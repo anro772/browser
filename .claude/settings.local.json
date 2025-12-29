@@ -5,7 +5,8 @@
       "Skill(superpowers:using-superpowers)",
       "Skill(superpowers:brainstorming)",
       "WebSearch",
-      "WebFetch(domain:github.com)"
+      "WebFetch(domain:github.com)",
+      "Bash(ls:*)"
     ],
     "deny": [],
     "ask": []
