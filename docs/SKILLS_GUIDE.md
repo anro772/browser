@@ -26,7 +26,7 @@
 |----------|------------|------------|---------|
 | **Skills** | User-invocable commands (`/skill-name`) | Skill tool | Specific workflows (commit, review, design) |
 | **Task Agents** | Specialized subagents | Task tool with `subagent_type` | Architecture, exploration, review |
-| **MCP Servers** | External tools/APIs | `mcp__servername__toolname` | Library docs, UI components, browser testing |
+| **MCP Servers** | External tools/APIs | `mcp__servername__toolname` | Library docs, browser testing |
 
 ---
 
@@ -194,21 +194,7 @@ MCP (Model Context Protocol) servers provide external capabilities.
 2. query-docs: "/microsoft/webview2", "intercept and modify HTTP requests"
 ```
 
-### **2. shadcn-ui - UI Components**
-- **Purpose:** Get shadcn/ui v4 component source and demos
-- **Tools:**
-  - `mcp__shadcn-ui__list_components` - List all components
-  - `mcp__shadcn-ui__get_component` - Get component source
-  - `mcp__shadcn-ui__get_component_demo` - Get usage demo
-  - `mcp__shadcn-ui__get_component_metadata` - Get metadata
-  - `mcp__shadcn-ui__list_blocks` - List UI blocks
-  - `mcp__shadcn-ui__get_block` - Get block source
-- **Use in Browser (Phase 9):**
-  - Get modern UI patterns
-  - Adapt to WPF equivalents
-  - Inspiration for visual design
-
-### **3. playwright - Browser Automation**
+### **2. playwright - Browser Automation**
 - **Purpose:** Automate browser testing and interactions
 - **Key Tools:**
   - `mcp__playwright__browser_navigate` - Go to URL
@@ -250,7 +236,6 @@ MCP (Model Context Protocol) servers provide external capabilities.
 - ✅ Deep architecture design (Agents)
 - ✅ Thorough code review (Agents)
 - ✅ Up-to-date documentation (context7)
-- ✅ Modern UI patterns (shadcn-ui)
 - ✅ Automated testing (playwright)
 
 ---
@@ -317,10 +302,7 @@ MCP (Model Context Protocol) servers provide external capabilities.
 1. frontend-design skill
    → Generate modern UI concepts
 
-2. shadcn-ui MCP
-   → Get component patterns
-
-3. playwright
+2. playwright
    → Verify 60 FPS, smooth animations
 ```
 
@@ -615,22 +597,7 @@ Task tool:
    - query: "CoreWebView2.WebResourceRequested event handler"
 ```
 
-### **Example 4: Get UI Component Pattern**
-
-```
-1. mcp__shadcn-ui__list_components
-   → See all available components
-
-2. mcp__shadcn-ui__get_component:
-   - componentName: "button"
-   → Get button source code
-
-3. mcp__shadcn-ui__get_component_demo:
-   - componentName: "button"
-   → Get usage examples
-```
-
-### **Example 5: Browser Testing**
+### **Example 4: Browser Testing**
 
 ```
 1. mcp__playwright__browser_navigate:
@@ -647,7 +614,7 @@ Task tool:
    - filename: "test-result.png"
 ```
 
-### **Example 6: Code Review**
+### **Example 5: Code Review**
 
 ```
 Task tool:
@@ -660,7 +627,7 @@ Task tool:
   Only report high-confidence issues."
 ```
 
-### **Example 7: Create Commit**
+### **Example 6: Create Commit**
 
 ```
 Skill tool:
@@ -743,7 +710,8 @@ Skill tool:
 **Previous Version:** December 2025 (had outdated "superpowers" and "episodic-memory" plugins)
 **Changes:**
 - Removed references to unavailable plugins (superpowers, episodic-memory)
-- Added MCP servers: context7, shadcn-ui, playwright
+- Removed shadcn-ui MCP (not needed for WPF project)
+- Added MCP servers: context7, playwright
 - Updated skills list to current availability
 - Added Task agents section
 - Updated workflows to use current tools
@@ -753,6 +721,6 @@ Skill tool:
 **Remember:** Use the right tool for the job:
 - **Skills** for structured workflows (commit, review, design)
 - **Task Agents** for complex analysis (architecture, exploration, review)
-- **MCP Tools** for external capabilities (docs, UI patterns, testing)
+- **MCP Tools** for external capabilities (docs, browser testing)
 
 **When in doubt:** This guide has the current list of available tools.

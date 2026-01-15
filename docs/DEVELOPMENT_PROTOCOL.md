@@ -42,7 +42,6 @@
 | Server | Purpose |
 |--------|---------|
 | **context7** | Library documentation (WebView2, WPF, etc.) |
-| **shadcn-ui** | Modern UI component patterns |
 | **playwright** | Browser automation and testing |
 
 ---
