@@ -214,7 +214,12 @@ public partial class RuleManagerViewModel : ObservableObject
             };
 
             await repository.AddAsync(entity);
+            ErrorLogger.LogInfo($"Template '{rule.Name}' added to database");
+
             await _ruleEngine.ReloadRulesAsync();
+            var activeCount = _ruleEngine.GetActiveRules().Count();
+            ErrorLogger.LogInfo($"RuleEngine reloaded, now has {activeCount} active rules");
+
             await LoadRulesAsync();
 
             MessageBox.Show($"Template '{rule.Name}' has been loaded and enabled.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);

@@ -818,5 +818,373 @@ Usage:
 
 ---
 
-**Last Updated:** December 2025
-**Next Update:** After Phase 1 completion (add learnings/gotchas)
+---
+
+## 🔐 Error Logging & Debugging
+
+### **Log File Locations**
+
+All application errors and info logs are written to:
+```
+%LOCALAPPDATA%\BrowserApp\Logs\
+```
+
+Specific log files:
+- `info_<date>.log` - Application events, startup, rule loading, blocking events
+- `errors_<date>.log` - Consolidated daily error log
+- `error_<timestamp>.txt` - Individual error files with full stack traces
+
+### **Opening Log Directory**
+
+PowerShell:
+```powershell
+explorer %LOCALAPPDATA%\BrowserApp\Logs
+```
+
+C#:
+```csharp
+string logDir = ErrorLogger.GetLogDirectory();
+Process.Start("explorer.exe", logDir);
+```
+
+### **Error Logger Usage**
+
+```csharp
+// Log informational message
+ErrorLogger.LogInfo("Application started");
+ErrorLogger.LogInfo($"Loaded {count} rules");
+
+// Log error with full exception details
+try
+{
+    // risky operation
+}
+catch (Exception ex)
+{
+    ErrorLogger.LogError("Operation failed", ex);
+}
+```
+
+### **What Gets Logged**
+
+**Startup Events:**
+- Application starting
+- Services configured
+- Database migrations (running/completed)
+- Blocking service initialization (with rule count)
+- Network logger started
+- Main window shown
+
+**Rule System Events:**
+- Template loading: `Template 'Block Ads' added to database`
+- Rule engine reloads: `RuleEngine reloaded, now has 5 active rules`
+- Blocked requests: `BLOCKED: https://ads.example.com by rule: Block Ads`
+
+**Error Events:**
+- All unhandled exceptions (with full stack trace)
+- UI thread exceptions
+- Database migration failures
+- Rule evaluation errors
+
+### **Debugging with Logs**
+
+1. **Check if rules are loaded:**
+   Look for: `BlockingService initialized with X active rules`
+   - If X = 0, rules aren't loading properly
+   - Check database with SQLite browser
+
+2. **Verify blocking is working:**
+   Look for: `BLOCKED: <url> by rule: <rule-name>`
+   - If no BLOCKED messages, rules aren't matching requests
+   - Check URL patterns in rule definitions
+
+3. **Find startup errors:**
+   Look for: `Startup Failed` or exception stack traces
+   - Database migration failures
+   - Missing dependencies
+   - Configuration errors
+
+---
+
+## 🗄️ Database Management
+
+### **Database Location**
+
+```
+%LOCALAPPDATA%\BrowserApp\browser.db
+```
+
+### **EF Core Migrations**
+
+**Current Status:** Migrations are set up and working
+
+**Migration Commands:**
+```bash
+# Create new migration (from BrowserApp.Data directory)
+dotnet ef migrations add MigrationName --startup-project ..\BrowserApp.UI
+
+# Apply migrations (automatic on startup)
+# or manually:
+dotnet ef database update --startup-project ..\BrowserApp.UI
+
+# Remove last migration
+dotnet ef migrations remove --startup-project ..\BrowserApp.UI
+
+# View migration SQL
+dotnet ef migrations script --startup-project ..\BrowserApp.UI
+```
+
+### **Schema Management**
+
+The database schema is managed via EF Core migrations:
+- `BrowserDbContext.cs` - Defines entity mappings
+- `Migrations/` - Contains migration history
+- Automatic migration on startup via `Database.Migrate()`
+
+**Tables:**
+- `BrowsingHistory` - Visited URLs with timestamps
+- `NetworkLogs` - Captured HTTP requests (URL, method, type, blocked status)
+- `Rules` - Blocking/injection rules (JSON-serialized)
+- `Settings` - Key-value app settings
+- `__EFMigrationsHistory` - Migration tracking
+
+### **Database Reset (Development)**
+
+To start fresh (WARNING: Deletes all data):
+```powershell
+Remove-Item "$env:LOCALAPPDATA\BrowserApp\browser.db" -Force
+```
+
+App will recreate DB with latest schema on next launch.
+
+### **Viewing Database**
+
+Use SQLite browser:
+```bash
+# Install DB Browser for SQLite
+winget install DB.Browser.for.SQLite
+
+# Open database
+"C:\Program Files\DB Browser for SQLite\DB Browser for SQLite.exe" "$env:LOCALAPPDATA\BrowserApp\browser.db"
+```
+
+---
+
+## 🛡️ Rule System Status
+
+### **Phase 3: ✅ COMPLETE**
+
+All rule system features implemented:
+
+**Core Components:**
+- ✅ Rule models (Rule, RuleAction, RuleMatch, RuleEvaluationResult)
+- ✅ UrlMatcher utility for wildcard pattern matching
+- ✅ RuleEntity and RuleRepository for SQLite persistence
+- ✅ RuleEngine for evaluating rules against requests
+- ✅ BlockingService for coordinating request blocking
+- ✅ CSSInjector for page style modifications
+- ✅ JSInjector for page script execution
+- ✅ RequestInterceptor modifications for blocking integration
+- ✅ NavigationService modifications for injection execution
+
+**UI Components:**
+- ✅ RuleManagerView dialog (XAML + code-behind)
+- ✅ RuleManagerViewModel with MVVM commands
+- ✅ Shield button in MainWindow toolbar
+- ✅ Template loading from embedded resources
+- ✅ Rule enable/disable toggle
+- ✅ Rule deletion support
+
+**Pre-built Templates:**
+- ✅ `privacy-mode.json` - Blocks tracking domains (Google Analytics, Facebook Pixel, etc.)
+- ✅ `cookie-banners.json` - Hides cookie consent dialogs (CSS injection)
+- ✅ `block-ads.json` - Blocks ad networks (Google Ads, DoubleClick, Amazon, Taboola, etc.)
+- ✅ `dark-mode.json` - Forces dark mode via CSS filter
+- ✅ `hide-social-widgets.json` - Hides social share buttons
+
+**Working Features:**
+- ✅ URL pattern matching with wildcards (`*`, `?`)
+- ✅ Request blocking (returns 403 response)
+- ✅ CSS injection on page load
+- ✅ JS injection on page load
+- ✅ Rule priority system
+- ✅ Template JSON deserialization
+- ✅ Database persistence with migrations
+- ✅ Logging of blocked requests
+
+### **Rule System Architecture**
+
+```
+┌─────────────────┐
+│  MainWindow     │──┐
+│  (Shield btn)   │  │ Opens
+└─────────────────┘  │
+                     ▼
+┌─────────────────────────────────────┐
+│  RuleManagerView                    │
+│  ┌─────────────────────────────┐  │
+│  │ RuleManagerViewModel         │  │
+│  │ - LoadTemplateCommand        │  │
+│  │ - DeleteRuleCommand          │  │
+│  │ - LoadRulesCommand           │  │
+│  └─────────────────────────────┘  │
+└─────────────────────────────────────┘
+              │ Uses
+              ▼
+┌──────────────────────────────────────┐
+│  RuleEngine                          │
+│  - InitializeAsync()                 │
+│  - Evaluate(request, pageUrl)        │
+│  - GetInjectionsForPage(pageUrl)     │
+└──────────────────────────────────────┘
+              │ Loads from
+              ▼
+┌──────────────────────────────────────┐
+│  RuleRepository (SQLite)             │
+│  - GetAllAsync()                     │
+│  - AddAsync()                        │
+│  - DeleteAsync()                     │
+└──────────────────────────────────────┘
+              │
+              ▼
+┌──────────────────────────────────────┐
+│  Database: browser.db                │
+│  Table: Rules                        │
+│  - Id, Name, Site, RulesJson         │
+│  - Enabled, Priority, Source         │
+└──────────────────────────────────────┘
+```
+
+### **Known Limitations**
+
+1. **YouTube Video Ads:**
+   - Display ads are blocked ✅
+   - Tracking pixels are blocked ✅
+   - **Video ads still play** ⚠️
+   - Reason: Server-side ad insertion from `googlevideo.com` (same domain as content)
+   - Solution: Requires element hiding + DOM manipulation (future enhancement)
+
+2. **Ad Network Updates:**
+   - Ad networks change domains frequently
+   - Templates may need periodic updates
+   - Check logs for new ad domains to block
+
+3. **CSS/JS Injection Timing:**
+   - Injections run after NavigationCompleted
+   - Some sites may show content briefly before injection applies
+   - Consider using `DOMContentLoaded` for earlier injection
+
+---
+
+## 🚨 Troubleshooting Guide
+
+### **App Won't Start**
+
+1. Check logs: `%LOCALAPPDATA%\BrowserApp\Logs\errors_<date>.log`
+2. Look for "Startup Failed" message
+3. Common causes:
+   - Database migration failure → Delete `browser.db` and restart
+   - Missing WebView2 Runtime → Install from Microsoft
+   - Corrupted user data → Delete `%LOCALAPPDATA%\BrowserApp\UserData`
+
+### **Rules Not Blocking**
+
+1. Check if rules are loaded:
+   ```
+   Log: "BlockingService initialized with X active rules"
+   ```
+   - If X = 0: Rules didn't load from database
+
+2. Check if template was imported:
+   ```
+   Log: "Template 'Block Ads' added to database"
+   ```
+
+3. Check if rules are enabled in Rule Manager
+
+4. Check if blocking is happening:
+   ```
+   Log: "BLOCKED: <url> by rule: <rule-name>"
+   ```
+   - If no BLOCKED messages: URL patterns don't match requests
+
+### **Database Errors**
+
+**Error:** "no such table: Rules"
+- **Cause:** Database created without migrations
+- **Fix:** Delete `browser.db`, app will recreate with migrations
+
+**Error:** "no such column: Rules.ChannelId"
+- **Cause:** Database schema is outdated
+- **Fix:** App should auto-delete and recreate DB
+- **Manual Fix:** Delete `browser.db`
+
+### **Template Won't Load**
+
+**Error:** "Template 'block-ads' not found"
+- **Cause:** Embedded resources not configured
+- **Fix:** Check `BrowserApp.UI.csproj` has:
+  ```xml
+  <EmbeddedResource Include="Resources\DefaultRules\*.json" />
+  ```
+- **Rebuild:** `dotnet build`
+
+### **Logs Too Many Files**
+
+Logs are created per-error and per-day. To clean up:
+```powershell
+Remove-Item "$env:LOCALAPPDATA\BrowserApp\Logs\*" -Force
+```
+
+---
+
+## 📋 Development Checklist (Updated)
+
+### **Phase 1: Core Browser** ✅ COMPLETE
+- ✅ Create WPF project
+- ✅ Install NuGet packages
+- ✅ Add WebView2 control to MainWindow
+- ✅ Configure UserDataFolder for persistence
+- ✅ Enable password autofill
+- ✅ Implement address bar with URL/search detection
+- ✅ Add back/forward/refresh buttons
+- ✅ Apply WPF UI styling
+- ✅ Test navigation to 5-10 websites
+- ✅ Verify cookies persist after app restart
+
+### **Phase 2: Network Monitoring** ✅ COMPLETE
+- ✅ Add WebResourceRequested event handler
+- ✅ Create NetworkRequest model class
+- ✅ Log requests to console (verify interception works)
+- ✅ Create NetworkLogger service (save to SQLite)
+- ✅ Build network monitor UI (DataGrid in sidebar)
+- ✅ Add filtering (blocked, 3rd party, type)
+- ✅ Add export to CSV functionality
+- ✅ Test on tracker-heavy sites
+
+### **Phase 3: Rule System** ✅ COMPLETE
+- ✅ Create Rule model (JSON schema)
+- ✅ Implement RuleEngine (evaluate rules)
+- ✅ Add BlockingService (cancel requests)
+- ✅ Implement CSS injection (CSSInjector)
+- ✅ Implement JS injection (JSInjector)
+- ✅ Create 5 pre-built rule templates
+- ✅ Add Rule Manager UI (dialog window)
+- ✅ Template loading from embedded resources
+- ✅ EF Core migrations for database schema
+- ✅ Error logging system with file output
+- ✅ Test blocking and injection on real sites
+
+### **Phase 4: Next Steps** (Not Started)
+- [ ] Real-time log viewer UI
+- [ ] Manual rule builder (UI for creating custom rules)
+- [ ] Rule marketplace/sharing
+- [ ] Advanced YouTube ad blocking (element hiding + auto-skip)
+- [ ] Rule import/export
+- [ ] Per-site rule override
+- [ ] Privacy dashboard (stats, saved bandwidth)
+
+---
+
+**Last Updated:** January 15, 2026
+**Status:** Phase 3 Complete | 66/66 Tests Passing | All Systems Operational

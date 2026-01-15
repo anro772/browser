@@ -23,6 +23,8 @@ public class BlockingService : IBlockingService
     public async Task InitializeAsync()
     {
         await _ruleEngine.InitializeAsync();
+        var ruleCount = _ruleEngine.GetActiveRules().Count();
+        ErrorLogger.LogInfo($"BlockingService initialized with {ruleCount} active rules");
     }
 
     public RuleEvaluationResult ShouldBlockRequest(NetworkRequest request, string? currentPageUrl)
@@ -40,6 +42,7 @@ public class BlockingService : IBlockingService
                     _bytesSaved += request.Size ?? 5000; // Default 5KB estimate
                 }
 
+                ErrorLogger.LogInfo($"BLOCKED: {request.Url} by rule: {result.BlockedByRuleName}");
                 Debug.WriteLine($"[BlockingService] Blocked: {request.Url} by rule: {result.BlockedByRuleName}");
             }
 
@@ -47,6 +50,7 @@ public class BlockingService : IBlockingService
         }
         catch (Exception ex)
         {
+            ErrorLogger.LogError("BlockingService evaluation error", ex);
             Debug.WriteLine($"[BlockingService] Error evaluating request: {ex.Message}");
             // Fail-open: allow the request if evaluation fails
             return RuleEvaluationResult.Allow();
