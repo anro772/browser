@@ -87,6 +87,14 @@
                                  Height="24"
                                  Margin="4,0"/>
 
+                <!-- Rules Manager -->
+                <ui:Button Icon="{ui:SymbolIcon Shield24}"
+                           ToolTip="Manage Rules (Ctrl+R)"
+                           x:Name="RulesButton"
+                           Click="RulesButton_Click"
+                           Appearance="Secondary"
+                           Margin="4,0"/>
+
                 <!-- Network Monitor Toggle -->
                 <ui:Button Icon="{ui:SymbolIcon NetworkCheck24}"
                            ToolTip="Toggle Network Monitor (Ctrl+Shift+N)"

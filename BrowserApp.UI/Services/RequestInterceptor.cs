@@ -11,12 +11,22 @@ namespace BrowserApp.UI.Services;
 public class RequestInterceptor : IRequestInterceptor
 {
     private CoreWebView2? _coreWebView2;
+    private readonly IBlockingService? _blockingService;
     private bool _isEnabled;
     private bool _isInitialized;
 
     public event EventHandler<NetworkRequest>? RequestCaptured;
 
     public bool IsEnabled => _isEnabled;
+
+    public RequestInterceptor()
+    {
+    }
+
+    public RequestInterceptor(IBlockingService blockingService)
+    {
+        _blockingService = blockingService;
+    }
 
     /// <summary>
     /// Sets the CoreWebView2 instance to intercept requests from.
@@ -76,6 +86,34 @@ public class RequestInterceptor : IRequestInterceptor
                 Timestamp = DateTime.UtcNow,
                 WasBlocked = false
             };
+
+            // Check if request should be blocked
+            if (_blockingService != null)
+            {
+                var currentPageUrl = _coreWebView2?.Source;
+                var evaluation = _blockingService.ShouldBlockRequest(request, currentPageUrl);
+
+                if (evaluation.ShouldBlock)
+                {
+                    // Block the request by setting a 403 response
+                    var stream = new System.IO.MemoryStream(System.Text.Encoding.UTF8.GetBytes("Blocked by BrowserApp rule"));
+                    e.Response = _coreWebView2!.Environment.CreateWebResourceResponse(
+                        stream, 403, "Blocked", "Content-Type: text/plain");
+
+                    // Create a new request object with blocking info
+                    request = new NetworkRequest
+                    {
+                        Url = request.Url,
+                        Method = request.Method,
+                        ResourceType = request.ResourceType,
+                        Timestamp = request.Timestamp,
+                        WasBlocked = true,
+                        BlockedByRuleId = evaluation.BlockedByRuleId
+                    };
+
+                    System.Diagnostics.Debug.WriteLine($"[RequestInterceptor] Blocked: {request.Url}");
+                }
+            }
 
             RequestCaptured?.Invoke(this, request);
         }

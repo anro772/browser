@@ -12,6 +12,7 @@ public class BrowserDbContext : DbContext
     public DbSet<BrowsingHistoryEntity> BrowsingHistory { get; set; } = null!;
     public DbSet<SettingsEntity> Settings { get; set; } = null!;
     public DbSet<NetworkLogEntity> NetworkLogs { get; set; } = null!;
+    public DbSet<RuleEntity> Rules { get; set; } = null!;
 
     public BrowserDbContext()
     {
@@ -59,6 +60,23 @@ public class BrowserDbContext : DbContext
             entity.HasIndex(e => e.Timestamp);
             entity.HasIndex(e => e.WasBlocked);
             entity.HasIndex(e => e.ResourceType);
+        });
+
+        modelBuilder.Entity<RuleEntity>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Name).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.Site).IsRequired().HasMaxLength(500);
+            entity.Property(e => e.RulesJson).IsRequired();
+            entity.Property(e => e.Enabled).HasDefaultValue(true);
+            entity.Property(e => e.Priority).HasDefaultValue(10);
+            entity.Property(e => e.IsEnforced).HasDefaultValue(false);
+            entity.Property(e => e.Source).HasDefaultValue("local").HasMaxLength(50);
+
+            // Indexes for performance
+            entity.HasIndex(e => e.Enabled);
+            entity.HasIndex(e => e.Priority);
+            entity.HasIndex(e => e.Source);
         });
     }
 

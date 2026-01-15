@@ -1,0 +1,22 @@
+{
+  "id": "00000000-0000-0000-0000-000000000002",
+  "name": "Hide Cookie Banners",
+  "description": "Hides common cookie consent dialogs and GDPR banners",
+  "site": "*",
+  "enabled": false,
+  "priority": 90,
+  "rules": [
+    {
+      "type": "inject_css",
+      "match": { "urlPattern": "*" },
+      "css": "#cookie-notice, #cookie-banner, #cookie-consent, .cookie-notice, .cookie-banner, .cookie-consent, .cookie-popup, .cookie-modal, .cookie-dialog, .cookie-law-info-bar, .cc-banner, .cc-window, .cc-dialog, .consent-banner, .consent-dialog, .consent-modal, .gdpr-banner, .gdpr-notice, .gdpr-popup, .privacy-notice, .privacy-banner, [class*='cookie-consent'], [class*='cookie-banner'], [class*='gdpr-'], [id*='cookie-consent'], [id*='cookie-banner'], [id*='gdpr-'], .qc-cmp-ui-container, .qc-cmp2-container, #qc-cmp2-main, .cmp-container, #onetrust-banner-sdk, #onetrust-consent-sdk, .onetrust-pc-dark-filter, #didomi-host, .didomi-popup-container, #sp_message_container, .sp_message_container, #usercentrics-root, .uc-banner, .cookiebot-widget, #CookiebotDialog, .iubenda-cs-container { display: none !important; visibility: hidden !important; opacity: 0 !important; pointer-events: none !important; }",
+      "timing": "dom_ready"
+    },
+    {
+      "type": "inject_css",
+      "match": { "urlPattern": "*" },
+      "css": "body.modal-open, body.no-scroll, body.cookie-modal-open, body.has-cookie-notice, html.has-cookie-notice { overflow: auto !important; position: static !important; }",
+      "timing": "dom_ready"
+    }
+  ]
+}

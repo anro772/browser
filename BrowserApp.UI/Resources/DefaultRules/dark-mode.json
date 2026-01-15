@@ -1,0 +1,16 @@
+{
+  "id": "00000000-0000-0000-0000-000000000004",
+  "name": "Force Dark Mode",
+  "description": "Forces dark colors on websites that don't support dark mode",
+  "site": "*",
+  "enabled": false,
+  "priority": 50,
+  "rules": [
+    {
+      "type": "inject_css",
+      "match": { "urlPattern": "*" },
+      "css": "html { filter: invert(90%) hue-rotate(180deg) !important; background-color: #111 !important; } img, video, picture, canvas, iframe, svg, [style*='background-image'] { filter: invert(100%) hue-rotate(180deg) !important; }",
+      "timing": "dom_ready"
+    }
+  ]
+}

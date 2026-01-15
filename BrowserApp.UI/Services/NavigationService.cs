@@ -14,11 +14,25 @@ public class NavigationService : INavigationService
 {
     private WebView2? _webView;
     private CoreWebView2? _coreWebView2;
+    private readonly IRuleEngine? _ruleEngine;
+    private readonly ICSSInjector? _cssInjector;
+    private readonly IJSInjector? _jsInjector;
     private bool _isInitialized;
 
     public event EventHandler<NavigationEventArgs>? NavigationStarting;
     public event EventHandler<NavigationEventArgs>? NavigationCompleted;
     public event EventHandler<string>? SourceChanged;
+
+    public NavigationService()
+    {
+    }
+
+    public NavigationService(IRuleEngine ruleEngine, ICSSInjector cssInjector, IJSInjector jsInjector)
+    {
+        _ruleEngine = ruleEngine;
+        _cssInjector = cssInjector;
+        _jsInjector = jsInjector;
+    }
 
     public bool CanGoBack => _coreWebView2?.CanGoBack ?? false;
     public bool CanGoForward => _coreWebView2?.CanGoForward ?? false;
@@ -134,7 +148,7 @@ public class NavigationService : INavigationService
         });
     }
 
-    private void OnNavigationCompleted(object? sender, CoreWebView2NavigationCompletedEventArgs e)
+    private async void OnNavigationCompleted(object? sender, CoreWebView2NavigationCompletedEventArgs e)
     {
         NavigationCompleted?.Invoke(this, new NavigationEventArgs
         {
@@ -142,6 +156,41 @@ public class NavigationService : INavigationService
             IsSuccess = e.IsSuccess,
             HttpStatusCode = e.HttpStatusCode
         });
+
+        // Execute content injections if navigation was successful
+        if (e.IsSuccess && _ruleEngine != null)
+        {
+            await ExecuteInjectionsAsync();
+        }
+    }
+
+    /// <summary>
+    /// Executes CSS and JavaScript injections for the current page.
+    /// </summary>
+    private async Task ExecuteInjectionsAsync()
+    {
+        if (_ruleEngine == null) return;
+
+        try
+        {
+            var injections = _ruleEngine.GetInjectionsForPage(CurrentUrl);
+
+            foreach (var injection in injections)
+            {
+                if (injection.Type == "inject_css" && _cssInjector != null && !string.IsNullOrEmpty(injection.Css))
+                {
+                    await _cssInjector.InjectAsync(injection.Css, injection.Timing);
+                }
+                else if (injection.Type == "inject_js" && _jsInjector != null && !string.IsNullOrEmpty(injection.Js))
+                {
+                    await _jsInjector.InjectAsync(injection.Js, injection.Timing);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[NavigationService] Injection error: {ex.Message}");
+        }
     }
 
     private void OnSourceChanged(object? sender, CoreWebView2SourceChangedEventArgs e)

@@ -33,6 +33,10 @@ public partial class App : Application
         // Ensure database is created
         EnsureDatabase();
 
+        // Initialize blocking service (loads rules)
+        var blockingService = _serviceProvider.GetRequiredService<IBlockingService>();
+        _ = blockingService.InitializeAsync();
+
         // Start network logger background task
         var networkLogger = _serviceProvider.GetRequiredService<INetworkLogger>();
         _ = networkLogger.StartAsync();
@@ -54,14 +58,26 @@ public partial class App : Application
         // Core Services
         services.AddTransient<ISearchEngineService, SearchEngineService>();
 
-        // UI Services (Singleton - shared state for WebView2)
-        services.AddSingleton<NavigationService>();
-        services.AddSingleton<INavigationService>(sp => sp.GetRequiredService<NavigationService>());
+        // Phase 3: Rule System Services
+        services.AddSingleton<IRuleEngine, RuleEngine>();
+        services.AddSingleton<IBlockingService, BlockingService>();
+        services.AddSingleton<CSSInjector>();
+        services.AddSingleton<ICSSInjector>(sp => sp.GetRequiredService<CSSInjector>());
+        services.AddSingleton<JSInjector>();
+        services.AddSingleton<IJSInjector>(sp => sp.GetRequiredService<JSInjector>());
 
-        // Network Monitoring Services (Phase 2)
-        services.AddSingleton<RequestInterceptor>();
+        // Network Monitoring Services (Phase 2) - with blocking support
+        services.AddSingleton<RequestInterceptor>(sp => new RequestInterceptor(
+            sp.GetRequiredService<IBlockingService>()));
         services.AddSingleton<IRequestInterceptor>(sp => sp.GetRequiredService<RequestInterceptor>());
         services.AddSingleton<INetworkLogger, NetworkLogger>();
+
+        // Navigation Service with injection support
+        services.AddSingleton<NavigationService>(sp => new NavigationService(
+            sp.GetRequiredService<IRuleEngine>(),
+            sp.GetRequiredService<ICSSInjector>(),
+            sp.GetRequiredService<IJSInjector>()));
+        services.AddSingleton<INavigationService>(sp => sp.GetRequiredService<NavigationService>());
 
         // Data Services
         services.AddDbContext<BrowserDbContext>(options =>
@@ -71,14 +87,17 @@ public partial class App : Application
         });
         services.AddScoped<IBrowsingHistoryRepository, BrowsingHistoryRepository>();
         services.AddScoped<INetworkLogRepository, NetworkLogRepository>();
+        services.AddScoped<IRuleRepository, RuleRepository>();
 
         // ViewModels
         services.AddTransient<MainViewModel>();
         services.AddTransient<NetworkMonitorViewModel>();
+        services.AddTransient<RuleManagerViewModel>();
 
         // Views
         services.AddSingleton<MainWindow>();
         services.AddSingleton<NetworkMonitorView>();
+        services.AddTransient<RuleManagerView>();
     }
 
     private void EnsureDatabase()

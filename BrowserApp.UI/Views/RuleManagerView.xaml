@@ -1,0 +1,112 @@
+<ui:FluentWindow x:Class="BrowserApp.UI.Views.RuleManagerView"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+        xmlns:vm="clr-namespace:BrowserApp.UI.ViewModels"
+        Title="Rule Manager"
+        Height="500" Width="800"
+        WindowStartupLocation="CenterOwner">
+
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <StackPanel Grid.Row="0" Margin="0,0,0,16">
+            <TextBlock Text="Rules" FontSize="24" FontWeight="SemiBold" Margin="0,0,0,4"/>
+            <TextBlock Text="Manage blocking and content injection rules" Foreground="Gray"/>
+        </StackPanel>
+
+        <!-- Stats and Actions -->
+        <Grid Grid.Row="1" Margin="0,0,0,12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                <TextBlock Text="{Binding TotalRules}" FontWeight="SemiBold"/>
+                <TextBlock Text=" rules total, " Foreground="Gray"/>
+                <TextBlock Text="{Binding EnabledRules}" FontWeight="SemiBold" Foreground="Green"/>
+                <TextBlock Text=" enabled" Foreground="Gray"/>
+            </StackPanel>
+
+            <StackPanel Grid.Column="1" Orientation="Horizontal">
+                <ui:DropDownButton Content="Load Template" Margin="0,0,8,0">
+                    <ui:DropDownButton.Flyout>
+                        <ContextMenu>
+                            <MenuItem Header="Privacy Mode" Command="{Binding LoadTemplateCommand}" CommandParameter="privacy-mode"/>
+                            <MenuItem Header="Hide Cookie Banners" Command="{Binding LoadTemplateCommand}" CommandParameter="cookie-banners"/>
+                            <MenuItem Header="Block Ads" Command="{Binding LoadTemplateCommand}" CommandParameter="block-ads"/>
+                            <MenuItem Header="Force Dark Mode" Command="{Binding LoadTemplateCommand}" CommandParameter="dark-mode"/>
+                            <MenuItem Header="Hide Social Widgets" Command="{Binding LoadTemplateCommand}" CommandParameter="hide-social-widgets"/>
+                        </ContextMenu>
+                    </ui:DropDownButton.Flyout>
+                </ui:DropDownButton>
+                <ui:Button Content="Refresh" Icon="{ui:SymbolIcon ArrowSync24}" Command="{Binding LoadRulesCommand}"/>
+            </StackPanel>
+        </Grid>
+
+        <!-- Rules List -->
+        <Border Grid.Row="2" BorderBrush="{DynamicResource ControlElevationBorderBrush}" BorderThickness="1" CornerRadius="4">
+            <DataGrid ItemsSource="{Binding Rules}"
+                      SelectedItem="{Binding SelectedRule}"
+                      AutoGenerateColumns="False"
+                      IsReadOnly="True"
+                      SelectionMode="Single"
+                      CanUserAddRows="False"
+                      CanUserDeleteRows="False"
+                      HeadersVisibility="Column"
+                      GridLinesVisibility="Horizontal"
+                      BorderThickness="0"
+                      Background="Transparent">
+                <DataGrid.Columns>
+                    <DataGridTemplateColumn Header="Enabled" Width="70">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <ui:ToggleSwitch IsChecked="{Binding IsEnabled, Mode=OneWay}"
+                                                 Command="{Binding DataContext.ToggleRuleCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                                 CommandParameter="{Binding}"
+                                                 IsEnabled="{Binding IsEnforced, Converter={StaticResource InverseBoolConverter}}"
+                                                 HorizontalAlignment="Center"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+
+                    <DataGridTextColumn Header="Name" Binding="{Binding Name}" Width="200"/>
+                    <DataGridTextColumn Header="Site" Binding="{Binding Site}" Width="150"/>
+                    <DataGridTextColumn Header="Actions" Binding="{Binding ActionCount}" Width="60"/>
+                    <DataGridTextColumn Header="Priority" Binding="{Binding Priority}" Width="60"/>
+                    <DataGridTextColumn Header="Source" Binding="{Binding SourceDisplay}" Width="80"/>
+
+                    <DataGridTemplateColumn Header="" Width="50">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <ui:Button Icon="{ui:SymbolIcon Delete24}"
+                                           Appearance="Danger"
+                                           Command="{Binding DataContext.DeleteRuleCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                           CommandParameter="{Binding}"
+                                           ToolTip="Delete rule"
+                                           Padding="4"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                </DataGrid.Columns>
+            </DataGrid>
+        </Border>
+
+        <!-- Loading Indicator -->
+        <Border Grid.Row="2" Background="#80000000" Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisibilityConverter}}">
+            <ui:ProgressRing IsIndeterminate="True"/>
+        </Border>
+
+        <!-- Footer -->
+        <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
+            <ui:Button Content="Close" IsCancel="True" Click="CloseButton_Click"/>
+        </StackPanel>
+    </Grid>
+</ui:FluentWindow>
