@@ -9,9 +9,10 @@ namespace BrowserApp.UI.Services;
 /// Service for injecting CSS into web pages via WebView2.
 /// Includes XSS sanitization to prevent malicious code injection.
 /// </summary>
-public class CSSInjector : ICSSInjector
+public class CSSInjector : ICSSInjector, IDisposable
 {
     private CoreWebView2? _coreWebView2;
+    private bool _isDisposed;
 
     /// <summary>
     /// Sets the CoreWebView2 instance to use for injection.
@@ -113,5 +114,17 @@ public class CSSInjector : ICSSInjector
         {
             await InjectAsync(css);
         }
+    }
+
+    public void Dispose()
+    {
+        if (_isDisposed) return;
+
+        _isDisposed = true;
+
+        // Release reference to CoreWebView2 to allow cleanup
+        _coreWebView2 = null;
+
+        GC.SuppressFinalize(this);
     }
 }

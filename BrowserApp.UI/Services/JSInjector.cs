@@ -10,9 +10,10 @@ namespace BrowserApp.UI.Services;
 /// Service for injecting JavaScript into web pages via WebView2.
 /// Includes validation to detect dangerous patterns.
 /// </summary>
-public class JSInjector : IJSInjector
+public class JSInjector : IJSInjector, IDisposable
 {
     private CoreWebView2? _coreWebView2;
+    private bool _isDisposed;
 
     /// <summary>
     /// Sets the CoreWebView2 instance to use for injection.
@@ -126,5 +127,17 @@ public class JSInjector : IJSInjector
         {
             await InjectAsync(js);
         }
+    }
+
+    public void Dispose()
+    {
+        if (_isDisposed) return;
+
+        _isDisposed = true;
+
+        // Release reference to CoreWebView2 to allow cleanup
+        _coreWebView2 = null;
+
+        GC.SuppressFinalize(this);
     }
 }

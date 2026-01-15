@@ -82,6 +82,8 @@ public partial class NetworkMonitorViewModel : ObservableObject, IDisposable
         if (!IsMonitoringEnabled) return;
 
         // Log to database (async, non-blocking)
+        // NOTE: Intentionally fire-and-forget for performance - we don't want to block on DB writes.
+        // The NetworkLogger handles errors internally and has its own batching/buffering.
         _ = _networkLogger.LogRequestAsync(request);
 
         // Add to buffer for batched UI update

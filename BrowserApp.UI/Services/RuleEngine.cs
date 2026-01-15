@@ -14,7 +14,7 @@ namespace BrowserApp.UI.Services;
 /// Rule evaluation engine that matches network requests against active rules.
 /// Includes LRU caching for 90%+ cache hit rate on repeated URLs.
 /// </summary>
-public class RuleEngine : IRuleEngine
+public class RuleEngine : IRuleEngine, IDisposable
 {
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly MemoryCache _evaluationCache;
@@ -22,6 +22,11 @@ public class RuleEngine : IRuleEngine
     private readonly object _cacheLock = new();
     private bool _isInitialized;
     private int _ruleVersion = 0;
+    private bool _isDisposed;
+
+    // Cache metrics
+    private long _cacheHits = 0;
+    private long _cacheMisses = 0;
 
     public event EventHandler? RulesReloaded;
 
@@ -81,10 +86,12 @@ public class RuleEngine : IRuleEngine
         // Try to get cached result
         if (_evaluationCache.TryGetValue(cacheKey, out RuleEvaluationResult? cachedResult))
         {
+            Interlocked.Increment(ref _cacheHits);
             return cachedResult!;
         }
 
         // Cache miss - perform evaluation
+        Interlocked.Increment(ref _cacheMisses);
         var result = EvaluateInternal(request, currentPageUrl);
 
         // Cache the result with 5-minute expiration
@@ -95,6 +102,14 @@ public class RuleEngine : IRuleEngine
         };
 
         _evaluationCache.Set(cacheKey, result, cacheOptions);
+
+        // Log cache stats every 1000 evaluations
+        var totalEvals = _cacheHits + _cacheMisses;
+        if (totalEvals % 1000 == 0 && totalEvals > 0)
+        {
+            var hitRate = (_cacheHits * 100.0) / totalEvals;
+            Debug.WriteLine($"[RuleEngine] Cache stats: {_cacheHits} hits, {_cacheMisses} misses ({hitRate:F1}% hit rate)");
+        }
 
         return result;
     }
@@ -260,5 +275,26 @@ public class RuleEngine : IRuleEngine
         }
 
         return rule;
+    }
+
+    public void Dispose()
+    {
+        if (_isDisposed) return;
+
+        _isDisposed = true;
+
+        // Log final cache statistics
+        var totalEvals = _cacheHits + _cacheMisses;
+        if (totalEvals > 0)
+        {
+            var hitRate = (_cacheHits * 100.0) / totalEvals;
+            Debug.WriteLine($"[RuleEngine] Final cache stats: {_cacheHits} hits, {_cacheMisses} misses ({hitRate:F1}% hit rate)");
+            ErrorLogger.LogInfo($"RuleEngine cache stats: {hitRate:F1}% hit rate ({_cacheHits}/{totalEvals} hits)");
+        }
+
+        // Dispose MemoryCache
+        _evaluationCache?.Dispose();
+
+        GC.SuppressFinalize(this);
     }
 }

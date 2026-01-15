@@ -9,10 +9,11 @@ namespace BrowserApp.UI.ViewModels;
 /// ViewModel for the main browser window.
 /// Handles address bar input and navigation commands.
 /// </summary>
-public partial class MainViewModel : ObservableObject
+public partial class MainViewModel : ObservableObject, IDisposable
 {
     private readonly INavigationService _navigationService;
     private readonly ISearchEngineService _searchEngineService;
+    private bool _isDisposed;
 
     [ObservableProperty]
     private string _addressBarText = string.Empty;
@@ -126,5 +127,19 @@ public partial class MainViewModel : ObservableObject
     {
         OnPropertyChanged(nameof(CanGoBack));
         OnPropertyChanged(nameof(CanGoForward));
+    }
+
+    public void Dispose()
+    {
+        if (_isDisposed) return;
+
+        _isDisposed = true;
+
+        // Unsubscribe from navigation events to prevent memory leak
+        _navigationService.SourceChanged -= OnSourceChanged;
+        _navigationService.NavigationStarting -= OnNavigationStarting;
+        _navigationService.NavigationCompleted -= OnNavigationCompleted;
+
+        GC.SuppressFinalize(this);
     }
 }
