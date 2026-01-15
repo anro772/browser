@@ -1,0 +1,129 @@
+# .NET / Visual Studio / Rider
+## Build results
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+[Ww][Ii][Nn]32/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+
+## Visual Studio
+.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.csproj.user
+*.dbmdl
+*.dbproj.schemaview
+*.jfm
+*.pfx
+*.publishsettings
+
+## NuGet
+*.nupkg
+*.snupkg
+**/[Pp]ackages/*
+!**/[Pp]ackages/build/
+*.nuget.props
+*.nuget.targets
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+## MSBuild
+*.msbuild
+msbuild.log
+msbuild.err
+msbuild.wrn
+
+## .NET Core / .NET 5+
+project.assets.json
+
+## Rider / JetBrains
+.idea/
+*.sln.iml
+
+## User-specific files
+*.rsuser
+*.suo
+*.userprefs
+
+## Mono Auto Generated Files
+mono_crash.*
+
+## Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msm
+*.msp
+*.lnk
+
+## macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+## Test Results
+[Tt]est[Rr]esult*/
+[Bb]uild[Ll]og.*
+*.trx
+*.coverage
+*.coveragexml
+
+## Code Coverage
+coverage/
+*.lcov
+coverage*.json
+coverage*.xml
+
+## Publish output
+publish/
+PublishOutput/
+
+## Temp files
+*.tmp
+*.temp
+*.bak
+*.swp
+*~
+
+## Local application data (created at runtime)
+# Note: The actual user data is stored in %LOCALAPPDATA%/BrowserApp/
+# This is just in case any gets created locally during development
+
+## SQLite database files (local dev)
+*.db
+*.db-shm
+*.db-wal
+
+## Secrets and credentials (never commit these)
+*.pfx
+*.snk
+appsettings.*.json
+!appsettings.json
+secrets.json
+credentials.json
+
+## IDE workspace settings
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+## Claude Code local settings
+.claude/settings.local.json

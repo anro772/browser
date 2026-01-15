@@ -109,6 +109,23 @@
 
 ---
 
+## 🤖 Agent-Maintained Files
+
+The following files are maintained by AI agents and should be updated as needed during development:
+
+| File | Responsibility | When to Update |
+|------|----------------|----------------|
+| `.gitignore` | Agent | When new file patterns need exclusion (build artifacts, IDE files, secrets) |
+| `docs/DEVELOPMENT_PROTOCOL.md` | Agent | When workflow changes or new tools are added |
+| `docs/SKILLS_GUIDE.md` | Agent | When new skills/agents become available |
+
+### **Git Workflow**
+- **Commits are created by user** - Agents prepare changes, user commits manually
+- **Agent updates .gitignore** - When new patterns are identified (e.g., new IDE, build output)
+- **Agent does NOT push** - Unless explicitly requested by user
+
+---
+
 ## 🗂️ File Organization
 
 ### **C# Classes**

@@ -6,7 +6,18 @@
       "Skill(superpowers:brainstorming)",
       "WebSearch",
       "WebFetch(domain:github.com)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(dotnet new:*)",
+      "Bash(dotnet sln:*)",
+      "Bash(dotnet add reference:*)",
+      "Bash(dotnet add package:*)",
+      "Bash(dotnet test:*)",
+      "mcp__context7__resolve-library-id",
+      "Bash(dotnet remove package:*)",
+      "Bash(tasklist:*)",
+      "Bash(Get-Process)",
+      "Bash(Where-Object {$_ProcessName -like \"*Browser*\"})",
+      "Bash(taskkill:*)"
     ],
     "deny": [],
     "ask": []
