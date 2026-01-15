@@ -64,8 +64,17 @@ public partial class MainWindow : FluentWindow
 
     private void RulesButton_Click(object sender, RoutedEventArgs e)
     {
-        var ruleManagerView = _serviceProvider.GetRequiredService<RuleManagerView>();
-        ruleManagerView.Owner = this;
-        ruleManagerView.ShowDialog();
+        try
+        {
+            ErrorLogger.LogInfo("Opening Rule Manager");
+            var ruleManagerView = _serviceProvider.GetRequiredService<RuleManagerView>();
+            ruleManagerView.Owner = this;
+            ruleManagerView.ShowDialog();
+            ErrorLogger.LogInfo("Rule Manager closed");
+        }
+        catch (Exception ex)
+        {
+            ErrorLogger.LogError("Failed to open Rule Manager", ex);
+        }
     }
 }

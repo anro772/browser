@@ -3,9 +3,15 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
         xmlns:vm="clr-namespace:BrowserApp.UI.ViewModels"
+        xmlns:views="clr-namespace:BrowserApp.UI.Views"
         Title="Rule Manager"
         Height="500" Width="800"
         WindowStartupLocation="CenterOwner">
+
+    <ui:FluentWindow.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
+        <views:InverseBoolConverter x:Key="InverseBoolConverter"/>
+    </ui:FluentWindow.Resources>
 
     <Grid Margin="16">
         <Grid.RowDefinitions>

@@ -21,7 +21,9 @@
       "Bash(powershell:*)",
       "mcp__plugin_playwright_playwright__browser_wait_for",
       "Bash(dotnet ef migrations add:*)",
-      "Bash(dotnet tool install:*)"
+      "Bash(dotnet tool install:*)",
+      "Bash(timeout /t 3 /nobreak)",
+      "Bash(timeout /t 5 /nobreak)"
     ],
     "deny": [],
     "ask": []

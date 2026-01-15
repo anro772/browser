@@ -15,10 +15,6 @@ public partial class RuleManagerView : Wpf.Ui.Controls.FluentWindow
         InitializeComponent();
         DataContext = viewModel;
 
-        // Add converters to resources
-        Resources.Add("BoolToVisibilityConverter", new BooleanToVisibilityConverter());
-        Resources.Add("InverseBoolConverter", new InverseBoolConverter());
-
         // Load rules when window opens
         Loaded += async (s, e) => await viewModel.LoadRulesCommand.ExecuteAsync(null);
     }
