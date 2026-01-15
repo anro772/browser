@@ -1,10 +1,14 @@
 using System.IO;
+using System.Net.Http;
 using System.Windows;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using BrowserApp.Core.Interfaces;
 using BrowserApp.Core.Services;
+using BrowserApp.Core.AdBlocker.Interfaces;
+using BrowserApp.Core.AdBlocker.Services;
+using BrowserApp.Core.AdBlocker.Parsing;
 using BrowserApp.Data;
 using BrowserApp.Data.Interfaces;
 using BrowserApp.Data.Repositories;
@@ -80,6 +84,12 @@ public partial class App : Application
 
         ErrorLogger.LogInfo("Blocking service initialized");
 
+        // Initialize ad blocker service (downloads and parses uBlock Origin filters)
+        var adBlockerService = _serviceProvider.GetRequiredService<IAdBlockerService>();
+        await adBlockerService.InitializeAsync();
+
+        ErrorLogger.LogInfo("Ad blocker service initialized");
+
         // Start network logger background task - AWAIT to ensure it starts
         var networkLogger = _serviceProvider.GetRequiredService<INetworkLogger>();
         await networkLogger.StartAsync();
@@ -105,6 +115,17 @@ public partial class App : Application
         // Core Services
         services.AddTransient<ISearchEngineService, SearchEngineService>();
 
+        // Ad Blocker Services (uBlock Origin integration)
+        services.AddHttpClient(); // Required for IHttpClientFactory
+        services.AddSingleton<IFilterParser, FilterParser>();
+        services.AddSingleton<IFilterListDownloader>(sp =>
+        {
+            var httpClientFactory = sp.GetRequiredService<IHttpClientFactory>();
+            var httpClient = httpClientFactory.CreateClient();
+            return new FilterListDownloader(httpClient);
+        });
+        services.AddSingleton<IAdBlockerService, AdBlockerService>();
+
         // Phase 3: Rule System Services
         services.AddSingleton<IRuleEngine, RuleEngine>();
         services.AddSingleton<IBlockingService, BlockingService>();
@@ -115,7 +136,8 @@ public partial class App : Application
 
         // Network Monitoring Services (Phase 2) - with blocking support
         services.AddSingleton<RequestInterceptor>(sp => new RequestInterceptor(
-            sp.GetRequiredService<IBlockingService>()));
+            sp.GetRequiredService<IBlockingService>(),
+            sp.GetRequiredService<IAdBlockerService>()));
         services.AddSingleton<IRequestInterceptor>(sp => sp.GetRequiredService<RequestInterceptor>());
         services.AddSingleton<INetworkLogger, NetworkLogger>();
 

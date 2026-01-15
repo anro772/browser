@@ -1,6 +1,7 @@
 using Microsoft.Web.WebView2.Core;
 using BrowserApp.Core.Interfaces;
 using BrowserApp.Core.Models;
+using BrowserApp.Core.AdBlocker.Interfaces;
 
 namespace BrowserApp.UI.Services;
 
@@ -12,6 +13,7 @@ public class RequestInterceptor : IRequestInterceptor
 {
     private CoreWebView2? _coreWebView2;
     private readonly IBlockingService? _blockingService;
+    private readonly IAdBlockerService? _adBlockerService;
     private bool _isEnabled;
     private bool _isInitialized;
 
@@ -23,9 +25,10 @@ public class RequestInterceptor : IRequestInterceptor
     {
     }
 
-    public RequestInterceptor(IBlockingService blockingService)
+    public RequestInterceptor(IBlockingService blockingService, IAdBlockerService? adBlockerService = null)
     {
         _blockingService = blockingService;
+        _adBlockerService = adBlockerService;
     }
 
     /// <summary>
@@ -88,31 +91,55 @@ public class RequestInterceptor : IRequestInterceptor
             };
 
             // Check if request should be blocked
-            if (_blockingService != null)
+            bool shouldBlock = false;
+            string? blockedByRuleId = null;
+            string? blockReason = null;
+
+            // Step 1: Check AdBlockerService (fast, 90%+ blocks)
+            if (_adBlockerService != null)
+            {
+                var currentPageUrl = _coreWebView2?.Source;
+                if (_adBlockerService.ShouldBlock(request.Url, request.ResourceType, currentPageUrl))
+                {
+                    shouldBlock = true;
+                    blockedByRuleId = "uBlock Origin";
+                    blockReason = "uBlock Origin Filter";
+                    System.Diagnostics.Debug.WriteLine($"[RequestInterceptor] Blocked by AdBlocker: {request.Url}");
+                }
+            }
+
+            // Step 2: Check BlockingService (custom rules) if not already blocked
+            if (!shouldBlock && _blockingService != null)
             {
                 var currentPageUrl = _coreWebView2?.Source;
                 var evaluation = _blockingService.ShouldBlockRequest(request, currentPageUrl);
 
                 if (evaluation.ShouldBlock)
                 {
-                    // Block the request by setting a 403 response
-                    var stream = new System.IO.MemoryStream(System.Text.Encoding.UTF8.GetBytes("Blocked by BrowserApp rule"));
-                    e.Response = _coreWebView2!.Environment.CreateWebResourceResponse(
-                        stream, 403, "Blocked", "Content-Type: text/plain");
-
-                    // Create a new request object with blocking info
-                    request = new NetworkRequest
-                    {
-                        Url = request.Url,
-                        Method = request.Method,
-                        ResourceType = request.ResourceType,
-                        Timestamp = request.Timestamp,
-                        WasBlocked = true,
-                        BlockedByRuleId = evaluation.BlockedByRuleId
-                    };
-
-                    System.Diagnostics.Debug.WriteLine($"[RequestInterceptor] Blocked: {request.Url}");
+                    shouldBlock = true;
+                    blockedByRuleId = evaluation.BlockedByRuleId?.ToString();
+                    blockReason = $"Custom Rule {evaluation.BlockedByRuleId}";
+                    System.Diagnostics.Debug.WriteLine($"[RequestInterceptor] Blocked by Custom Rule: {request.Url}");
                 }
+            }
+
+            // Block the request if needed
+            if (shouldBlock)
+            {
+                var stream = new System.IO.MemoryStream(System.Text.Encoding.UTF8.GetBytes($"Blocked by {blockReason}"));
+                e.Response = _coreWebView2!.Environment.CreateWebResourceResponse(
+                    stream, 403, "Blocked", "Content-Type: text/plain");
+
+                // Create a new request object with blocking info
+                request = new NetworkRequest
+                {
+                    Url = request.Url,
+                    Method = request.Method,
+                    ResourceType = request.ResourceType,
+                    Timestamp = request.Timestamp,
+                    WasBlocked = true,
+                    BlockedByRuleId = blockedByRuleId
+                };
             }
 
             RequestCaptured?.Invoke(this, request);
