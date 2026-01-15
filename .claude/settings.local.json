@@ -17,7 +17,9 @@
       "Bash(tasklist:*)",
       "Bash(Get-Process)",
       "Bash(Where-Object {$_ProcessName -like \"*Browser*\"})",
-      "Bash(taskkill:*)"
+      "Bash(taskkill:*)",
+      "Bash(powershell:*)",
+      "mcp__plugin_playwright_playwright__browser_wait_for"
     ],
     "deny": [],
     "ask": []
