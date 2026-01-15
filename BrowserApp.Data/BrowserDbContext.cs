@@ -11,6 +11,7 @@ public class BrowserDbContext : DbContext
 {
     public DbSet<BrowsingHistoryEntity> BrowsingHistory { get; set; } = null!;
     public DbSet<SettingsEntity> Settings { get; set; } = null!;
+    public DbSet<NetworkLogEntity> NetworkLogs { get; set; } = null!;
 
     public BrowserDbContext()
     {
@@ -44,6 +45,20 @@ public class BrowserDbContext : DbContext
         modelBuilder.Entity<SettingsEntity>(entity =>
         {
             entity.HasKey(e => e.Key);
+        });
+
+        modelBuilder.Entity<NetworkLogEntity>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Url).IsRequired();
+            entity.Property(e => e.Method).HasDefaultValue("GET");
+            entity.Property(e => e.ResourceType).HasDefaultValue("Unknown");
+            entity.Property(e => e.WasBlocked).HasDefaultValue(false);
+
+            // Indexes for performance
+            entity.HasIndex(e => e.Timestamp);
+            entity.HasIndex(e => e.WasBlocked);
+            entity.HasIndex(e => e.ResourceType);
         });
     }
 

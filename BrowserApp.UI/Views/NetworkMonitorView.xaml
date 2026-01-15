@@ -1,0 +1,229 @@
+<UserControl x:Class="BrowserApp.UI.Views.NetworkMonitorView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+             xmlns:vm="clr-namespace:BrowserApp.UI.ViewModels"
+             mc:Ignorable="d"
+             d:DesignHeight="600"
+             d:DesignWidth="350"
+             d:DataContext="{d:DesignInstance vm:NetworkMonitorViewModel}">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <Border Grid.Row="0"
+                Background="{DynamicResource ControlFillColorDefaultBrush}"
+                CornerRadius="4"
+                Margin="8"
+                Padding="12">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0">
+                    <TextBlock Text="Network Monitor"
+                               FontSize="16"
+                               FontWeight="SemiBold"
+                               Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                    <TextBlock FontSize="12"
+                               Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                               Margin="0,4,0,0">
+                        <Run Text="{Binding TotalRequests, Mode=OneWay}"/>
+                        <Run Text="requests captured"/>
+                    </TextBlock>
+                </StackPanel>
+
+                <ui:ToggleSwitch Grid.Column="1"
+                                 IsChecked="{Binding IsMonitoringEnabled}"
+                                 ToolTip="Toggle monitoring"
+                                 VerticalAlignment="Center"/>
+            </Grid>
+        </Border>
+
+        <!-- Stats -->
+        <Grid Grid.Row="1" Margin="8,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <Border Grid.Column="0"
+                    Background="{DynamicResource ControlFillColorDefaultBrush}"
+                    CornerRadius="4"
+                    Padding="8"
+                    Margin="0,0,4,0">
+                <StackPanel HorizontalAlignment="Center">
+                    <TextBlock Text="{Binding TotalRequests}"
+                               FontSize="18"
+                               FontWeight="Bold"
+                               HorizontalAlignment="Center"
+                               Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                    <TextBlock Text="Total"
+                               FontSize="11"
+                               HorizontalAlignment="Center"
+                               Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                </StackPanel>
+            </Border>
+
+            <Border Grid.Column="1"
+                    Background="{DynamicResource ControlFillColorDefaultBrush}"
+                    CornerRadius="4"
+                    Padding="8"
+                    Margin="2,0">
+                <StackPanel HorizontalAlignment="Center">
+                    <TextBlock Text="{Binding BlockedCount}"
+                               FontSize="18"
+                               FontWeight="Bold"
+                               HorizontalAlignment="Center"
+                               Foreground="#D13438"/>
+                    <TextBlock Text="Blocked"
+                               FontSize="11"
+                               HorizontalAlignment="Center"
+                               Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                </StackPanel>
+            </Border>
+
+            <Border Grid.Column="2"
+                    Background="{DynamicResource ControlFillColorDefaultBrush}"
+                    CornerRadius="4"
+                    Padding="8"
+                    Margin="4,0,0,0">
+                <StackPanel HorizontalAlignment="Center">
+                    <TextBlock Text="{Binding DataSaved}"
+                               FontSize="14"
+                               FontWeight="Bold"
+                               HorizontalAlignment="Center"
+                               Foreground="#107C10"/>
+                    <TextBlock Text="Saved"
+                               FontSize="11"
+                               HorizontalAlignment="Center"
+                               Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <!-- Filter Buttons -->
+        <ScrollViewer Grid.Row="2"
+                      HorizontalScrollBarVisibility="Auto"
+                      VerticalScrollBarVisibility="Disabled"
+                      Margin="8,8,8,4">
+            <StackPanel Orientation="Horizontal">
+                <ui:Button Content="All"
+                           Command="{Binding ApplyFilterCommand}"
+                           CommandParameter="All"
+                           Appearance="Secondary"
+                           Margin="0,0,4,0"
+                           Padding="12,6"/>
+                <ui:Button Content="Blocked"
+                           Command="{Binding ApplyFilterCommand}"
+                           CommandParameter="Blocked"
+                           Appearance="Secondary"
+                           Margin="0,0,4,0"
+                           Padding="12,6"/>
+                <ui:Button Content="3rd Party"
+                           Command="{Binding ApplyFilterCommand}"
+                           CommandParameter="ThirdParty"
+                           Appearance="Secondary"
+                           Margin="0,0,4,0"
+                           Padding="12,6"/>
+                <ui:Button Content="Scripts"
+                           Command="{Binding ApplyFilterCommand}"
+                           CommandParameter="Scripts"
+                           Appearance="Secondary"
+                           Margin="0,0,4,0"
+                           Padding="12,6"/>
+                <ui:Button Content="Images"
+                           Command="{Binding ApplyFilterCommand}"
+                           CommandParameter="Images"
+                           Appearance="Secondary"
+                           Padding="12,6"/>
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- Request List -->
+        <Border Grid.Row="3"
+                Background="{DynamicResource ControlFillColorDefaultBrush}"
+                CornerRadius="4"
+                Margin="8">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <!-- DataGrid -->
+                <DataGrid Grid.Row="0"
+                          ItemsSource="{Binding Requests}"
+                          SelectedItem="{Binding SelectedRequest}"
+                          AutoGenerateColumns="False"
+                          IsReadOnly="True"
+                          HeadersVisibility="Column"
+                          GridLinesVisibility="None"
+                          CanUserAddRows="False"
+                          CanUserDeleteRows="False"
+                          SelectionMode="Single"
+                          VirtualizingPanel.IsVirtualizing="True"
+                          VirtualizingPanel.VirtualizationMode="Recycling"
+                          EnableRowVirtualization="True"
+                          Background="Transparent"
+                          BorderThickness="0"
+                          RowHeight="32"
+                          FontSize="12">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="Type"
+                                            Binding="{Binding ResourceType}"
+                                            Width="70"/>
+                        <DataGridTextColumn Header="URL"
+                                            Binding="{Binding ShortUrl}"
+                                            Width="*"/>
+                        <DataGridTextColumn Header="Status"
+                                            Binding="{Binding StatusCode}"
+                                            Width="50"/>
+                        <DataGridTextColumn Header="Size"
+                                            Binding="{Binding FormattedSize}"
+                                            Width="60"/>
+                    </DataGrid.Columns>
+
+                    <DataGrid.RowStyle>
+                        <Style TargetType="DataGridRow">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding WasBlocked}" Value="True">
+                                    <Setter Property="Foreground" Value="#D13438"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </DataGrid.RowStyle>
+                </DataGrid>
+
+                <!-- Action Buttons -->
+                <StackPanel Grid.Row="1"
+                            Orientation="Horizontal"
+                            HorizontalAlignment="Right"
+                            Margin="8">
+                    <ui:Button Content="Clear"
+                               Icon="{ui:SymbolIcon Delete24}"
+                               Command="{Binding ClearAllCommand}"
+                               Appearance="Secondary"
+                               Margin="0,0,4,0"
+                               Padding="8,4"/>
+                    <ui:Button Content="Export CSV"
+                               Icon="{ui:SymbolIcon Save24}"
+                               Command="{Binding ExportToCsvCommand}"
+                               Appearance="Primary"
+                               Padding="8,4"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>

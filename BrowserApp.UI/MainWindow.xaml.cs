@@ -1,6 +1,7 @@
 using Wpf.Ui.Controls;
 using BrowserApp.UI.ViewModels;
 using BrowserApp.UI.Services;
+using BrowserApp.UI.Views;
 
 namespace BrowserApp.UI;
 
@@ -12,15 +13,26 @@ public partial class MainWindow : FluentWindow
 {
     private readonly MainViewModel _viewModel;
     private readonly NavigationService _navigationService;
+    private readonly RequestInterceptor _requestInterceptor;
+    private readonly NetworkMonitorView _networkMonitorView;
 
-    public MainWindow(MainViewModel viewModel, NavigationService navigationService)
+    public MainWindow(
+        MainViewModel viewModel,
+        NavigationService navigationService,
+        RequestInterceptor requestInterceptor,
+        NetworkMonitorView networkMonitorView)
     {
         _viewModel = viewModel;
         _navigationService = navigationService;
+        _requestInterceptor = requestInterceptor;
+        _networkMonitorView = networkMonitorView;
 
         InitializeComponent();
 
         DataContext = _viewModel;
+
+        // Set the sidebar content
+        SidebarContent.Content = _networkMonitorView;
 
         // Wire up WebView2 to NavigationService
         Loaded += MainWindow_Loaded;
@@ -33,6 +45,13 @@ public partial class MainWindow : FluentWindow
 
         // Initialize navigation service (sets up WebView2 with UserDataFolder)
         await _navigationService.InitializeAsync();
+
+        // Initialize request interceptor with CoreWebView2
+        if (_navigationService.CoreWebView2 != null)
+        {
+            _requestInterceptor.SetCoreWebView2(_navigationService.CoreWebView2);
+            await _requestInterceptor.InitializeAsync();
+        }
 
         // Navigate to default page
         await _viewModel.HomeCommand.ExecuteAsync(null);

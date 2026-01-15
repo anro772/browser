@@ -10,6 +10,7 @@ using BrowserApp.Data.Interfaces;
 using BrowserApp.Data.Repositories;
 using BrowserApp.UI.Services;
 using BrowserApp.UI.ViewModels;
+using BrowserApp.UI.Views;
 
 namespace BrowserApp.UI;
 
@@ -32,6 +33,10 @@ public partial class App : Application
         // Ensure database is created
         EnsureDatabase();
 
+        // Start network logger background task
+        var networkLogger = _serviceProvider.GetRequiredService<INetworkLogger>();
+        _ = networkLogger.StartAsync();
+
         // Show main window
         var mainWindow = _serviceProvider.GetRequiredService<MainWindow>();
         mainWindow.Show();
@@ -53,6 +58,11 @@ public partial class App : Application
         services.AddSingleton<NavigationService>();
         services.AddSingleton<INavigationService>(sp => sp.GetRequiredService<NavigationService>());
 
+        // Network Monitoring Services (Phase 2)
+        services.AddSingleton<RequestInterceptor>();
+        services.AddSingleton<IRequestInterceptor>(sp => sp.GetRequiredService<RequestInterceptor>());
+        services.AddSingleton<INetworkLogger, NetworkLogger>();
+
         // Data Services
         services.AddDbContext<BrowserDbContext>(options =>
         {
@@ -60,12 +70,15 @@ public partial class App : Application
             options.UseSqlite($"Data Source={dbPath}");
         });
         services.AddScoped<IBrowsingHistoryRepository, BrowsingHistoryRepository>();
+        services.AddScoped<INetworkLogRepository, NetworkLogRepository>();
 
         // ViewModels
         services.AddTransient<MainViewModel>();
+        services.AddTransient<NetworkMonitorViewModel>();
 
         // Views
         services.AddSingleton<MainWindow>();
+        services.AddSingleton<NetworkMonitorView>();
     }
 
     private void EnsureDatabase()
@@ -75,8 +88,18 @@ public partial class App : Application
         dbContext.Database.EnsureCreated();
     }
 
-    protected override void OnExit(ExitEventArgs e)
+    protected override async void OnExit(ExitEventArgs e)
     {
+        // Stop network logger gracefully
+        if (_serviceProvider != null)
+        {
+            var networkLogger = _serviceProvider.GetService<INetworkLogger>();
+            if (networkLogger != null)
+            {
+                await networkLogger.DisposeAsync();
+            }
+        }
+
         if (_serviceProvider is IDisposable disposable)
         {
             disposable.Dispose();

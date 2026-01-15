@@ -23,6 +23,9 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty]
     private string _pageTitle = "AI-Powered Privacy Browser";
 
+    [ObservableProperty]
+    private bool _isSidebarVisible = true;
+
     public bool CanGoBack => _navigationService.CanGoBack;
     public bool CanGoForward => _navigationService.CanGoForward;
 
@@ -91,6 +94,15 @@ public partial class MainViewModel : ObservableObject
     {
         AddressBarText = "https://www.google.com";
         await _navigationService.NavigateAsync("https://www.google.com");
+    }
+
+    /// <summary>
+    /// Toggles the sidebar visibility.
+    /// </summary>
+    [RelayCommand]
+    private void ToggleSidebar()
+    {
+        IsSidebarVisible = !IsSidebarVisible;
     }
 
     private void OnSourceChanged(object? sender, string newUrl)

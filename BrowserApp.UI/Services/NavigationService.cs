@@ -25,6 +25,12 @@ public class NavigationService : INavigationService
     public string CurrentUrl => _coreWebView2?.Source ?? string.Empty;
 
     /// <summary>
+    /// Gets the underlying CoreWebView2 instance.
+    /// Used by RequestInterceptor for network monitoring.
+    /// </summary>
+    public CoreWebView2? CoreWebView2 => _coreWebView2;
+
+    /// <summary>
     /// Sets the WebView2 control to use for navigation.
     /// Must be called before InitializeAsync.
     /// </summary>
