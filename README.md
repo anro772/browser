@@ -10,6 +10,8 @@ A modern, privacy-focused web browser built with C# WPF, WebView2, and Entity Fr
 - ✅ **Network Monitoring** - Real-time request capture with filtering and export
 - ✅ **Rule System** - Advanced blocking and injection with 5 pre-built templates
 
+> **Note:** See [ISSUES.md](ISSUES.md) for known issues and improvement plan before Phase 4
+
 ## 📸 Features
 
 ### Core Browser
