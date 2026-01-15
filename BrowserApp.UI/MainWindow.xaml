@@ -1,4 +1,4 @@
-<ui:FluentWindow x:Class="BrowserApp.UI.MainWindow"
+<Window x:Class="BrowserApp.UI.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -9,12 +9,12 @@
         xmlns:views="clr-namespace:BrowserApp.UI.Views"
         mc:Ignorable="d"
         Title="{Binding PageTitle}"
-        Height="800"
-        Width="1200"
+        Height="1000"
+        Width="1600"
         MinHeight="600"
         MinWidth="800"
-        ExtendsContentIntoTitleBar="True"
-        WindowBackdropType="Mica">
+        WindowStartupLocation="CenterScreen"
+        WindowState="Maximized">
 
     <Grid>
         <Grid.RowDefinitions>
@@ -26,7 +26,7 @@
         <!-- Navigation Bar -->
         <Grid Grid.Row="0"
               Background="{DynamicResource ApplicationBackgroundBrush}"
-              Margin="0,32,0,0">
+              Margin="0,4,0,0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="*"/>
@@ -136,4 +136,4 @@
                        Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
         </Border>
     </Grid>
-</ui:FluentWindow>
+</Window>

@@ -23,7 +23,10 @@
       "Bash(dotnet ef migrations add:*)",
       "Bash(dotnet tool install:*)",
       "Bash(timeout /t 3 /nobreak)",
-      "Bash(timeout /t 5 /nobreak)"
+      "Bash(timeout /t 5 /nobreak)",
+      "Bash(start \"\" \"c:\\\\Users\\\\stefa\\\\Desktop\\\\browser\\\\BrowserApp.UI\\\\bin\\\\Debug\\\\net8.0-windows\\\\BrowserApp.UI.exe\")",
+      "Bash(timeout /t 3)",
+      "Bash(wc:*)"
     ],
     "deny": [],
     "ask": []

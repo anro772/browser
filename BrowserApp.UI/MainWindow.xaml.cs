@@ -11,7 +11,7 @@ namespace BrowserApp.UI;
 /// Interaction logic for MainWindow.xaml
 /// Minimal code-behind - all logic in MainViewModel.
 /// </summary>
-public partial class MainWindow : FluentWindow
+public partial class MainWindow : Window
 {
     private readonly MainViewModel _viewModel;
     private readonly NavigationService _navigationService;
