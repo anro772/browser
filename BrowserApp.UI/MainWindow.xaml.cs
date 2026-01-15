@@ -1,3 +1,5 @@
+using System.Windows;
+using Microsoft.Extensions.DependencyInjection;
 using Wpf.Ui.Controls;
 using BrowserApp.UI.ViewModels;
 using BrowserApp.UI.Services;
@@ -15,17 +17,20 @@ public partial class MainWindow : FluentWindow
     private readonly NavigationService _navigationService;
     private readonly RequestInterceptor _requestInterceptor;
     private readonly NetworkMonitorView _networkMonitorView;
+    private readonly IServiceProvider _serviceProvider;
 
     public MainWindow(
         MainViewModel viewModel,
         NavigationService navigationService,
         RequestInterceptor requestInterceptor,
-        NetworkMonitorView networkMonitorView)
+        NetworkMonitorView networkMonitorView,
+        IServiceProvider serviceProvider)
     {
         _viewModel = viewModel;
         _navigationService = navigationService;
         _requestInterceptor = requestInterceptor;
         _networkMonitorView = networkMonitorView;
+        _serviceProvider = serviceProvider;
 
         InitializeComponent();
 
@@ -55,5 +60,12 @@ public partial class MainWindow : FluentWindow
 
         // Navigate to default page
         await _viewModel.HomeCommand.ExecuteAsync(null);
+    }
+
+    private void RulesButton_Click(object sender, RoutedEventArgs e)
+    {
+        var ruleManagerView = _serviceProvider.GetRequiredService<RuleManagerView>();
+        ruleManagerView.Owner = this;
+        ruleManagerView.ShowDialog();
     }
 }
