@@ -1,6 +1,8 @@
+using System.Collections.Concurrent;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Windows;
+using System.Windows.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Win32;
@@ -12,6 +14,7 @@ namespace BrowserApp.UI.ViewModels;
 /// <summary>
 /// ViewModel for the network monitor panel.
 /// Displays captured network requests with filtering and export capabilities.
+/// Uses buffered updates to prevent UI thread overload with high request volume.
 /// </summary>
 public partial class NetworkMonitorViewModel : ObservableObject, IDisposable
 {
@@ -19,6 +22,12 @@ public partial class NetworkMonitorViewModel : ObservableObject, IDisposable
     private readonly IRequestInterceptor _requestInterceptor;
     private readonly INavigationService _navigationService;
     private bool _isDisposed;
+
+    // Buffering for high-performance UI updates
+    private readonly ConcurrentQueue<NetworkRequest> _pendingRequests = new();
+    private readonly DispatcherTimer _updateTimer;
+    private const int BatchSize = 50;
+    private const int UpdateIntervalMs = 250;
 
     [ObservableProperty]
     private ObservableCollection<NetworkRequest> _requests = new();
@@ -54,10 +63,19 @@ public partial class NetworkMonitorViewModel : ObservableObject, IDisposable
 
         // Subscribe to captured requests
         _requestInterceptor.RequestCaptured += OnRequestCaptured;
+
+        // Initialize buffered update timer
+        _updateTimer = new DispatcherTimer
+        {
+            Interval = TimeSpan.FromMilliseconds(UpdateIntervalMs)
+        };
+        _updateTimer.Tick += FlushPendingRequests;
+        _updateTimer.Start();
     }
 
     /// <summary>
     /// Handles a newly captured network request.
+    /// Buffers the request for batched UI updates to prevent overwhelming the UI thread.
     /// </summary>
     private void OnRequestCaptured(object? sender, NetworkRequest request)
     {
@@ -66,25 +84,51 @@ public partial class NetworkMonitorViewModel : ObservableObject, IDisposable
         // Log to database (async, non-blocking)
         _ = _networkLogger.LogRequestAsync(request);
 
-        // Update UI on dispatcher thread
-        Application.Current?.Dispatcher.Invoke(() =>
+        // Add to buffer for batched UI update
+        _pendingRequests.Enqueue(request);
+    }
+
+    /// <summary>
+    /// Flushes pending requests to the UI in batches.
+    /// Called by timer every 250ms to provide smooth updates even under high load.
+    /// </summary>
+    private void FlushPendingRequests(object? sender, EventArgs e)
+    {
+        if (_pendingRequests.IsEmpty)
+            return;
+
+        // Dequeue up to BatchSize requests
+        var batch = new List<NetworkRequest>();
+        while (batch.Count < BatchSize && _pendingRequests.TryDequeue(out var request))
         {
-            // Add to top of list
-            Requests.Insert(0, request);
+            batch.Add(request);
+        }
+
+        if (batch.Count == 0)
+            return;
+
+        // Update UI on background priority to avoid blocking user interactions
+        Application.Current?.Dispatcher.InvokeAsync(() =>
+        {
+            foreach (var request in batch)
+            {
+                // Add to top of list
+                Requests.Insert(0, request);
+
+                // Update stats
+                TotalRequests++;
+                if (request.WasBlocked)
+                {
+                    BlockedCount++;
+                }
+            }
 
             // Trim old entries to prevent memory issues
             while (Requests.Count > MaxDisplayedRequests)
             {
                 Requests.RemoveAt(Requests.Count - 1);
             }
-
-            // Update stats
-            TotalRequests++;
-            if (request.WasBlocked)
-            {
-                BlockedCount++;
-            }
-        });
+        }, DispatcherPriority.Background);
     }
 
     /// <summary>
@@ -282,6 +326,12 @@ public partial class NetworkMonitorViewModel : ObservableObject, IDisposable
         if (_isDisposed) return;
 
         _isDisposed = true;
+
+        // Stop timer and flush any remaining requests
+        _updateTimer.Stop();
+        _updateTimer.Tick -= FlushPendingRequests;
+
+        // Unsubscribe from events
         _requestInterceptor.RequestCaptured -= OnRequestCaptured;
 
         GC.SuppressFinalize(this);

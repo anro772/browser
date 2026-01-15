@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Text.RegularExpressions;
 using Microsoft.Web.WebView2.Core;
 using BrowserApp.Core.Interfaces;
 
@@ -6,6 +7,7 @@ namespace BrowserApp.UI.Services;
 
 /// <summary>
 /// Service for injecting CSS into web pages via WebView2.
+/// Includes XSS sanitization to prevent malicious code injection.
 /// </summary>
 public class CSSInjector : ICSSInjector
 {
@@ -33,8 +35,11 @@ public class CSSInjector : ICSSInjector
 
         try
         {
-            // Escape backticks and dollar signs to avoid JavaScript template literal issues
-            var escapedCss = css
+            // Sanitize CSS to prevent XSS attacks
+            var sanitizedCss = SanitizeCss(css);
+
+            // Escape for JavaScript template literal
+            var escapedCss = sanitizedCss
                 .Replace("\\", "\\\\")
                 .Replace("`", "\\`")
                 .Replace("$", "\\$")
@@ -61,6 +66,45 @@ public class CSSInjector : ICSSInjector
         {
             Debug.WriteLine($"[CSSInjector] Error injecting CSS: {ex.Message}");
         }
+    }
+
+    /// <summary>
+    /// Sanitizes CSS to prevent XSS attacks.
+    /// Removes dangerous patterns like &lt;/style&gt;, javascript: URLs, expression(), @import, etc.
+    /// </summary>
+    private string SanitizeCss(string css)
+    {
+        if (string.IsNullOrEmpty(css))
+            return css;
+
+        // Remove </style> tags that could break out of style context
+        css = Regex.Replace(css, @"<\s*/\s*style\s*>", "", RegexOptions.IgnoreCase);
+
+        // Remove <script> tags
+        css = Regex.Replace(css, @"<\s*script[^>]*>.*?<\s*/\s*script\s*>", "", RegexOptions.IgnoreCase | RegexOptions.Singleline);
+
+        // Remove javascript: URLs
+        css = Regex.Replace(css, @"javascript\s*:", "", RegexOptions.IgnoreCase);
+
+        // Remove vbscript: URLs
+        css = Regex.Replace(css, @"vbscript\s*:", "", RegexOptions.IgnoreCase);
+
+        // Remove data: URLs (can be used for XSS)
+        css = Regex.Replace(css, @"data\s*:[^;]*;base64", "", RegexOptions.IgnoreCase);
+
+        // Remove expression() (IE only but still dangerous)
+        css = Regex.Replace(css, @"expression\s*\(", "", RegexOptions.IgnoreCase);
+
+        // Remove -moz-binding (Firefox XSS vector)
+        css = Regex.Replace(css, @"-moz-binding\s*:", "", RegexOptions.IgnoreCase);
+
+        // Remove @import (can load external malicious CSS)
+        css = Regex.Replace(css, @"@import", "", RegexOptions.IgnoreCase);
+
+        // Remove behavior: (IE XSS vector)
+        css = Regex.Replace(css, @"behavior\s*:", "", RegexOptions.IgnoreCase);
+
+        return css;
     }
 
     public async Task InjectMultipleAsync(IEnumerable<string> cssRules)

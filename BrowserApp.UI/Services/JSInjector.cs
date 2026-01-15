@@ -1,4 +1,6 @@
 using System.Diagnostics;
+using System.Security;
+using System.Text.RegularExpressions;
 using Microsoft.Web.WebView2.Core;
 using BrowserApp.Core.Interfaces;
 
@@ -6,6 +8,7 @@ namespace BrowserApp.UI.Services;
 
 /// <summary>
 /// Service for injecting JavaScript into web pages via WebView2.
+/// Includes validation to detect dangerous patterns.
 /// </summary>
 public class JSInjector : IJSInjector
 {
@@ -33,18 +36,32 @@ public class JSInjector : IJSInjector
 
         try
         {
+            // Validate JavaScript doesn't contain extremely dangerous patterns
+            ValidateJavaScript(js);
+
+            // Log what's being injected for security audit
+            ErrorLogger.LogInfo($"[JSInjector] Injecting JS ({js.Length} chars, timing: {timing})");
+
             string script;
 
             if (timing == "load")
             {
-                // Wrap in window.onload event listener
+                // Wrap in window.onload event listener with error handling
                 script = $@"
                 (function() {{
                     if (document.readyState === 'complete') {{
-                        {js}
+                        try {{
+                            {js}
+                        }} catch (e) {{
+                            console.error('[BrowserApp] Injection error (load):', e);
+                        }}
                     }} else {{
                         window.addEventListener('load', function() {{
-                            {js}
+                            try {{
+                                {js}
+                            }} catch (e) {{
+                                console.error('[BrowserApp] Injection error (load):', e);
+                            }}
                         }});
                     }}
                 }})();
@@ -52,7 +69,7 @@ public class JSInjector : IJSInjector
             }
             else
             {
-                // Execute immediately (DOMContentLoaded already fired)
+                // Execute immediately with error handling
                 script = $@"
                 (function() {{
                     try {{
@@ -70,6 +87,36 @@ public class JSInjector : IJSInjector
         catch (Exception ex)
         {
             Debug.WriteLine($"[JSInjector] Error injecting JS: {ex.Message}");
+            ErrorLogger.LogError("[JSInjector] Failed to inject JavaScript", ex);
+        }
+    }
+
+    /// <summary>
+    /// Validates JavaScript for extremely dangerous patterns.
+    /// Note: This is NOT comprehensive security - JS injection is inherently risky.
+    /// This only catches the most obvious malicious patterns.
+    /// </summary>
+    private void ValidateJavaScript(string js)
+    {
+        // Check for attempts to access file:// URLs
+        if (Regex.IsMatch(js, @"file://", RegexOptions.IgnoreCase))
+        {
+            throw new SecurityException("JavaScript contains file:// URL access which is blocked");
+        }
+
+        // Check for attempts to execute external scripts from untrusted domains
+        // This is just a basic check - not comprehensive
+        if (Regex.IsMatch(js, @"\.src\s*=\s*[""'][^""']*(?<!https://cdn\.|https://www\.)[""']", RegexOptions.IgnoreCase))
+        {
+            // Log warning but don't block - might be legitimate
+            Debug.WriteLine("[JSInjector] WARNING: Detected dynamic script loading");
+        }
+
+        // Check for potential eval/Function usage (warning only)
+        if (Regex.IsMatch(js, @"\beval\s*\(", RegexOptions.IgnoreCase) ||
+            Regex.IsMatch(js, @"new\s+Function\s*\(", RegexOptions.IgnoreCase))
+        {
+            Debug.WriteLine("[JSInjector] WARNING: Detected eval() or Function() usage");
         }
     }
 

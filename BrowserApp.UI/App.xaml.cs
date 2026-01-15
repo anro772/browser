@@ -22,7 +22,7 @@ public partial class App : Application
 {
     private IServiceProvider? _serviceProvider;
 
-    protected override void OnStartup(StartupEventArgs e)
+    protected override async void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
 
@@ -46,34 +46,7 @@ public partial class App : Application
 
         try
         {
-            var services = new ServiceCollection();
-            ConfigureServices(services);
-            _serviceProvider = services.BuildServiceProvider();
-
-            ErrorLogger.LogInfo("Services configured");
-
-            // Ensure database is created
-            EnsureDatabase();
-
-            ErrorLogger.LogInfo("Database initialized");
-
-            // Initialize blocking service (loads rules)
-            var blockingService = _serviceProvider.GetRequiredService<IBlockingService>();
-            _ = blockingService.InitializeAsync();
-
-            ErrorLogger.LogInfo("Blocking service initialized");
-
-            // Start network logger background task
-            var networkLogger = _serviceProvider.GetRequiredService<INetworkLogger>();
-            _ = networkLogger.StartAsync();
-
-            ErrorLogger.LogInfo("Network logger started");
-
-            // Show main window
-            var mainWindow = _serviceProvider.GetRequiredService<MainWindow>();
-            mainWindow.Show();
-
-            ErrorLogger.LogInfo("Main window shown - startup complete");
+            await InitializeApplicationAsync();
         }
         catch (Exception ex)
         {
@@ -86,6 +59,38 @@ public partial class App : Application
                 System.Windows.MessageBoxImage.Error);
             Shutdown(1);
         }
+    }
+
+    private async Task InitializeApplicationAsync()
+    {
+        var services = new ServiceCollection();
+        ConfigureServices(services);
+        _serviceProvider = services.BuildServiceProvider();
+
+        ErrorLogger.LogInfo("Services configured");
+
+        // Ensure database is created
+        EnsureDatabase();
+
+        ErrorLogger.LogInfo("Database initialized");
+
+        // Initialize blocking service (loads rules) - AWAIT to ensure it completes
+        var blockingService = _serviceProvider.GetRequiredService<IBlockingService>();
+        await blockingService.InitializeAsync();
+
+        ErrorLogger.LogInfo("Blocking service initialized");
+
+        // Start network logger background task - AWAIT to ensure it starts
+        var networkLogger = _serviceProvider.GetRequiredService<INetworkLogger>();
+        await networkLogger.StartAsync();
+
+        ErrorLogger.LogInfo("Network logger started");
+
+        // Show main window
+        var mainWindow = _serviceProvider.GetRequiredService<MainWindow>();
+        mainWindow.Show();
+
+        ErrorLogger.LogInfo("Main window shown - startup complete");
     }
 
     private void ConfigureServices(IServiceCollection services)
