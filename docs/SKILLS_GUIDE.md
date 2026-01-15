@@ -178,33 +178,37 @@ Task tool with:
 
 MCP (Model Context Protocol) servers provide external capabilities.
 
-### **1. context7 - Library Documentation**
+> **Important:** Use the **plugin versions** of MCP tools (prefixed with `mcp__plugin_`). The raw MCP versions may require separate authentication.
+
+### **1. context7 - Library Documentation** ✅ Verified Working
 - **Purpose:** Fetch up-to-date documentation for any library
-- **Tools:**
-  - `mcp__context7__resolve-library-id` - Find library ID
-  - `mcp__context7__query-docs` - Query documentation
+- **Tools (use plugin version):**
+  - `mcp__plugin_context7_context7__resolve-library-id` - Find library ID
+  - `mcp__plugin_context7_context7__query-docs` - Query documentation
 - **Use in Browser:**
   - WebView2 documentation
   - WPF patterns
   - NuGet package docs
+  - Entity Framework Core docs
 
 **Example Usage:**
 ```
-1. resolve-library-id: "WebView2", "how to intercept network requests"
-2. query-docs: "/microsoft/webview2", "intercept and modify HTTP requests"
+1. resolve-library-id: libraryName="WebView2", query="how to intercept network requests"
+2. query-docs: libraryId="/microsoftedge/webview2browser", query="intercept HTTP requests"
 ```
 
-### **2. playwright - Browser Automation**
+### **2. playwright - Browser Automation** ✅ Verified Working
 - **Purpose:** Automate browser testing and interactions
-- **Key Tools:**
-  - `mcp__playwright__browser_navigate` - Go to URL
-  - `mcp__playwright__browser_snapshot` - Accessibility snapshot (better than screenshot)
-  - `mcp__playwright__browser_click` - Click elements
-  - `mcp__playwright__browser_type` - Type text
-  - `mcp__playwright__browser_take_screenshot` - Capture screenshot
-  - `mcp__playwright__browser_evaluate` - Run JavaScript
-  - `mcp__playwright__browser_console_messages` - Get console logs
-  - `mcp__playwright__browser_network_requests` - Get network activity
+- **Key Tools (use plugin version):**
+  - `mcp__plugin_playwright_playwright__browser_navigate` - Go to URL
+  - `mcp__plugin_playwright_playwright__browser_snapshot` - Accessibility snapshot (better than screenshot)
+  - `mcp__plugin_playwright_playwright__browser_click` - Click elements
+  - `mcp__plugin_playwright_playwright__browser_type` - Type text
+  - `mcp__plugin_playwright_playwright__browser_take_screenshot` - Capture screenshot
+  - `mcp__plugin_playwright_playwright__browser_evaluate` - Run JavaScript
+  - `mcp__plugin_playwright_playwright__browser_console_messages` - Get console logs
+  - `mcp__plugin_playwright_playwright__browser_network_requests` - Get network activity
+  - `mcp__plugin_playwright_playwright__browser_tabs` - Manage browser tabs
 - **Use in Browser:**
   - Test browser behavior
   - Verify UI interactions
@@ -213,11 +217,28 @@ MCP (Model Context Protocol) servers provide external capabilities.
 
 **Example Usage:**
 ```
-1. browser_navigate: "https://example.com"
+1. browser_navigate: url="https://example.com"
 2. browser_snapshot: Get page structure
-3. browser_click: Click element by ref
-4. browser_take_screenshot: Capture result
+3. browser_click: element="Submit button", ref="button[0]"
+4. browser_take_screenshot: filename="test-result.png"
 ```
+
+### **3. shadcn-ui - UI Component Reference** ✅ Verified Working
+- **Purpose:** Access shadcn/ui v4 component source code and demos
+- **Key Tools:**
+  - `mcp__shadcn-ui__list_components` - List all 46 available components
+  - `mcp__shadcn-ui__get_component` - Get component source code
+  - `mcp__shadcn-ui__get_component_demo` - Get usage demo code
+  - `mcp__shadcn-ui__list_blocks` - List pre-built UI blocks (dashboards, etc.)
+  - `mcp__shadcn-ui__get_block` - Get block source code
+- **Use in Browser:**
+  - **Design reference** for WPF UI patterns
+  - Component structure inspiration
+  - Modern UI/UX patterns to adapt
+- **Note:** shadcn-ui is React/Tailwind-based. Use for **design patterns only**, not direct code.
+
+**Available Components (46 total):**
+accordion, alert, alert-dialog, avatar, badge, breadcrumb, button, calendar, card, carousel, chart, checkbox, collapsible, command, context-menu, dialog, drawer, dropdown-menu, form, hover-card, input, label, menubar, navigation-menu, pagination, popover, progress, radio-group, resizable, scroll-area, select, separator, sheet, sidebar, skeleton, slider, sonner, switch, table, tabs, textarea, toggle, toggle-group, tooltip
 
 ---
 
