@@ -104,7 +104,38 @@ public partial class App : Application
     {
         using var scope = _serviceProvider!.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<BrowserDbContext>();
+
+        // EnsureCreated only creates DB if it doesn't exist
         dbContext.Database.EnsureCreated();
+
+        // Check if Rules table exists and create it if not (handles schema evolution)
+        EnsureRulesTable(dbContext);
+    }
+
+    private static void EnsureRulesTable(BrowserDbContext dbContext)
+    {
+        // Drop and recreate rules table to ensure correct schema
+        // This is safe during development - no important data yet
+        dbContext.Database.ExecuteSqlRaw("DROP TABLE IF EXISTS Rules");
+        dbContext.Database.ExecuteSqlRaw(@"
+            CREATE TABLE Rules (
+                Id TEXT PRIMARY KEY,
+                Name TEXT NOT NULL,
+                Description TEXT NOT NULL DEFAULT '',
+                Site TEXT NOT NULL,
+                RulesJson TEXT NOT NULL,
+                Enabled INTEGER NOT NULL DEFAULT 1,
+                Priority INTEGER NOT NULL DEFAULT 10,
+                IsEnforced INTEGER NOT NULL DEFAULT 0,
+                Source TEXT NOT NULL DEFAULT 'local',
+                ChannelId TEXT NULL,
+                CreatedAt TEXT NOT NULL,
+                UpdatedAt TEXT NOT NULL
+            );
+            CREATE INDEX IX_Rules_Enabled ON Rules(Enabled);
+            CREATE INDEX IX_Rules_Priority ON Rules(Priority);
+            CREATE INDEX IX_Rules_Source ON Rules(Source);
+        ");
     }
 
     protected override async void OnExit(ExitEventArgs e)

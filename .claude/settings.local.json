@@ -19,7 +19,9 @@
       "Bash(Where-Object {$_ProcessName -like \"*Browser*\"})",
       "Bash(taskkill:*)",
       "Bash(powershell:*)",
-      "mcp__plugin_playwright_playwright__browser_wait_for"
+      "mcp__plugin_playwright_playwright__browser_wait_for",
+      "Bash(dotnet ef migrations add:*)",
+      "Bash(dotnet tool install:*)"
     ],
     "deny": [],
     "ask": []
