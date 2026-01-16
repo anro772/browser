@@ -163,21 +163,46 @@ public partial class App : Application
         }
         catch (Exception ex)
         {
-            // Log the error and try to recover
+            // Log the error
             ErrorLogger.LogError("Database migration failed", ex);
+
+            string dbPath = BrowserDbContext.GetDatabasePath();
+            string backupPath = $"{dbPath}.backup_{DateTime.Now:yyyyMMddHHmmss}";
 
             try
             {
-                ErrorLogger.LogInfo("Attempting to delete and recreate database");
+                // Create backup before attempting recovery
+                if (File.Exists(dbPath))
+                {
+                    ErrorLogger.LogInfo($"Creating database backup at: {backupPath}");
+                    File.Copy(dbPath, backupPath, overwrite: true);
+                }
+
+                ErrorLogger.LogInfo("Attempting to recreate database with migrations");
                 // Database exists but was created without migrations (legacy)
                 // Delete and recreate with proper migrations
                 dbContext.Database.EnsureDeleted();
                 dbContext.Database.Migrate();
-                ErrorLogger.LogInfo("Database recreated successfully");
+                ErrorLogger.LogInfo("Database recreated successfully. Backup saved at: " + backupPath);
             }
             catch (Exception innerEx)
             {
                 ErrorLogger.LogError("Database recreation failed", innerEx);
+
+                // Restore from backup if recreation failed
+                if (File.Exists(backupPath))
+                {
+                    try
+                    {
+                        File.Copy(backupPath, dbPath, overwrite: true);
+                        ErrorLogger.LogInfo("Database restored from backup");
+                    }
+                    catch (Exception restoreEx)
+                    {
+                        ErrorLogger.LogError("Failed to restore backup", restoreEx);
+                    }
+                }
+
                 throw;
             }
         }

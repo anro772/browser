@@ -60,6 +60,15 @@ public partial class MainWindow : Window
         {
             _requestInterceptor.SetCoreWebView2(_navigationService.CoreWebView2);
             await _requestInterceptor.InitializeAsync();
+
+            // Initialize CSS and JS injectors with CoreWebView2
+            var cssInjector = _serviceProvider.GetRequiredService<CSSInjector>();
+            cssInjector.SetCoreWebView2(_navigationService.CoreWebView2);
+
+            var jsInjector = _serviceProvider.GetRequiredService<JSInjector>();
+            jsInjector.SetCoreWebView2(_navigationService.CoreWebView2);
+
+            System.Diagnostics.Debug.WriteLine("[MainWindow] CSS and JS injectors initialized");
         }
 
         // Navigate to default page

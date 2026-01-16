@@ -129,9 +129,11 @@ public class RequestInterceptor : IRequestInterceptor
                     Size = estimatedSize,
                     StatusCode = 403
                 };
-            }
 
-            RequestCaptured?.Invoke(this, request);
+                // Only fire event for blocked requests (non-blocked logged in OnWebResourceResponseReceived)
+                RequestCaptured?.Invoke(this, request);
+            }
+            // Note: Non-blocked requests are logged in OnWebResourceResponseReceived with full response data
         }
         catch (Exception ex)
         {

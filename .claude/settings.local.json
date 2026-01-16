@@ -27,7 +27,8 @@
       "Bash(start \"\" \"c:\\\\Users\\\\stefa\\\\Desktop\\\\browser\\\\BrowserApp.UI\\\\bin\\\\Debug\\\\net8.0-windows\\\\BrowserApp.UI.exe\")",
       "Bash(timeout /t 3)",
       "Bash(wc:*)",
-      "Bash(test:*)"
+      "Bash(test:*)",
+      "Bash(grep:*)"
     ],
     "deny": [],
     "ask": []
