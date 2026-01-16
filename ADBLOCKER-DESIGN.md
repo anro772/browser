@@ -1,5 +1,19 @@
 # uBlock Origin Integration Design
 
+**⚠️ STATUS: NOT IMPLEMENTED - REMOVED ON 2026-01-15**
+
+**Reason for Removal:** Network-level ad blocking has fundamental limitations:
+- Cannot block first-party ads (YouTube serves ads from same domain as videos)
+- Exception rules required for site functionality whitelist too many ads
+- Requires cosmetic filtering (DOM manipulation) for complete coverage
+- Maintenance burden too high (weekly filter list updates, constant cat-and-mouse game)
+
+**See [ADBLOCKER-REMOVED.md](ADBLOCKER-REMOVED.md) for full removal documentation.**
+
+The design below was successfully implemented and tested but ultimately removed due to these limitations. The implementation successfully blocked 90%+ of third-party ads but could not block YouTube ads without breaking YouTube functionality.
+
+---
+
 ## Architecture Overview
 
 ```

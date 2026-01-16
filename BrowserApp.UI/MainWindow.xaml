@@ -116,14 +116,21 @@
                           x:Name="webView"
                           Margin="0"/>
 
-            <!-- Sidebar Panel -->
+            <!-- Sidebar Panel with Tabs -->
             <Border Grid.Column="1"
-                    Width="380"
+                    Width="900"
                     Background="{DynamicResource ApplicationBackgroundBrush}"
                     BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
                     BorderThickness="1,0,0,0"
                     Visibility="{Binding IsSidebarVisible, Converter={StaticResource BoolToVisibility}}">
-                <ContentControl x:Name="SidebarContent"/>
+                <TabControl>
+                    <TabItem Header="Network Monitor">
+                        <ContentControl x:Name="NetworkMonitorContent"/>
+                    </TabItem>
+                    <TabItem Header="Debug Console">
+                        <ContentControl x:Name="LogViewerContent"/>
+                    </TabItem>
+                </TabControl>
             </Border>
         </Grid>
 

@@ -84,8 +84,9 @@ public class NetworkLogRepository : INetworkLogRepository
     /// <inheritdoc/>
     public async Task<long> GetTotalSizeAsync()
     {
+        // Sum only blocked requests - this represents actual data savings
         return await _context.NetworkLogs
-            .Where(l => l.Size.HasValue)
+            .Where(l => l.WasBlocked && l.Size.HasValue)
             .SumAsync(l => l.Size!.Value);
     }
 

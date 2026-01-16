@@ -45,11 +45,8 @@
                 <ui:DropDownButton Content="Load Template" Margin="0,0,8,0">
                     <ui:DropDownButton.Flyout>
                         <ContextMenu>
-                            <MenuItem Header="Privacy Mode" Command="{Binding LoadTemplateCommand}" CommandParameter="privacy-mode"/>
                             <MenuItem Header="Hide Cookie Banners" Command="{Binding LoadTemplateCommand}" CommandParameter="cookie-banners"/>
-                            <MenuItem Header="Block Ads" Command="{Binding LoadTemplateCommand}" CommandParameter="block-ads"/>
-                            <MenuItem Header="Force Dark Mode" Command="{Binding LoadTemplateCommand}" CommandParameter="dark-mode"/>
-                            <MenuItem Header="Hide Social Widgets" Command="{Binding LoadTemplateCommand}" CommandParameter="hide-social-widgets"/>
+                            <MenuItem Header="Remove Sticky Headers" Command="{Binding LoadTemplateCommand}" CommandParameter="remove-sticky-headers"/>
                         </ContextMenu>
                     </ui:DropDownButton.Flyout>
                 </ui:DropDownButton>

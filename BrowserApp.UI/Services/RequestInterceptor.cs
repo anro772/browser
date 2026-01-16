@@ -1,7 +1,6 @@
 using Microsoft.Web.WebView2.Core;
 using BrowserApp.Core.Interfaces;
 using BrowserApp.Core.Models;
-using BrowserApp.Core.AdBlocker.Interfaces;
 
 namespace BrowserApp.UI.Services;
 
@@ -13,7 +12,6 @@ public class RequestInterceptor : IRequestInterceptor
 {
     private CoreWebView2? _coreWebView2;
     private readonly IBlockingService? _blockingService;
-    private readonly IAdBlockerService? _adBlockerService;
     private bool _isEnabled;
     private bool _isInitialized;
 
@@ -25,10 +23,9 @@ public class RequestInterceptor : IRequestInterceptor
     {
     }
 
-    public RequestInterceptor(IBlockingService blockingService, IAdBlockerService? adBlockerService = null)
+    public RequestInterceptor(IBlockingService blockingService)
     {
         _blockingService = blockingService;
-        _adBlockerService = adBlockerService;
     }
 
     /// <summary>
@@ -95,21 +92,8 @@ public class RequestInterceptor : IRequestInterceptor
             string? blockedByRuleId = null;
             string? blockReason = null;
 
-            // Step 1: Check AdBlockerService (fast, 90%+ blocks)
-            if (_adBlockerService != null)
-            {
-                var currentPageUrl = _coreWebView2?.Source;
-                if (_adBlockerService.ShouldBlock(request.Url, request.ResourceType, currentPageUrl))
-                {
-                    shouldBlock = true;
-                    blockedByRuleId = "uBlock Origin";
-                    blockReason = "uBlock Origin Filter";
-                    System.Diagnostics.Debug.WriteLine($"[RequestInterceptor] Blocked by AdBlocker: {request.Url}");
-                }
-            }
-
-            // Step 2: Check BlockingService (custom rules) if not already blocked
-            if (!shouldBlock && _blockingService != null)
+            // Check BlockingService (custom rules)
+            if (_blockingService != null)
             {
                 var currentPageUrl = _coreWebView2?.Source;
                 var evaluation = _blockingService.ShouldBlockRequest(request, currentPageUrl);
@@ -130,6 +114,9 @@ public class RequestInterceptor : IRequestInterceptor
                 e.Response = _coreWebView2!.Environment.CreateWebResourceResponse(
                     stream, 403, "Blocked", "Content-Type: text/plain");
 
+                // Estimate size savings based on resource type (industry-standard approach)
+                var estimatedSize = EstimateBlockedResourceSize(request.ResourceType, request.Url);
+
                 // Create a new request object with blocking info
                 request = new NetworkRequest
                 {
@@ -138,7 +125,9 @@ public class RequestInterceptor : IRequestInterceptor
                     ResourceType = request.ResourceType,
                     Timestamp = request.Timestamp,
                     WasBlocked = true,
-                    BlockedByRuleId = blockedByRuleId
+                    BlockedByRuleId = blockedByRuleId,
+                    Size = estimatedSize,
+                    StatusCode = 403
                 };
             }
 
@@ -257,5 +246,44 @@ public class RequestInterceptor : IRequestInterceptor
             url.EndsWith(".mp3") || url.EndsWith(".ogg")) return "Media";
 
         return "Other";
+    }
+
+    /// <summary>
+    /// Estimates the size of a blocked resource based on resource type and URL patterns.
+    /// Uses industry-standard averages similar to uBlock Origin's approach.
+    /// </summary>
+    private static long EstimateBlockedResourceSize(string resourceType, string url)
+    {
+        var lowerUrl = url.ToLowerInvariant();
+
+        return resourceType switch
+        {
+            // Scripts: Typically 50-150 KB (ads, trackers, analytics)
+            "Script" => lowerUrl.Contains("analytics") || lowerUrl.Contains("tracking") ? 80_000 : 100_000,
+
+            // Images: Banner ads, tracking pixels
+            "Image" => lowerUrl.Contains("pixel") || lowerUrl.Contains("beacon") ? 1_000 : 50_000,
+
+            // Video ads (largest)
+            "Media" => 500_000,
+
+            // Stylesheets: Ad styling
+            "Stylesheet" => 20_000,
+
+            // XHR/Fetch: Tracking beacons, ad requests
+            "XHR" or "Fetch" => 5_000,
+
+            // Fonts: Rarely blocked, but estimate if they are
+            "Font" => 30_000,
+
+            // Documents: Pop-ups, redirects
+            "Document" => 50_000,
+
+            // WebSocket: Real-time tracking
+            "WebSocket" => 10_000,
+
+            // Everything else: Conservative estimate
+            _ => 25_000
+        };
     }
 }

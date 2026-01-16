@@ -17,6 +17,7 @@ public partial class MainWindow : Window
     private readonly NavigationService _navigationService;
     private readonly RequestInterceptor _requestInterceptor;
     private readonly NetworkMonitorView _networkMonitorView;
+    private readonly LogViewerView _logViewerView;
     private readonly IServiceProvider _serviceProvider;
 
     public MainWindow(
@@ -24,20 +25,23 @@ public partial class MainWindow : Window
         NavigationService navigationService,
         RequestInterceptor requestInterceptor,
         NetworkMonitorView networkMonitorView,
+        LogViewerView logViewerView,
         IServiceProvider serviceProvider)
     {
         _viewModel = viewModel;
         _navigationService = navigationService;
         _requestInterceptor = requestInterceptor;
         _networkMonitorView = networkMonitorView;
+        _logViewerView = logViewerView;
         _serviceProvider = serviceProvider;
 
         InitializeComponent();
 
         DataContext = _viewModel;
 
-        // Set the sidebar content
-        SidebarContent.Content = _networkMonitorView;
+        // Set the sidebar tab contents
+        NetworkMonitorContent.Content = _networkMonitorView;
+        LogViewerContent.Content = _logViewerView;
 
         // Wire up WebView2 to NavigationService
         Loaded += MainWindow_Loaded;
