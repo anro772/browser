@@ -1,14 +1,15 @@
-namespace BrowserApp.Data.Entities;
+namespace BrowserApp.Server.Data.Entities;
 
 /// <summary>
-/// Entity for storing rules in SQLite database.
+/// Entity for storing marketplace rules in PostgreSQL.
+/// Mirrors client RuleEntity structure with marketplace-specific fields.
 /// </summary>
-public class RuleEntity
+public class MarketplaceRuleEntity
 {
     /// <summary>
-    /// Unique identifier (GUID as string).
+    /// Unique identifier (UUID).
     /// </summary>
-    public string Id { get; set; } = Guid.NewGuid().ToString();
+    public Guid Id { get; set; } = Guid.NewGuid();
 
     /// <summary>
     /// Human-readable name for the rule.
@@ -22,13 +23,9 @@ public class RuleEntity
 
     /// <summary>
     /// URL pattern for sites this rule applies to.
+    /// Use "*" for all sites.
     /// </summary>
     public string Site { get; set; } = "*";
-
-    /// <summary>
-    /// Whether the rule is currently active.
-    /// </summary>
-    public bool Enabled { get; set; } = true;
 
     /// <summary>
     /// Priority for rule evaluation (higher = evaluated first).
@@ -36,29 +33,29 @@ public class RuleEntity
     public int Priority { get; set; } = 10;
 
     /// <summary>
-    /// JSON array of RuleAction objects.
+    /// JSON array of RuleAction objects (stored as JSONB in PostgreSQL).
     /// </summary>
     public string RulesJson { get; set; } = "[]";
 
     /// <summary>
-    /// Source of the rule: "local", "marketplace", "channel", "template".
+    /// Author user ID (foreign key).
     /// </summary>
-    public string Source { get; set; } = "local";
+    public Guid AuthorId { get; set; }
 
     /// <summary>
-    /// Channel ID if this rule came from a business channel.
+    /// Navigation property to author.
     /// </summary>
-    public string? ChannelId { get; set; }
+    public UserEntity Author { get; set; } = null!;
 
     /// <summary>
-    /// Marketplace rule ID if this rule was downloaded from the marketplace.
+    /// Number of times this rule has been downloaded.
     /// </summary>
-    public string? MarketplaceId { get; set; }
+    public int DownloadCount { get; set; }
 
     /// <summary>
-    /// Whether this rule is enforced by a channel (cannot be disabled).
+    /// Tags for categorization.
     /// </summary>
-    public bool IsEnforced { get; set; }
+    public string[] Tags { get; set; } = Array.Empty<string>();
 
     /// <summary>
     /// When the rule was created.

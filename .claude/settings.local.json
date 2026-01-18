@@ -28,7 +28,9 @@
       "Bash(timeout /t 3)",
       "Bash(wc:*)",
       "Bash(test:*)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Skill(feature-dev:feature-dev)",
+      "Skill(feature-dev:feature-dev:*)"
     ],
     "deny": [],
     "ask": []

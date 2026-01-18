@@ -119,6 +119,12 @@ public partial class App : Application
         services.AddSingleton<IRequestInterceptor>(sp => sp.GetRequiredService<RequestInterceptor>());
         services.AddSingleton<INetworkLogger, NetworkLogger>();
 
+        // Phase 4: Marketplace Services
+        services.AddSingleton<MarketplaceApiClient>();
+        services.AddSingleton<IMarketplaceApiClient>(sp => sp.GetRequiredService<MarketplaceApiClient>());
+        services.AddSingleton<RuleSyncService>();
+        services.AddSingleton<IRuleSyncService>(sp => sp.GetRequiredService<RuleSyncService>());
+
         // Navigation Service with injection support
         services.AddSingleton<NavigationService>(sp => new NavigationService(
             sp.GetRequiredService<IRuleEngine>(),
