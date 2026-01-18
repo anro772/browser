@@ -5,6 +5,25 @@
 
 ---
 
+## ⚠️ IMPORTANT: Project Vision
+
+> **This browser must be visually stunning and modern - like Comet Browser.**
+> It is NOT just a business tool. The end product should appeal to:
+> 1. **Power Users** - Who want a beautiful, fast browser with AI-powered privacy controls
+> 2. **Businesses** - Who need policy enforcement via channels
+>
+> **Design Goal:** Modern consumer app that happens to have business features, NOT a corporate tool with consumer features bolted on.
+
+### Key Decisions (Phase 4+)
+- **Database:** PostgreSQL for server
+- **Deployment:** Docker for easy laptop/desktop portability
+- **Auth:** Skip for now - just have different users (add proper auth later)
+- **Marketplace:** Start simple - upload/download rules with user attribution
+- **Channels:** Phase 5 (after marketplace)
+- **AI Copilot:** Phase 6 (after channels)
+
+---
+
 ## 🎯 Core Principles
 
 1. **Function First, Polish Later** - Phases 1-8 before Phase 9 (visual enhancements)
@@ -252,10 +271,48 @@ BrowserApp/
 
 **Verify:** Blocking works, CSS/JS injection works, templates work
 
-### **Phase 4-8: Server, Channels, AI, Profiles, Polish**
-- Follow same TDD → verify → review workflow
-- Each phase builds on previous
-- Integration tests between phases
+### **Phase 4: Server + Marketplace**
+- **Server:** .NET 8 Web API + PostgreSQL + Docker
+- **No auth yet:** Just username field for rule attribution
+- **Marketplace:** Browse, upload, download rules
+- **Sync:** Client pulls rules from server, caches locally
+
+**Verify:** Server runs in Docker, can upload/download rules, client syncs
+
+### **Phase 5: Business Channels**
+- Channel creation (name, password, rules)
+- Join channel with password
+- Enforced rules (cannot disable)
+- Auto-sync every 15 minutes
+- Audit logging
+
+**Verify:** Create channel, join from different client, rules sync and enforce
+
+### **Phase 6: AI Copilot**
+- Ollama integration (Llama 3.2 7B or Mistral)
+- Copilot sidebar UI
+- Context awareness (current URL, network requests)
+- Natural language → rule generation
+- Preview + apply flow
+
+**Verify:** AI responds, generates valid rules, rules work when applied
+
+### **Phase 7: Profiles & Settings**
+- Work/Personal/Custom profiles
+- Profile-specific rules
+- Settings panel (server config, preferences)
+- Import/export profiles
+
+**Verify:** Switch profiles, rules change, settings persist
+
+### **Phase 8: Polish & Testing**
+- Bug fixes and edge cases
+- Performance optimization
+- UI consistency and polish
+- Error handling and user feedback
+- Demo preparation
+
+**Verify:** 1-hour crash-free sessions, top 50 websites work
 
 ---
 
@@ -298,5 +355,9 @@ BrowserApp/
 
 ---
 
-**Last Updated:** January 2026
-**Changes:** Simplified from old superpowers plugin references to current official Claude Code tools
+**Last Updated:** January 16, 2026
+**Changes:**
+- Added IMPORTANT section with project vision (modern consumer app, not just business tool)
+- Added key decisions for Phase 4+ (PostgreSQL, Docker, skip auth)
+- Expanded Phase 4-8 reminders with detailed requirements
+- Phase 3 completed on January 16, 2026
