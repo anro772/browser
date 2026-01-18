@@ -73,19 +73,20 @@ public class MarketplaceRuleRepository : IMarketplaceRuleRepository
         }
     }
 
-    public async Task<IEnumerable<MarketplaceRuleEntity>> SearchAsync(string? query, string[]? tags, int page, int pageSize)
+    /// <summary>
+    /// Builds a search query with filters for name/description and tags.
+    /// Uses PostgreSQL case-insensitive ILIKE for efficient searching.
+    /// </summary>
+    private IQueryable<MarketplaceRuleEntity> BuildSearchQuery(string? query, string[]? tags)
     {
-        var queryable = _context.MarketplaceRules
-            .Include(r => r.Author)
-            .AsQueryable();
+        var queryable = _context.MarketplaceRules.AsQueryable();
 
-        // Filter by search query (name or description)
+        // Filter by search query (name or description) - using PostgreSQL ILIKE for case-insensitive search
         if (!string.IsNullOrWhiteSpace(query))
         {
-            var lowerQuery = query.ToLower();
             queryable = queryable.Where(r =>
-                r.Name.ToLower().Contains(lowerQuery) ||
-                r.Description.ToLower().Contains(lowerQuery));
+                EF.Functions.ILike(r.Name, $"%{query}%") ||
+                EF.Functions.ILike(r.Description, $"%{query}%"));
         }
 
         // Filter by tags (any match)
@@ -94,7 +95,13 @@ public class MarketplaceRuleRepository : IMarketplaceRuleRepository
             queryable = queryable.Where(r => r.Tags.Any(t => tags.Contains(t)));
         }
 
-        return await queryable
+        return queryable;
+    }
+
+    public async Task<IEnumerable<MarketplaceRuleEntity>> SearchAsync(string? query, string[]? tags, int page, int pageSize)
+    {
+        return await BuildSearchQuery(query, tags)
+            .Include(r => r.Author)
             .OrderByDescending(r => r.DownloadCount)
             .ThenByDescending(r => r.CreatedAt)
             .Skip((page - 1) * pageSize)
@@ -109,22 +116,7 @@ public class MarketplaceRuleRepository : IMarketplaceRuleRepository
 
     public async Task<int> GetSearchCountAsync(string? query, string[]? tags)
     {
-        var queryable = _context.MarketplaceRules.AsQueryable();
-
-        if (!string.IsNullOrWhiteSpace(query))
-        {
-            var lowerQuery = query.ToLower();
-            queryable = queryable.Where(r =>
-                r.Name.ToLower().Contains(lowerQuery) ||
-                r.Description.ToLower().Contains(lowerQuery));
-        }
-
-        if (tags != null && tags.Length > 0)
-        {
-            queryable = queryable.Where(r => r.Tags.Any(t => tags.Contains(t)));
-        }
-
-        return await queryable.CountAsync();
+        return await BuildSearchQuery(query, tags).CountAsync();
     }
 
     public async Task<MarketplaceRuleEntity?> IncrementDownloadCountAsync(Guid id)
@@ -136,7 +128,16 @@ public class MarketplaceRuleRepository : IMarketplaceRuleRepository
         if (rule != null)
         {
             rule.DownloadCount++;
-            await _context.SaveChangesAsync();
+            rule.UpdatedAt = DateTime.UtcNow;
+
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateException ex)
+            {
+                throw new InvalidOperationException($"Failed to increment download count for rule {id}", ex);
+            }
         }
 
         return rule;

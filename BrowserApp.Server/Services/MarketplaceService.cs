@@ -55,8 +55,14 @@ public class MarketplaceService : IMarketplaceService
         // Reload with author data
         savedEntity = await _ruleRepository.GetByIdAsync(savedEntity.Id);
 
+        if (savedEntity == null)
+        {
+            _logger.LogError("Failed to retrieve rule after upload. ID: {Id}", entity.Id);
+            throw new InvalidOperationException("Rule was created but could not be retrieved");
+        }
+
         _logger.LogInformation("Rule '{Name}' uploaded successfully with ID {Id}",
-            request.Name, savedEntity!.Id);
+            request.Name, savedEntity.Id);
 
         return MarketplaceRuleMapper.ToDto(savedEntity);
     }

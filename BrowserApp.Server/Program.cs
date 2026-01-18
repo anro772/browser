@@ -8,9 +8,16 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container
 
+// Validate connection string
+var connectionString = builder.Configuration.GetConnectionString("PostgreSQL");
+if (string.IsNullOrEmpty(connectionString))
+{
+    throw new InvalidOperationException("PostgreSQL connection string is not configured. Please set ConnectionStrings:PostgreSQL in appsettings.json");
+}
+
 // Database
 builder.Services.AddDbContext<ServerDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("PostgreSQL")));
+    options.UseNpgsql(connectionString));
 
 // Repositories
 builder.Services.AddScoped<IUserRepository, UserRepository>();
@@ -34,14 +41,26 @@ builder.Services.AddSwaggerGen(options =>
     });
 });
 
-// CORS - allow client connections
+// CORS - Development only allows any origin, Production requires specific origins
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAll", policy =>
+    options.AddPolicy("AllowClient", policy =>
     {
-        policy.AllowAnyOrigin()
-              .AllowAnyMethod()
-              .AllowAnyHeader();
+        if (builder.Environment.IsDevelopment())
+        {
+            policy.AllowAnyOrigin()
+                  .AllowAnyMethod()
+                  .AllowAnyHeader();
+        }
+        else
+        {
+            // TODO: Configure production origins in appsettings.json
+            var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
+                ?? new[] { "https://yourdomain.com" };
+            policy.WithOrigins(allowedOrigins)
+                  .AllowAnyMethod()
+                  .AllowAnyHeader();
+        }
     });
 });
 
@@ -54,7 +73,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseCors("AllowAll");
+app.UseCors("AllowClient");
 
 app.UseAuthorization();
 

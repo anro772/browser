@@ -28,5 +28,5 @@ public class RuleListResponse
     /// <summary>
     /// Total number of pages.
     /// </summary>
-    public int TotalPages => (int)Math.Ceiling((double)TotalCount / PageSize);
+    public int TotalPages => PageSize > 0 ? (int)Math.Ceiling((double)TotalCount / PageSize) : 0;
 }

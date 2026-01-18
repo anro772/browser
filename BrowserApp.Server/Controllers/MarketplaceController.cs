@@ -24,6 +24,17 @@ public class MarketplaceController : ControllerBase
     }
 
     /// <summary>
+    /// Validates and normalizes pagination parameters.
+    /// </summary>
+    private static (int page, int pageSize) ValidatePagination(int page, int pageSize)
+    {
+        if (page < 1) page = 1;
+        if (pageSize < 1) pageSize = 20;
+        if (pageSize > 100) pageSize = 100;
+        return (page, pageSize);
+    }
+
+    /// <summary>
     /// Gets a paginated list of all marketplace rules.
     /// </summary>
     /// <param name="page">Page number (1-based).</param>
@@ -34,10 +45,7 @@ public class MarketplaceController : ControllerBase
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20)
     {
-        if (page < 1) page = 1;
-        if (pageSize < 1) pageSize = 20;
-        if (pageSize > 100) pageSize = 100;
-
+        (page, pageSize) = ValidatePagination(page, pageSize);
         var result = await _marketplaceService.GetRulesAsync(page, pageSize);
         return Ok(result);
     }
@@ -48,13 +56,13 @@ public class MarketplaceController : ControllerBase
     /// <param name="id">Rule ID.</param>
     [HttpGet("rules/{id:guid}")]
     [ProducesResponseType(typeof(RuleResponse), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
     public async Task<ActionResult<RuleResponse>> GetRuleById(Guid id)
     {
         var rule = await _marketplaceService.GetRuleByIdAsync(id);
         if (rule == null)
         {
-            return NotFound(new { error = $"Rule with ID {id} not found" });
+            return NotFound(new ErrorResponse($"Rule with ID {id} not found"));
         }
 
         return Ok(rule);
@@ -66,7 +74,7 @@ public class MarketplaceController : ControllerBase
     /// <param name="request">Rule upload request.</param>
     [HttpPost("rules")]
     [ProducesResponseType(typeof(RuleResponse), StatusCodes.Status201Created)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<RuleResponse>> UploadRule([FromBody] RuleUploadRequest request)
     {
         if (!ModelState.IsValid)
@@ -85,7 +93,7 @@ public class MarketplaceController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to upload rule '{Name}'", request.Name);
-            return BadRequest(new { error = "Failed to upload rule" });
+            return BadRequest(new ErrorResponse("Failed to upload rule", ex.Message));
         }
     }
 
@@ -104,9 +112,7 @@ public class MarketplaceController : ControllerBase
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20)
     {
-        if (page < 1) page = 1;
-        if (pageSize < 1) pageSize = 20;
-        if (pageSize > 100) pageSize = 100;
+        (page, pageSize) = ValidatePagination(page, pageSize);
 
         string[]? tagArray = null;
         if (!string.IsNullOrWhiteSpace(tags))
@@ -124,13 +130,13 @@ public class MarketplaceController : ControllerBase
     /// <param name="id">Rule ID.</param>
     [HttpPost("rules/{id:guid}/download")]
     [ProducesResponseType(typeof(RuleResponse), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
     public async Task<ActionResult<RuleResponse>> IncrementDownload(Guid id)
     {
         var rule = await _marketplaceService.IncrementDownloadAsync(id);
         if (rule == null)
         {
-            return NotFound(new { error = $"Rule with ID {id} not found" });
+            return NotFound(new ErrorResponse($"Rule with ID {id} not found"));
         }
 
         return Ok(rule);
@@ -142,13 +148,13 @@ public class MarketplaceController : ControllerBase
     /// <param name="id">Rule ID.</param>
     [HttpDelete("rules/{id:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeleteRule(Guid id)
     {
         var deleted = await _marketplaceService.DeleteRuleAsync(id);
         if (!deleted)
         {
-            return NotFound(new { error = $"Rule with ID {id} not found" });
+            return NotFound(new ErrorResponse($"Rule with ID {id} not found"));
         }
 
         return NoContent();
