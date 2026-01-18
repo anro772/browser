@@ -30,7 +30,13 @@
       "Bash(test:*)",
       "Bash(grep:*)",
       "Skill(feature-dev:feature-dev)",
-      "Skill(feature-dev:feature-dev:*)"
+      "Skill(feature-dev:feature-dev:*)",
+      "Bash(docker --version:*)",
+      "Bash(docker-compose:*)",
+      "Bash(docker compose:*)",
+      "Bash(curl:*)",
+      "Bash(docker ps:*)",
+      "Bash(python:*)"
     ],
     "deny": [],
     "ask": []
