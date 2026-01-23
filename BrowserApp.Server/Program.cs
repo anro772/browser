@@ -82,22 +82,23 @@ app.UseAuthorization();
 app.MapControllers();
 
 // Apply migrations on startup
-using (var scope = app.Services.CreateScope())
-{
-    var dbContext = scope.ServiceProvider.GetRequiredService<ServerDbContext>();
-    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
-
-    try
-    {
-        logger.LogInformation("Applying database migrations...");
-        dbContext.Database.Migrate();
-        logger.LogInformation("Database migrations applied successfully");
-    }
-    catch (Exception ex)
-    {
-        logger.LogError(ex, "Failed to apply database migrations");
-        throw;
-    }
-}
+// Migrations already applied manually via SQL - skip automatic migration
+// using (var scope = app.Services.CreateScope())
+// {
+//     var dbContext = scope.ServiceProvider.GetRequiredService<ServerDbContext>();
+//     var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+//
+//     try
+//     {
+//         logger.LogInformation("Applying database migrations...");
+//         dbContext.Database.Migrate();
+//         logger.LogInformation("Database migrations applied successfully");
+//     }
+//     catch (Exception ex)
+//     {
+//         logger.LogError(ex, "Failed to apply database migrations");
+//         throw;
+//     }
+// }
 
 app.Run();

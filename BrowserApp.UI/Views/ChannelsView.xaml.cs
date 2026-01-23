@@ -25,6 +25,14 @@ public partial class ChannelsView : FluentWindow
     {
         DataContext = viewModel;
     }
+
+    private async void ChannelsView_Loaded(object sender, RoutedEventArgs e)
+    {
+        if (DataContext is ChannelsViewModel viewModel)
+        {
+            await viewModel.LoadChannelsCommand.ExecuteAsync(null);
+        }
+    }
 }
 
 /// <summary>

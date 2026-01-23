@@ -5,7 +5,8 @@
         xmlns:viewmodels="clr-namespace:BrowserApp.UI.ViewModels"
         Title="Channels Manager"
         Height="600" Width="1000"
-        WindowStartupLocation="CenterOwner">
+        WindowStartupLocation="CenterOwner"
+        Loaded="ChannelsView_Loaded">
 
     <Grid Margin="16">
         <Grid.RowDefinitions>
@@ -85,7 +86,7 @@
                                             </ui:Badge>
                                             <ui:Button Content="Leave" Margin="0,8,0,0"
                                                        Appearance="Secondary"
-                                                       Command="{Binding DataContext.LeaveChannelCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                       Command="{Binding DataContext.LeaveChannelCommand, RelativeSource={RelativeSource AncestorType=ui:FluentWindow}}"
                                                        CommandParameter="{Binding}"/>
                                         </StackPanel>
                                     </Grid>

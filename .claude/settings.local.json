@@ -37,7 +37,16 @@
       "Bash(curl:*)",
       "Bash(docker ps:*)",
       "Bash(python:*)",
-      "Bash(dotnet ef database update:*)"
+      "Bash(dotnet ef database update:*)",
+      "Bash(docker exec:*)",
+      "Bash(timeout /t 15)",
+      "Bash(findstr:*)",
+      "Bash(docker restart:*)",
+      "Bash(ping:*)",
+      "Bash(Select-String -Pattern \"Applying|Done|success|error\" -CaseSensitive:$false)",
+      "Bash(docker volume rm:*)",
+      "Bash(docker volume ls:*)",
+      "Bash(docker logs:*)"
     ],
     "deny": [],
     "ask": []
