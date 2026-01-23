@@ -86,11 +86,7 @@ public partial class App : Application
 
         ErrorLogger.LogInfo("Network logger started");
 
-        // Start channel sync service for background sync (15-minute interval)
-        var channelSyncService = _serviceProvider.GetRequiredService<IChannelSyncService>();
-        await channelSyncService.StartAsync();
-
-        ErrorLogger.LogInfo("Channel sync service started");
+        ErrorLogger.LogInfo("Channel sync service initialized (manual sync only)");
 
         // Show main window
         var mainWindow = _serviceProvider.GetRequiredService<MainWindow>();
@@ -161,6 +157,7 @@ public partial class App : Application
         services.AddTransient<RuleManagerViewModel>();
         services.AddSingleton<LogViewerViewModel>();
         services.AddTransient<ChannelsViewModel>();
+        services.AddTransient<MarketplaceViewModel>();
 
         // Views
         services.AddSingleton<MainWindow>();
@@ -168,6 +165,7 @@ public partial class App : Application
         services.AddTransient<RuleManagerView>();
         services.AddSingleton<LogViewerView>();
         services.AddTransient<ChannelsView>();
+        services.AddTransient<MarketplaceView>();
     }
 
     private void EnsureDatabase()

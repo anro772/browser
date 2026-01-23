@@ -56,4 +56,9 @@ public interface IRuleRepository
     /// Deletes all rules from a specific channel.
     /// </summary>
     Task DeleteByChannelIdAsync(string channelId);
+
+    /// <summary>
+    /// Gets a rule by its marketplace ID.
+    /// </summary>
+    Task<RuleEntity?> GetByMarketplaceIdAsync(string marketplaceId);
 }

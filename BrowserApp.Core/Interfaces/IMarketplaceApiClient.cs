@@ -1,36 +1,36 @@
+using BrowserApp.Core.DTOs;
+
 namespace BrowserApp.Core.Interfaces;
 
 /// <summary>
 /// Interface for marketplace API client operations.
-/// Note: Using object type here to avoid circular reference -
-/// implementation uses DTOs from BrowserApp.UI.
 /// </summary>
 public interface IMarketplaceApiClient
 {
     /// <summary>
     /// Gets a paginated list of all marketplace rules.
     /// </summary>
-    Task<object?> GetRulesAsync(int page = 1, int pageSize = 20);
+    Task<RuleListResponse?> GetRulesAsync(int page = 1, int pageSize = 20);
 
     /// <summary>
     /// Gets a rule by its ID.
     /// </summary>
-    Task<object?> GetRuleByIdAsync(Guid id);
+    Task<RuleResponse?> GetRuleByIdAsync(Guid id);
 
     /// <summary>
     /// Uploads a rule to the marketplace.
     /// </summary>
-    Task<object?> UploadRuleAsync(object request);
+    Task<RuleResponse?> UploadRuleAsync(RuleUploadRequest request);
 
     /// <summary>
     /// Searches marketplace rules.
     /// </summary>
-    Task<object?> SearchRulesAsync(string? query, string[]? tags, int page = 1, int pageSize = 20);
+    Task<RuleListResponse?> SearchRulesAsync(string? query, string[]? tags, int page = 1, int pageSize = 20);
 
     /// <summary>
     /// Increments the download count for a rule.
     /// </summary>
-    Task<object?> IncrementDownloadAsync(Guid id);
+    Task<RuleResponse?> IncrementDownloadAsync(Guid id);
 
     /// <summary>
     /// Checks if the marketplace server is available.

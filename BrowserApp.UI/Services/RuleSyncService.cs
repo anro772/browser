@@ -4,7 +4,7 @@ using BrowserApp.Core.Interfaces;
 using BrowserApp.Core.Models;
 using BrowserApp.Data.Entities;
 using BrowserApp.Data.Interfaces;
-using BrowserApp.UI.DTOs;
+using BrowserApp.Core.DTOs;
 
 namespace BrowserApp.UI.Services;
 
@@ -13,12 +13,12 @@ namespace BrowserApp.UI.Services;
 /// </summary>
 public class RuleSyncService : IRuleSyncService
 {
-    private readonly MarketplaceApiClient _apiClient;
+    private readonly IMarketplaceApiClient _apiClient;
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly IRuleEngine _ruleEngine;
 
     public RuleSyncService(
-        MarketplaceApiClient apiClient,
+        IMarketplaceApiClient apiClient,
         IServiceScopeFactory scopeFactory,
         IRuleEngine ruleEngine)
     {
@@ -32,7 +32,7 @@ public class RuleSyncService : IRuleSyncService
         try
         {
             // Get the rule from the marketplace
-            var response = await _apiClient.GetRuleByIdTypedAsync(marketplaceRuleId);
+            var response = await _apiClient.GetRuleByIdAsync(marketplaceRuleId);
             if (response == null)
             {
                 ErrorLogger.LogInfo($"Rule {marketplaceRuleId} not found in marketplace");
@@ -58,7 +58,7 @@ public class RuleSyncService : IRuleSyncService
             await repository.AddAsync(entity);
 
             // Increment download count on server
-            await _apiClient.IncrementDownloadTypedAsync(marketplaceRuleId);
+            await _apiClient.IncrementDownloadAsync(marketplaceRuleId);
 
             // Reload rules in engine
             await _ruleEngine.ReloadRulesAsync();
@@ -125,7 +125,7 @@ public class RuleSyncService : IRuleSyncService
                 Tags = Array.Empty<string>()
             };
 
-            var response = await _apiClient.UploadRuleTypedAsync(request);
+            var response = await _apiClient.UploadRuleAsync(request);
             return response != null;
         }
         catch (Exception ex)

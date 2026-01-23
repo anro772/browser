@@ -3,9 +3,10 @@ using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.DependencyInjection;
-using BrowserApp.Data.Entities;
-using BrowserApp.UI.DTOs;
+using BrowserApp.Core.DTOs;
+using BrowserApp.Core.Interfaces;
 using BrowserApp.UI.Services;
+using BrowserApp.UI.Views;
 
 namespace BrowserApp.UI.ViewModels;
 
@@ -15,8 +16,8 @@ namespace BrowserApp.UI.ViewModels;
 /// </summary>
 public partial class ChannelsViewModel : ObservableObject
 {
-    private readonly ChannelApiClient _apiClient;
-    private readonly ChannelSyncService _syncService;
+    private readonly IChannelApiClient _apiClient;
+    private readonly IChannelSyncService _syncService;
     private readonly IServiceScopeFactory _scopeFactory;
 
     [ObservableProperty]
@@ -38,8 +39,8 @@ public partial class ChannelsViewModel : ObservableObject
     private string _statusMessage = string.Empty;
 
     public ChannelsViewModel(
-        ChannelApiClient apiClient,
-        ChannelSyncService syncService,
+        IChannelApiClient apiClient,
+        IChannelSyncService syncService,
         IServiceScopeFactory scopeFactory)
     {
         _apiClient = apiClient;
@@ -56,7 +57,7 @@ public partial class ChannelsViewModel : ObservableObject
         try
         {
             // Load available channels from server
-            var response = await _apiClient.GetChannelsTypedAsync(1, 50);
+            var response = await _apiClient.GetChannelsAsync(1, 50);
             if (response != null)
             {
                 Application.Current.Dispatcher.Invoke(() =>
@@ -70,7 +71,7 @@ public partial class ChannelsViewModel : ObservableObject
             }
 
             // Load joined channels from local database
-            var joined = await _syncService.GetJoinedChannelsTypedAsync();
+            var joined = await _syncService.GetJoinedChannelsAsync();
             Application.Current.Dispatcher.Invoke(() =>
             {
                 JoinedChannels.Clear();
@@ -99,7 +100,7 @@ public partial class ChannelsViewModel : ObservableObject
         if (channel == null) return;
 
         // Show password dialog
-        var password = await ShowPasswordDialogAsync(channel.Name);
+        var password = ShowPasswordDialog(channel.Name);
         if (string.IsNullOrEmpty(password)) return;
 
         IsLoading = true;
@@ -204,15 +205,15 @@ public partial class ChannelsViewModel : ObservableObject
     private async Task CreateChannelAsync()
     {
         // Show create channel dialog
-        var (name, description, password) = await ShowCreateChannelDialogAsync();
-        if (string.IsNullOrEmpty(name)) return; // Dialog handles validation
+        var (name, description, password) = ShowCreateChannelDialog();
+        if (string.IsNullOrEmpty(name)) return;
 
         IsLoading = true;
         StatusMessage = $"Creating channel '{name}'...";
 
         try
         {
-            var result = await _apiClient.CreateChannelTypedAsync(new CreateChannelRequest
+            var result = await _apiClient.CreateChannelAsync(new CreateChannelRequest
             {
                 Name = name,
                 Description = description,
@@ -257,37 +258,47 @@ public partial class ChannelsViewModel : ObservableObject
         }
     }
 
-    private Task<string> ShowPasswordDialogAsync(string channelName)
+    private string ShowPasswordDialog(string channelName)
     {
-        // Simple password input using MessageBox for now (skeleton UI)
-        // In a real app, this would be a proper dialog
-        var password = Microsoft.VisualBasic.Interaction.InputBox(
-            $"Enter password for channel '{channelName}':",
-            "Join Channel",
-            "");
-        return Task.FromResult(password);
+        var dialog = new PasswordDialog
+        {
+            DialogTitle = "Join Channel",
+            PromptText = $"Enter password for channel '{channelName}':",
+            Owner = Application.Current.MainWindow
+        };
+
+        var result = dialog.ShowDialog();
+        return result == true ? dialog.Password : string.Empty;
     }
 
-    private Task<(string name, string description, string password)> ShowCreateChannelDialogAsync()
+    private (string name, string description, string password) ShowCreateChannelDialog()
     {
-        // Simple input using MessageBox for now (skeleton UI)
+        // For MVP, using simple InputBox dialogs for name and description
         var name = Microsoft.VisualBasic.Interaction.InputBox(
             "Enter channel name:",
             "Create Channel",
             "");
-        if (string.IsNullOrEmpty(name)) return Task.FromResult<(string, string, string)>(("", "", ""));
+        if (string.IsNullOrEmpty(name)) return ("", "", "");
 
         var description = Microsoft.VisualBasic.Interaction.InputBox(
             "Enter channel description:",
             "Create Channel",
             "");
 
-        var password = Microsoft.VisualBasic.Interaction.InputBox(
-            "Enter channel password (minimum 4 characters):",
-            "Create Channel",
-            "");
+        // Use proper password dialog for the password
+        var passwordDialog = new PasswordDialog
+        {
+            DialogTitle = "Create Channel",
+            PromptText = "Enter channel password (minimum 4 characters):",
+            Owner = Application.Current.MainWindow
+        };
 
-        // Validate password length (server requires minimum 4 characters)
+        var result = passwordDialog.ShowDialog();
+        if (result != true) return ("", "", "");
+
+        var password = passwordDialog.Password;
+
+        // Validate password length
         if (string.IsNullOrEmpty(password) || password.Length < 4)
         {
             MessageBox.Show(
@@ -295,10 +306,10 @@ public partial class ChannelsViewModel : ObservableObject
                 "Invalid Password",
                 MessageBoxButton.OK,
                 MessageBoxImage.Warning);
-            return Task.FromResult<(string, string, string)>(("", "", ""));
+            return ("", "", "");
         }
 
-        return Task.FromResult((name, description, password));
+        return (name, description, password);
     }
 }
 
@@ -341,14 +352,14 @@ public class JoinedChannelViewModel
     public DateTime LastSyncedAt { get; }
     public int RuleCount { get; }
 
-    public JoinedChannelViewModel(ChannelMembershipEntity entity)
+    public JoinedChannelViewModel(ChannelMembershipDto dto)
     {
-        ChannelId = entity.ChannelId;
-        ChannelName = entity.ChannelName;
-        ChannelDescription = entity.ChannelDescription;
-        JoinedAt = entity.JoinedAt;
-        LastSyncedAt = entity.LastSyncedAt;
-        RuleCount = entity.RuleCount;
+        ChannelId = dto.ChannelId;
+        ChannelName = dto.ChannelName;
+        ChannelDescription = dto.ChannelDescription;
+        JoinedAt = dto.JoinedAt;
+        LastSyncedAt = dto.LastSyncedAt;
+        RuleCount = dto.RuleCount;
     }
 
     public string LastSyncedDisplay => $"Last synced: {LastSyncedAt:g}";

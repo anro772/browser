@@ -1,96 +1,29 @@
-using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
+using BrowserApp.Core.DTOs;
 using BrowserApp.Core.Interfaces;
-using BrowserApp.Core.Models;
 using BrowserApp.Data.Entities;
 using BrowserApp.Data.Interfaces;
-using BrowserApp.UI.DTOs;
 
 namespace BrowserApp.UI.Services;
 
 /// <summary>
 /// Service for synchronizing channel rules between server and local storage.
+/// Simplified for MVP - manual sync only (no background timer).
 /// </summary>
 public class ChannelSyncService : IChannelSyncService
 {
-    private readonly ChannelApiClient _apiClient;
+    private readonly IChannelApiClient _apiClient;
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly IRuleEngine _ruleEngine;
-    private PeriodicTimer? _syncTimer;
-    private Task? _syncTask;
-    private CancellationTokenSource? _cts;
-    private string _currentUsername = string.Empty;
 
     public ChannelSyncService(
-        ChannelApiClient apiClient,
+        IChannelApiClient apiClient,
         IServiceScopeFactory scopeFactory,
         IRuleEngine ruleEngine)
     {
         _apiClient = apiClient;
         _scopeFactory = scopeFactory;
         _ruleEngine = ruleEngine;
-    }
-
-    public Task StartAsync()
-    {
-        _cts = new CancellationTokenSource();
-        _syncTimer = new PeriodicTimer(TimeSpan.FromMinutes(15));
-        _syncTask = RunSyncLoopAsync(_cts.Token);
-        ErrorLogger.LogInfo("Channel sync service started (15-minute interval)");
-        return Task.CompletedTask;
-    }
-
-    public async Task StopAsync()
-    {
-        if (_cts != null)
-        {
-            _cts.Cancel();
-            _syncTimer?.Dispose();
-
-            if (_syncTask != null)
-            {
-                try
-                {
-                    await _syncTask;
-                }
-                catch (OperationCanceledException)
-                {
-                    // Expected during shutdown
-                }
-            }
-
-            _cts.Dispose();
-            _cts = null;
-        }
-        ErrorLogger.LogInfo("Channel sync service stopped");
-    }
-
-    private async Task RunSyncLoopAsync(CancellationToken ct)
-    {
-        try
-        {
-            while (!ct.IsCancellationRequested && _syncTimer != null)
-            {
-                await _syncTimer.WaitForNextTickAsync(ct);
-                if (!string.IsNullOrEmpty(_currentUsername))
-                {
-                    await SyncAllChannelsAsync(_currentUsername);
-                }
-            }
-        }
-        catch (OperationCanceledException)
-        {
-            // Expected during shutdown
-        }
-        catch (Exception ex)
-        {
-            ErrorLogger.LogError("Channel sync loop error", ex);
-        }
-    }
-
-    public void SetUsername(string username)
-    {
-        _currentUsername = username;
     }
 
     public async Task<bool> JoinChannelAsync(Guid channelId, string channelName, string channelDescription, string username, string password)
@@ -127,7 +60,6 @@ public class ChannelSyncService : IChannelSyncService
             // Initial sync
             await SyncChannelRulesAsync(channelId.ToString(), username);
 
-            _currentUsername = username;
             ErrorLogger.LogInfo($"Successfully joined channel '{channelName}'");
             return true;
         }
@@ -172,7 +104,7 @@ public class ChannelSyncService : IChannelSyncService
         try
         {
             var channelGuid = Guid.Parse(channelId);
-            var rulesResponse = await _apiClient.GetChannelRulesTypedAsync(channelGuid, username);
+            var rulesResponse = await _apiClient.GetChannelRulesAsync(channelGuid, username);
 
             if (rulesResponse == null)
             {
@@ -188,7 +120,6 @@ public class ChannelSyncService : IChannelSyncService
             await ruleRepo.DeleteByChannelIdAsync(channelId);
 
             // Insert new rules
-            var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
             foreach (var serverRule in rulesResponse.Rules)
             {
                 var entity = new RuleEntity
@@ -252,18 +183,24 @@ public class ChannelSyncService : IChannelSyncService
         }
     }
 
-    public async Task<IEnumerable<object>> GetJoinedChannelsAsync()
+    public async Task<IEnumerable<ChannelMembershipDto>> GetJoinedChannelsAsync()
     {
         using var scope = _scopeFactory.CreateScope();
         var membershipRepo = scope.ServiceProvider.GetRequiredService<IChannelMembershipRepository>();
-        return await membershipRepo.GetActiveAsync();
-    }
+        var entities = await membershipRepo.GetActiveAsync();
 
-    public async Task<IEnumerable<ChannelMembershipEntity>> GetJoinedChannelsTypedAsync()
-    {
-        using var scope = _scopeFactory.CreateScope();
-        var membershipRepo = scope.ServiceProvider.GetRequiredService<IChannelMembershipRepository>();
-        return await membershipRepo.GetActiveAsync();
+        return entities.Select(e => new ChannelMembershipDto
+        {
+            Id = e.Id,
+            ChannelId = e.ChannelId,
+            ChannelName = e.ChannelName,
+            ChannelDescription = e.ChannelDescription,
+            Username = e.Username,
+            IsActive = e.IsActive,
+            JoinedAt = e.JoinedAt,
+            LastSyncedAt = e.LastSyncedAt,
+            RuleCount = e.RuleCount
+        });
     }
 
     public async Task<bool> IsServerAvailableAsync()

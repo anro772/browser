@@ -1,4 +1,4 @@
-namespace BrowserApp.UI.DTOs;
+namespace BrowserApp.Core.DTOs;
 
 /// <summary>
 /// Request to create a new channel.

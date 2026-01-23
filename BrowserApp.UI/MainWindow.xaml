@@ -103,6 +103,14 @@
                            Appearance="Secondary"
                            Margin="4,0"/>
 
+                <!-- Marketplace -->
+                <ui:Button Icon="{ui:SymbolIcon BuildingShop24}"
+                           ToolTip="Browse Marketplace (Ctrl+M)"
+                           x:Name="MarketplaceButton"
+                           Click="MarketplaceButton_Click"
+                           Appearance="Secondary"
+                           Margin="4,0"/>
+
                 <!-- Network Monitor Toggle -->
                 <ui:Button Icon="{ui:SymbolIcon NetworkCheck24}"
                            ToolTip="Toggle Network Monitor (Ctrl+Shift+N)"

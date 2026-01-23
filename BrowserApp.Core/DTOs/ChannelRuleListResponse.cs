@@ -1,4 +1,4 @@
-namespace BrowserApp.UI.DTOs;
+namespace BrowserApp.Core.DTOs;
 
 /// <summary>
 /// Response containing a list of channel rules.

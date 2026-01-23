@@ -1,20 +1,13 @@
+using BrowserApp.Core.DTOs;
+
 namespace BrowserApp.Core.Interfaces;
 
 /// <summary>
 /// Interface for channel sync service operations.
+/// Simplified for MVP - manual sync only (no background timer).
 /// </summary>
 public interface IChannelSyncService
 {
-    /// <summary>
-    /// Starts the background sync service.
-    /// </summary>
-    Task StartAsync();
-
-    /// <summary>
-    /// Stops the background sync service.
-    /// </summary>
-    Task StopAsync();
-
     /// <summary>
     /// Joins a channel and performs initial sync.
     /// </summary>
@@ -38,7 +31,7 @@ public interface IChannelSyncService
     /// <summary>
     /// Gets all active channel memberships.
     /// </summary>
-    Task<IEnumerable<object>> GetJoinedChannelsAsync();
+    Task<IEnumerable<ChannelMembershipDto>> GetJoinedChannelsAsync();
 
     /// <summary>
     /// Checks if the server is available.

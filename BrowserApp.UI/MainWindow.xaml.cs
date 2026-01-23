@@ -106,4 +106,20 @@ public partial class MainWindow : Window
             ErrorLogger.LogError("Failed to open Channels Manager", ex);
         }
     }
+
+    private void MarketplaceButton_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            ErrorLogger.LogInfo("Opening Marketplace");
+            var marketplaceView = _serviceProvider.GetRequiredService<MarketplaceView>();
+            marketplaceView.Owner = this;
+            marketplaceView.ShowDialog();
+            ErrorLogger.LogInfo("Marketplace closed");
+        }
+        catch (Exception ex)
+        {
+            ErrorLogger.LogError("Failed to open Marketplace", ex);
+        }
+    }
 }

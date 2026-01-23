@@ -1,11 +1,11 @@
-namespace BrowserApp.UI.DTOs;
+namespace BrowserApp.Core.DTOs;
 
 /// <summary>
-/// Paginated response containing a list of channels.
+/// Response DTO for a paginated list of marketplace rules.
 /// </summary>
-public class ChannelListResponse
+public class RuleListResponse
 {
-    public List<ChannelResponse> Channels { get; set; } = new();
+    public List<RuleResponse> Rules { get; set; } = new();
     public int TotalCount { get; set; }
     public int Page { get; set; }
     public int PageSize { get; set; }

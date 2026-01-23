@@ -47,7 +47,10 @@
       "Bash(docker volume rm:*)",
       "Bash(docker volume ls:*)",
       "Bash(docker logs:*)",
-      "Bash(netstat:*)"
+      "Bash(netstat:*)",
+      "Bash(del /Q \"%LOCALAPPDATA%\\\\BrowserApp\\\\browser.db*\")",
+      "Bash(timeout:*)",
+      "WebFetch(domain:wpfui.lepo.co)"
     ],
     "deny": [],
     "ask": []

@@ -105,4 +105,10 @@ public class RuleRepository : IRuleRepository
             await _context.SaveChangesAsync();
         }
     }
+
+    public async Task<RuleEntity?> GetByMarketplaceIdAsync(string marketplaceId)
+    {
+        return await _context.Rules
+            .FirstOrDefaultAsync(r => r.MarketplaceId == marketplaceId);
+    }
 }

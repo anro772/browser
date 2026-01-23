@@ -1,24 +1,23 @@
 using System.Net.Http;
 using System.Net.Http.Json;
 using Microsoft.Extensions.Configuration;
+using BrowserApp.Core.DTOs;
 using BrowserApp.Core.Interfaces;
-using BrowserApp.UI.DTOs;
 
 namespace BrowserApp.UI.Services;
 
 /// <summary>
 /// HTTP client for communicating with the marketplace API server.
 /// </summary>
-public class MarketplaceApiClient : IMarketplaceApiClient
+public class MarketplaceApiClient : IMarketplaceApiClient, IDisposable
 {
     private readonly HttpClient _httpClient;
-    private readonly IConfiguration _configuration;
     private readonly string? _serverUrl;
+    private bool _disposed;
 
     public MarketplaceApiClient(IConfiguration configuration)
     {
-        _configuration = configuration;
-        _serverUrl = _configuration["MarketplaceApi:BaseUrl"] ?? "http://localhost:5000";
+        _serverUrl = configuration["MarketplaceApi:BaseUrl"] ?? "http://localhost:5000";
 
         _httpClient = new HttpClient
         {
@@ -29,12 +28,7 @@ public class MarketplaceApiClient : IMarketplaceApiClient
 
     public string? ServerUrl => _serverUrl;
 
-    public async Task<object?> GetRulesAsync(int page = 1, int pageSize = 20)
-    {
-        return await GetRulesTypedAsync(page, pageSize);
-    }
-
-    public async Task<RuleListResponse?> GetRulesTypedAsync(int page = 1, int pageSize = 20)
+    public async Task<RuleListResponse?> GetRulesAsync(int page = 1, int pageSize = 20)
     {
         try
         {
@@ -49,12 +43,7 @@ public class MarketplaceApiClient : IMarketplaceApiClient
         }
     }
 
-    public async Task<object?> GetRuleByIdAsync(Guid id)
-    {
-        return await GetRuleByIdTypedAsync(id);
-    }
-
-    public async Task<RuleResponse?> GetRuleByIdTypedAsync(Guid id)
+    public async Task<RuleResponse?> GetRuleByIdAsync(Guid id)
     {
         try
         {
@@ -73,16 +62,7 @@ public class MarketplaceApiClient : IMarketplaceApiClient
         }
     }
 
-    public async Task<object?> UploadRuleAsync(object request)
-    {
-        if (request is RuleUploadRequest typedRequest)
-        {
-            return await UploadRuleTypedAsync(typedRequest);
-        }
-        return null;
-    }
-
-    public async Task<RuleResponse?> UploadRuleTypedAsync(RuleUploadRequest request)
+    public async Task<RuleResponse?> UploadRuleAsync(RuleUploadRequest request)
     {
         try
         {
@@ -97,12 +77,7 @@ public class MarketplaceApiClient : IMarketplaceApiClient
         }
     }
 
-    public async Task<object?> SearchRulesAsync(string? query, string[]? tags, int page = 1, int pageSize = 20)
-    {
-        return await SearchRulesTypedAsync(query, tags, page, pageSize);
-    }
-
-    public async Task<RuleListResponse?> SearchRulesTypedAsync(string? query, string[]? tags, int page = 1, int pageSize = 20)
+    public async Task<RuleListResponse?> SearchRulesAsync(string? query, string[]? tags, int page = 1, int pageSize = 20)
     {
         try
         {
@@ -127,12 +102,7 @@ public class MarketplaceApiClient : IMarketplaceApiClient
         }
     }
 
-    public async Task<object?> IncrementDownloadAsync(Guid id)
-    {
-        return await IncrementDownloadTypedAsync(id);
-    }
-
-    public async Task<RuleResponse?> IncrementDownloadTypedAsync(Guid id)
+    public async Task<RuleResponse?> IncrementDownloadAsync(Guid id)
     {
         try
         {
@@ -162,5 +132,15 @@ public class MarketplaceApiClient : IMarketplaceApiClient
         {
             return false;
         }
+    }
+
+    public void Dispose()
+    {
+        if (!_disposed)
+        {
+            _httpClient?.Dispose();
+            _disposed = true;
+        }
+        GC.SuppressFinalize(this);
     }
 }
