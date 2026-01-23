@@ -50,7 +50,8 @@
       "Bash(netstat:*)",
       "Bash(del /Q \"%LOCALAPPDATA%\\\\BrowserApp\\\\browser.db*\")",
       "Bash(timeout:*)",
-      "WebFetch(domain:wpfui.lepo.co)"
+      "WebFetch(domain:wpfui.lepo.co)",
+      "Bash(dotnet ef migrations has-pending-model-changes:*)"
     ],
     "deny": [],
     "ask": []
