@@ -95,6 +95,14 @@
                            Appearance="Secondary"
                            Margin="4,0"/>
 
+                <!-- Channels Manager -->
+                <ui:Button Icon="{ui:SymbolIcon PeopleTeam24}"
+                           ToolTip="Manage Channels (Ctrl+Shift+C)"
+                           x:Name="ChannelsButton"
+                           Click="ChannelsButton_Click"
+                           Appearance="Secondary"
+                           Margin="4,0"/>
+
                 <!-- Network Monitor Toggle -->
                 <ui:Button Icon="{ui:SymbolIcon NetworkCheck24}"
                            ToolTip="Toggle Network Monitor (Ctrl+Shift+N)"

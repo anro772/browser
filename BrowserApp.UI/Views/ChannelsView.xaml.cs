@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
+using Wpf.Ui.Controls;
 using BrowserApp.UI.ViewModels;
 
 namespace BrowserApp.UI.Views;
@@ -9,7 +10,7 @@ namespace BrowserApp.UI.Views;
 /// <summary>
 /// Interaction logic for ChannelsView.xaml
 /// </summary>
-public partial class ChannelsView : UserControl
+public partial class ChannelsView : FluentWindow
 {
     public ChannelsView()
     {

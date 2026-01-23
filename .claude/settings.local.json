@@ -36,7 +36,8 @@
       "Bash(docker compose:*)",
       "Bash(curl:*)",
       "Bash(docker ps:*)",
-      "Bash(python:*)"
+      "Bash(python:*)",
+      "Bash(dotnet ef database update:*)"
     ],
     "deny": [],
     "ask": []

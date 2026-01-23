@@ -19,6 +19,7 @@ public class ServerDbContext : DbContext
     public DbSet<ChannelEntity> Channels { get; set; }
     public DbSet<ChannelRuleEntity> ChannelRules { get; set; }
     public DbSet<ChannelMemberEntity> ChannelMembers { get; set; }
+    public DbSet<ChannelAuditLogEntity> ChannelAuditLogs { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -166,6 +167,35 @@ public class ServerDbContext : DbContext
             // Indexes
             entity.HasIndex(e => e.ChannelId);
             entity.HasIndex(e => e.UserId);
+        });
+
+        // ChannelAuditLog entity configuration
+        modelBuilder.Entity<ChannelAuditLogEntity>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.Action)
+                .IsRequired()
+                .HasMaxLength(50);
+
+            entity.Property(e => e.Metadata)
+                .HasColumnType("jsonb");
+
+            // Foreign keys
+            entity.HasOne(e => e.Channel)
+                .WithMany()
+                .HasForeignKey(e => e.ChannelId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.User)
+                .WithMany()
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            // Indexes for common queries
+            entity.HasIndex(e => e.ChannelId);
+            entity.HasIndex(e => e.UserId);
+            entity.HasIndex(e => e.Timestamp);
         });
     }
 }

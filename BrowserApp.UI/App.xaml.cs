@@ -86,6 +86,12 @@ public partial class App : Application
 
         ErrorLogger.LogInfo("Network logger started");
 
+        // Start channel sync service for background sync (15-minute interval)
+        var channelSyncService = _serviceProvider.GetRequiredService<IChannelSyncService>();
+        await channelSyncService.StartAsync();
+
+        ErrorLogger.LogInfo("Channel sync service started");
+
         // Show main window
         var mainWindow = _serviceProvider.GetRequiredService<MainWindow>();
         mainWindow.Show();

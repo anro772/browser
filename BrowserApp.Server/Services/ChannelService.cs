@@ -1,3 +1,4 @@
+using BrowserApp.Server.Data;
 using BrowserApp.Server.Data.Entities;
 using BrowserApp.Server.DTOs.Requests;
 using BrowserApp.Server.DTOs.Responses;
@@ -14,15 +15,18 @@ public class ChannelService : IChannelService
 {
     private readonly IChannelRepository _channelRepository;
     private readonly IUserRepository _userRepository;
+    private readonly ServerDbContext _dbContext;
     private readonly ILogger<ChannelService> _logger;
 
     public ChannelService(
         IChannelRepository channelRepository,
         IUserRepository userRepository,
+        ServerDbContext dbContext,
         ILogger<ChannelService> logger)
     {
         _channelRepository = channelRepository;
         _userRepository = userRepository;
+        _dbContext = dbContext;
         _logger = logger;
     }
 
@@ -61,6 +65,10 @@ public class ChannelService : IChannelService
         }
 
         _logger.LogInformation("Channel '{Name}' created by {Username}", request.Name, request.OwnerUsername);
+
+        // Audit log
+        await LogAuditAsync(savedEntity.Id, owner.Id, "channel_created", $"{{\"name\":\"{request.Name}\"}}");
+
         return ChannelMapper.ToDto(savedEntity);
     }
 
@@ -144,6 +152,10 @@ public class ChannelService : IChannelService
         await _channelRepository.IncrementMemberCountAsync(channelId);
 
         _logger.LogInformation("User {Username} joined channel {ChannelId}", request.Username, channelId);
+
+        // Audit log
+        await LogAuditAsync(channelId, user.Id, "user_joined", $"{{\"username\":\"{request.Username}\"}}");
+
         return (true, "Successfully joined channel");
     }
 
@@ -177,6 +189,10 @@ public class ChannelService : IChannelService
         await _channelRepository.DecrementMemberCountAsync(channelId);
 
         _logger.LogInformation("User {Username} left channel {ChannelId}", username, channelId);
+
+        // Audit log
+        await LogAuditAsync(channelId, user.Id, "user_left", $"{{\"username\":\"{username}\"}}");
+
         return (true, "Successfully left channel");
     }
 
@@ -221,6 +237,10 @@ public class ChannelService : IChannelService
         }
 
         var rules = await _channelRepository.GetChannelRulesAsync(channelId);
+
+        // Audit log (sync action)
+        await LogAuditAsync(channelId, user?.Id, "rules_synced", $"{{\"ruleCount\":{rules.Count()}}}");
+
         return ChannelMapper.ToRuleListDto(channel, rules);
     }
 
@@ -245,6 +265,11 @@ public class ChannelService : IChannelService
 
         _logger.LogInformation("Rule '{RuleName}' added to channel {ChannelId} by {Username}",
             request.Name, channelId, request.Username);
+
+        // Audit log
+        var user = await _userRepository.GetByUsernameAsync(request.Username);
+        await LogAuditAsync(channelId, user?.Id, "rule_added", $"{{\"ruleName\":\"{request.Name}\",\"ruleId\":\"{savedEntity.Id}\"}}");
+
         return ChannelMapper.ToRuleDto(savedEntity);
     }
 
@@ -273,6 +298,11 @@ public class ChannelService : IChannelService
         await _channelRepository.DeleteChannelRuleAsync(ruleId);
         _logger.LogInformation("Rule {RuleId} deleted from channel {ChannelId} by {Username}",
             ruleId, channelId, username);
+
+        // Audit log
+        var user = await _userRepository.GetByUsernameAsync(username);
+        await LogAuditAsync(channelId, user?.Id, "rule_deleted", $"{{\"ruleId\":\"{ruleId}\"}}");
+
         return true;
     }
 
@@ -286,6 +316,35 @@ public class ChannelService : IChannelService
         if (user != null)
         {
             await _channelRepository.UpdateMemberSyncTimeAsync(channelId, user.Id);
+        }
+    }
+
+    #endregion
+
+    #region Audit Logging
+
+    /// <summary>
+    /// Logs an audit event for a channel action.
+    /// </summary>
+    private async Task LogAuditAsync(Guid channelId, Guid? userId, string action, string? metadata = null)
+    {
+        try
+        {
+            var auditLog = new ChannelAuditLogEntity
+            {
+                ChannelId = channelId,
+                UserId = userId,
+                Action = action,
+                Metadata = metadata,
+                Timestamp = DateTime.UtcNow
+            };
+
+            _dbContext.ChannelAuditLogs.Add(auditLog);
+            await _dbContext.SaveChangesAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to log audit event: {Action} for channel {ChannelId}", action, channelId);
         }
     }
 

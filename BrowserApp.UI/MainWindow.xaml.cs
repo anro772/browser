@@ -90,4 +90,20 @@ public partial class MainWindow : Window
             ErrorLogger.LogError("Failed to open Rule Manager", ex);
         }
     }
+
+    private void ChannelsButton_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            ErrorLogger.LogInfo("Opening Channels Manager");
+            var channelsView = _serviceProvider.GetRequiredService<ChannelsView>();
+            channelsView.Owner = this;
+            channelsView.ShowDialog();
+            ErrorLogger.LogInfo("Channels Manager closed");
+        }
+        catch (Exception ex)
+        {
+            ErrorLogger.LogError("Failed to open Channels Manager", ex);
+        }
+    }
 }
