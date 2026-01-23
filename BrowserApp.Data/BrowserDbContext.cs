@@ -13,6 +13,7 @@ public class BrowserDbContext : DbContext
     public DbSet<SettingsEntity> Settings { get; set; } = null!;
     public DbSet<NetworkLogEntity> NetworkLogs { get; set; } = null!;
     public DbSet<RuleEntity> Rules { get; set; } = null!;
+    public DbSet<ChannelMembershipEntity> ChannelMemberships { get; set; } = null!;
 
     public BrowserDbContext()
     {
@@ -77,6 +78,19 @@ public class BrowserDbContext : DbContext
             entity.HasIndex(e => e.Enabled);
             entity.HasIndex(e => e.Priority);
             entity.HasIndex(e => e.Source);
+        });
+
+        modelBuilder.Entity<ChannelMembershipEntity>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.ChannelId).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.ChannelName).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.Username).IsRequired().HasMaxLength(50);
+            entity.Property(e => e.IsActive).HasDefaultValue(true);
+
+            // Indexes for performance
+            entity.HasIndex(e => e.ChannelId);
+            entity.HasIndex(e => e.IsActive);
         });
     }
 

@@ -22,9 +22,11 @@ builder.Services.AddDbContext<ServerDbContext>(options =>
 // Repositories
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IMarketplaceRuleRepository, MarketplaceRuleRepository>();
+builder.Services.AddScoped<IChannelRepository, ChannelRepository>();
 
 // Services
 builder.Services.AddScoped<IMarketplaceService, MarketplaceService>();
+builder.Services.AddScoped<IChannelService, ChannelService>();
 
 // Controllers
 builder.Services.AddControllers();

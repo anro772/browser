@@ -92,4 +92,17 @@ public class RuleRepository : IRuleRepository
     {
         return await _context.Rules.AnyAsync(r => r.Id == id);
     }
+
+    public async Task DeleteByChannelIdAsync(string channelId)
+    {
+        var rules = await _context.Rules
+            .Where(r => r.ChannelId == channelId)
+            .ToListAsync();
+
+        if (rules.Any())
+        {
+            _context.Rules.RemoveRange(rules);
+            await _context.SaveChangesAsync();
+        }
+    }
 }

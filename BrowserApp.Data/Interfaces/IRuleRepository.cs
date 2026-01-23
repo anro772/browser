@@ -51,4 +51,9 @@ public interface IRuleRepository
     /// Checks if a rule with the given ID exists.
     /// </summary>
     Task<bool> ExistsAsync(string id);
+
+    /// <summary>
+    /// Deletes all rules from a specific channel.
+    /// </summary>
+    Task DeleteByChannelIdAsync(string channelId);
 }

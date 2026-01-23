@@ -125,6 +125,13 @@ public partial class App : Application
         services.AddSingleton<RuleSyncService>();
         services.AddSingleton<IRuleSyncService>(sp => sp.GetRequiredService<RuleSyncService>());
 
+        // Phase 5: Channel Services
+        services.AddSingleton<ChannelApiClient>();
+        services.AddSingleton<IChannelApiClient>(sp => sp.GetRequiredService<ChannelApiClient>());
+        services.AddSingleton<ChannelSyncService>();
+        services.AddSingleton<IChannelSyncService>(sp => sp.GetRequiredService<ChannelSyncService>());
+        services.AddScoped<IChannelMembershipRepository, ChannelMembershipRepository>();
+
         // Navigation Service with injection support
         services.AddSingleton<NavigationService>(sp => new NavigationService(
             sp.GetRequiredService<IRuleEngine>(),
@@ -147,12 +154,14 @@ public partial class App : Application
         services.AddTransient<NetworkMonitorViewModel>();
         services.AddTransient<RuleManagerViewModel>();
         services.AddSingleton<LogViewerViewModel>();
+        services.AddTransient<ChannelsViewModel>();
 
         // Views
         services.AddSingleton<MainWindow>();
         services.AddSingleton<NetworkMonitorView>();
         services.AddTransient<RuleManagerView>();
         services.AddSingleton<LogViewerView>();
+        services.AddTransient<ChannelsView>();
     }
 
     private void EnsureDatabase()

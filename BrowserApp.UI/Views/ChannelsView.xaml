@@ -1,0 +1,172 @@
+<UserControl x:Class="BrowserApp.UI.Views.ChannelsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+             xmlns:viewmodels="clr-namespace:BrowserApp.UI.ViewModels">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="16,16,16,8">
+            <ui:SymbolIcon Symbol="People24" FontSize="24" Margin="0,0,8,0"/>
+            <TextBlock Text="Channels" FontSize="20" FontWeight="SemiBold" VerticalAlignment="Center"/>
+            <ui:Button Content="Refresh" Margin="16,0,0,0"
+                       Command="{Binding LoadChannelsCommand}"
+                       Appearance="Secondary"/>
+            <ui:Button Content="Sync Now" Margin="8,0,0,0"
+                       Command="{Binding SyncNowCommand}"
+                       Appearance="Primary"/>
+            <ui:Button Content="Create Channel" Margin="8,0,0,0"
+                       Command="{Binding CreateChannelCommand}"
+                       Appearance="Secondary"/>
+        </StackPanel>
+
+        <!-- Content -->
+        <Grid Grid.Row="1" Margin="16,8,16,8">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="16"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Joined Channels (Left) -->
+            <Border Grid.Column="0" BorderBrush="{DynamicResource ControlElevationBorderBrush}"
+                    BorderThickness="1" CornerRadius="8" Padding="8">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <TextBlock Text="Joined Channels" FontWeight="SemiBold" Margin="8,8,8,8"/>
+
+                    <ListBox Grid.Row="1" ItemsSource="{Binding JoinedChannels}"
+                             SelectedItem="{Binding SelectedChannel}"
+                             BorderThickness="0" Background="Transparent">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <Border Padding="12,8" Margin="4" CornerRadius="6"
+                                        Background="{DynamicResource ControlFillColorDefaultBrush}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                        </Grid.RowDefinitions>
+
+                                        <TextBlock Grid.Row="0" Text="{Binding ChannelName}"
+                                                   FontWeight="SemiBold" FontSize="14"/>
+                                        <TextBlock Grid.Row="1" Text="{Binding ChannelDescription}"
+                                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                                   TextTrimming="CharacterEllipsis"/>
+                                        <TextBlock Grid.Row="2" Text="{Binding LastSyncedDisplay}"
+                                                   FontSize="11"
+                                                   Foreground="{DynamicResource TextFillColorTertiaryBrush}"/>
+
+                                        <StackPanel Grid.Column="1" Grid.RowSpan="3"
+                                                    VerticalAlignment="Center" Margin="8,0,0,0">
+                                            <ui:Badge Appearance="Success">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <ui:SymbolIcon Symbol="Shield24" FontSize="12"/>
+                                                    <TextBlock Text="{Binding RuleCount}" Margin="4,0,0,0"/>
+                                                </StackPanel>
+                                            </ui:Badge>
+                                            <ui:Button Content="Leave" Margin="0,8,0,0"
+                                                       Appearance="Secondary"
+                                                       Command="{Binding DataContext.LeaveChannelCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                       CommandParameter="{Binding}"/>
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+
+                    <!-- Empty state -->
+                    <TextBlock Grid.Row="1" Text="No channels joined yet"
+                               Visibility="{Binding JoinedChannels.Count, Converter={StaticResource CountToVisibilityConverter}}"
+                               HorizontalAlignment="Center" VerticalAlignment="Center"
+                               Foreground="{DynamicResource TextFillColorTertiaryBrush}"/>
+                </Grid>
+            </Border>
+
+            <!-- Available Channels (Right) -->
+            <Border Grid.Column="2" BorderBrush="{DynamicResource ControlElevationBorderBrush}"
+                    BorderThickness="1" CornerRadius="8" Padding="8">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <TextBlock Text="Available Channels" FontWeight="SemiBold" Margin="8,8,8,8"/>
+
+                    <ListBox Grid.Row="1" ItemsSource="{Binding AvailableChannels}"
+                             BorderThickness="0" Background="Transparent">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <Border Padding="12,8" Margin="4" CornerRadius="6"
+                                        Background="{DynamicResource ControlFillColorDefaultBrush}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                        </Grid.RowDefinitions>
+
+                                        <TextBlock Grid.Row="0" Text="{Binding Name}"
+                                                   FontWeight="SemiBold" FontSize="14"/>
+                                        <TextBlock Grid.Row="1" Text="{Binding Description}"
+                                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                                   TextTrimming="CharacterEllipsis"/>
+                                        <TextBlock Grid.Row="2" Text="{Binding DisplayInfo}"
+                                                   FontSize="11"
+                                                   Foreground="{DynamicResource TextFillColorTertiaryBrush}"/>
+
+                                        <ui:Button Grid.Column="1" Grid.RowSpan="3"
+                                                   Content="Join"
+                                                   VerticalAlignment="Center"
+                                                   Appearance="Primary"
+                                                   Command="{Binding DataContext.JoinChannelCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                   CommandParameter="{Binding}"/>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+
+                    <!-- Empty state -->
+                    <TextBlock Grid.Row="1" Text="No channels available"
+                               Visibility="{Binding AvailableChannels.Count, Converter={StaticResource CountToVisibilityConverter}}"
+                               HorizontalAlignment="Center" VerticalAlignment="Center"
+                               Foreground="{DynamicResource TextFillColorTertiaryBrush}"/>
+                </Grid>
+            </Border>
+        </Grid>
+
+        <!-- Status bar -->
+        <Border Grid.Row="2" Background="{DynamicResource ControlFillColorDefaultBrush}"
+                Padding="16,8">
+            <Grid>
+                <TextBlock Text="{Binding StatusMessage}"
+                           Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                <ui:ProgressRing IsIndeterminate="True" Width="16" Height="16"
+                                 HorizontalAlignment="Right"
+                                 Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisibilityConverter}}"/>
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>

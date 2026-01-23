@@ -16,6 +16,9 @@ public class ServerDbContext : DbContext
 
     public DbSet<UserEntity> Users { get; set; }
     public DbSet<MarketplaceRuleEntity> MarketplaceRules { get; set; }
+    public DbSet<ChannelEntity> Channels { get; set; }
+    public DbSet<ChannelRuleEntity> ChannelRules { get; set; }
+    public DbSet<ChannelMemberEntity> ChannelMembers { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -68,6 +71,101 @@ public class ServerDbContext : DbContext
             entity.HasIndex(e => e.DownloadCount);
             entity.HasIndex(e => e.CreatedAt);
             entity.HasIndex(e => e.AuthorId);
+        });
+
+        // Channel entity configuration
+        modelBuilder.Entity<ChannelEntity>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.Name)
+                .IsRequired()
+                .HasMaxLength(200);
+
+            entity.Property(e => e.Description)
+                .HasMaxLength(2000);
+
+            entity.Property(e => e.PasswordHash)
+                .IsRequired()
+                .HasMaxLength(64);
+
+            entity.Property(e => e.MemberCount)
+                .HasDefaultValue(0);
+
+            entity.Property(e => e.IsActive)
+                .HasDefaultValue(true);
+
+            entity.Property(e => e.IsPublic)
+                .HasDefaultValue(true);
+
+            // Foreign key to User (owner)
+            entity.HasOne(e => e.Owner)
+                .WithMany()
+                .HasForeignKey(e => e.OwnerId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Indexes
+            entity.HasIndex(e => e.OwnerId);
+            entity.HasIndex(e => e.CreatedAt);
+            entity.HasIndex(e => e.IsPublic);
+        });
+
+        // ChannelRule entity configuration
+        modelBuilder.Entity<ChannelRuleEntity>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.Name)
+                .IsRequired()
+                .HasMaxLength(200);
+
+            entity.Property(e => e.Description)
+                .HasMaxLength(2000);
+
+            entity.Property(e => e.Site)
+                .IsRequired()
+                .HasMaxLength(500);
+
+            entity.Property(e => e.RulesJson)
+                .IsRequired()
+                .HasColumnType("jsonb");
+
+            entity.Property(e => e.IsEnforced)
+                .HasDefaultValue(true);
+
+            // Foreign key to Channel
+            entity.HasOne(e => e.Channel)
+                .WithMany(c => c.Rules)
+                .HasForeignKey(e => e.ChannelId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Indexes
+            entity.HasIndex(e => e.ChannelId);
+        });
+
+        // ChannelMember entity configuration
+        modelBuilder.Entity<ChannelMemberEntity>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+
+            // Foreign keys
+            entity.HasOne(e => e.Channel)
+                .WithMany(c => c.Members)
+                .HasForeignKey(e => e.ChannelId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.User)
+                .WithMany()
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Unique constraint on ChannelId + UserId
+            entity.HasIndex(e => new { e.ChannelId, e.UserId })
+                .IsUnique();
+
+            // Indexes
+            entity.HasIndex(e => e.ChannelId);
+            entity.HasIndex(e => e.UserId);
         });
     }
 }
