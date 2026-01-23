@@ -224,6 +224,13 @@ public partial class ChannelsViewModel : ObservableObject
 
             if (result != null)
             {
+                // Save local membership (owner is auto-joined on server)
+                await _syncService.SaveLocalMembershipAsync(
+                    result.Id.ToString(),
+                    result.Name,
+                    result.Description,
+                    Username);
+
                 StatusMessage = $"Channel '{name}' created successfully!";
                 MessageBox.Show(
                     $"Channel '{name}' has been created successfully!",

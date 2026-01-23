@@ -51,7 +51,8 @@
       "Bash(del /Q \"%LOCALAPPDATA%\\\\BrowserApp\\\\browser.db*\")",
       "Bash(timeout:*)",
       "WebFetch(domain:wpfui.lepo.co)",
-      "Bash(dotnet ef migrations has-pending-model-changes:*)"
+      "Bash(dotnet ef migrations has-pending-model-changes:*)",
+      "Bash(PGPASSWORD=1234 psql:*)"
     ],
     "deny": [],
     "ask": []

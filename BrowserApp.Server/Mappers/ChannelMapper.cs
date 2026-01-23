@@ -60,7 +60,7 @@ public static class ChannelMapper
             PasswordHash = passwordHash,
             IsPublic = request.IsPublic,
             IsActive = true,
-            MemberCount = 1, // Owner is first member
+            MemberCount = 0, // Will be incremented when owner is added as member
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
         };

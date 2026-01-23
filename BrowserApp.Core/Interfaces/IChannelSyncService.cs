@@ -37,4 +37,9 @@ public interface IChannelSyncService
     /// Checks if the server is available.
     /// </summary>
     Task<bool> IsServerAvailableAsync();
+
+    /// <summary>
+    /// Saves a local membership record (used when owner creates channel).
+    /// </summary>
+    Task SaveLocalMembershipAsync(string channelId, string channelName, string channelDescription, string username);
 }

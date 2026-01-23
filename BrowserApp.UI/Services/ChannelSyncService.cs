@@ -207,4 +207,33 @@ public class ChannelSyncService : IChannelSyncService
     {
         return await _apiClient.CheckConnectionAsync();
     }
+
+    public async Task SaveLocalMembershipAsync(string channelId, string channelName, string channelDescription, string username)
+    {
+        try
+        {
+            using var scope = _scopeFactory.CreateScope();
+            var membershipRepo = scope.ServiceProvider.GetRequiredService<IChannelMembershipRepository>();
+
+            var existing = await membershipRepo.GetByChannelIdAsync(channelId);
+            if (existing == null)
+            {
+                var membership = new ChannelMembershipEntity
+                {
+                    ChannelId = channelId,
+                    ChannelName = channelName,
+                    ChannelDescription = channelDescription,
+                    Username = username,
+                    JoinedAt = DateTime.UtcNow,
+                    LastSyncedAt = DateTime.UtcNow
+                };
+                await membershipRepo.AddAsync(membership);
+                ErrorLogger.LogInfo($"Saved local membership for channel '{channelName}'");
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorLogger.LogError($"Failed to save local membership for channel {channelId}", ex);
+        }
+    }
 }

@@ -552,49 +552,35 @@ Request → RequestInterceptor → RuleEngine
 **Phase 4: Server + Marketplace** ✅
 - .NET Web API setup
 - PostgreSQL database
-- Docker deployment
+- Docker deployment (ready, but use local for dev)
 - 7 marketplace endpoints
 - Client services registered
 - MarketplaceApiClient + RuleSyncService
+- MarketplaceView UI
 
-### Current: Phase 5 - Business Channels
+**Phase 5: Business Channels** ✅
+- Channel creation (name, password)
+- Join channel with password
+- Leave channel
+- Manual sync (background sync deferred)
+- ChannelsView UI with password dialog
+- ChannelApiClient + ChannelSyncService
+- Audit logging on server
+- Local membership tracking
 
-**Goal:** Multi-user policy enforcement
+### Current: Phase 6 - AI Integration
+
+**Goal:** AI-powered rule generation and assistance
 
 **Features Needed:**
-- Channel creation (name, password, rules)
-- Join channel with password
-- Enforced rules (cannot disable)
-- Background sync (15 min interval)
-- ChannelManager UI
-- Audit logging
-
-**API Endpoints:**
-```
-POST   /api/channels              # Create channel (admin)
-GET    /api/channels/{id}         # Get channel details
-GET    /api/channels/{id}/rules   # Get all rules for channel
-POST   /api/channels/{id}/join    # Join (password required)
-DELETE /api/channels/{id}/leave   # Leave channel
-POST   /api/channels/{id}/rules   # Add rule to channel (admin)
-```
-
-**Client UI:**
-- ChannelsView.xaml - Browse/join channels
-- Display "Enforced" badges on channel rules
-- Background sync timer service
-
-**Verification:** Create channel, join from different client, rules sync and enforce
-
-### Future Phases
-
-**Phase 6: AI Integration**
-- Ollama setup (7B model)
+- Ollama setup (7B model - Llama 3.2 or Mistral)
 - LLM wrapper API `/api/ai/chat`
 - CopilotSidebar UI
 - Context provider (page info, network requests)
 - Rule generation from natural language
 - Preview + apply flow
+
+### Future Phases
 
 **Phase 7: Profiles & Settings**
 - ProfileManager implementation
@@ -612,10 +598,32 @@ POST   /api/channels/{id}/rules   # Add rule to channel (admin)
 
 ## Server Reference
 
-### Docker Commands
+### Local Development (Preferred)
+
+> **IMPORTANT:** During development, run the server locally (not Docker) for easier testing and debugging. Docker setup exists but should only be used for final deployment testing.
+
+**Prerequisites:**
+- PostgreSQL installed locally
+- Connection: `Host=localhost;Port=5432;Database=browserapp;Username=postgres;Password=1234`
 
 ```bash
-# Start server (from project root)
+# Start server locally
+dotnet run --project BrowserApp.Server
+
+# Start client
+dotnet run --project BrowserApp.UI
+```
+
+**Server URL:** http://localhost:5000
+**Swagger UI:** http://localhost:5000/swagger
+
+**Database GUI:** Use DBeaver or pgAdmin to inspect PostgreSQL:
+- Host: `localhost`, Port: `5432`, Database: `browserapp`, User: `postgres`, Password: `1234`
+
+### Docker Commands (For Deployment Only)
+
+```bash
+# Start server via Docker (deployment testing only)
 docker compose up --build
 
 # Stop server
@@ -625,9 +633,6 @@ docker compose down
 docker logs browserapp-api
 docker logs browserapp-db
 ```
-
-**Server URL:** http://localhost:5000
-**Swagger UI:** http://localhost:5000/swagger
 
 ### Existing API Endpoints (Phase 4)
 
