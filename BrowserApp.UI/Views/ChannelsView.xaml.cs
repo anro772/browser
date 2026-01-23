@@ -15,10 +15,6 @@ public partial class ChannelsView : FluentWindow
     public ChannelsView()
     {
         InitializeComponent();
-
-        // Add converters to resources
-        Resources.Add("BoolToVisibilityConverter", new BoolToVisibilityConverter());
-        Resources.Add("CountToVisibilityConverter", new CountToVisibilityConverter());
     }
 
     public ChannelsView(ChannelsViewModel viewModel) : this()

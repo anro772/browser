@@ -46,7 +46,8 @@
       "Bash(Select-String -Pattern \"Applying|Done|success|error\" -CaseSensitive:$false)",
       "Bash(docker volume rm:*)",
       "Bash(docker volume ls:*)",
-      "Bash(docker logs:*)"
+      "Bash(docker logs:*)",
+      "Bash(netstat:*)"
     ],
     "deny": [],
     "ask": []

@@ -205,7 +205,7 @@ public partial class ChannelsViewModel : ObservableObject
     {
         // Show create channel dialog
         var (name, description, password) = await ShowCreateChannelDialogAsync();
-        if (string.IsNullOrEmpty(name) || string.IsNullOrEmpty(password)) return;
+        if (string.IsNullOrEmpty(name)) return; // Dialog handles validation
 
         IsLoading = true;
         StatusMessage = $"Creating channel '{name}'...";
@@ -223,18 +223,33 @@ public partial class ChannelsViewModel : ObservableObject
 
             if (result != null)
             {
-                StatusMessage = $"Channel '{name}' created!";
+                StatusMessage = $"Channel '{name}' created successfully!";
+                MessageBox.Show(
+                    $"Channel '{name}' has been created successfully!",
+                    "Channel Created",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
                 await LoadChannelsAsync();
             }
             else
             {
                 StatusMessage = "Failed to create channel.";
+                MessageBox.Show(
+                    "Failed to create channel. Please try again.",
+                    "Creation Failed",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
             }
         }
         catch (Exception ex)
         {
             StatusMessage = $"Error creating channel: {ex.Message}";
             ErrorLogger.LogError($"Failed to create channel '{name}'", ex);
+            MessageBox.Show(
+                $"Error creating channel: {ex.Message}",
+                "Error",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
         }
         finally
         {
@@ -268,10 +283,20 @@ public partial class ChannelsViewModel : ObservableObject
             "");
 
         var password = Microsoft.VisualBasic.Interaction.InputBox(
-            "Enter channel password:",
+            "Enter channel password (minimum 4 characters):",
             "Create Channel",
             "");
-        if (string.IsNullOrEmpty(password)) return Task.FromResult<(string, string, string)>(("", "", ""));
+
+        // Validate password length (server requires minimum 4 characters)
+        if (string.IsNullOrEmpty(password) || password.Length < 4)
+        {
+            MessageBox.Show(
+                "Password must be at least 4 characters long.",
+                "Invalid Password",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+            return Task.FromResult<(string, string, string)>(("", "", ""));
+        }
 
         return Task.FromResult((name, description, password));
     }
