@@ -36,7 +36,7 @@ public class ChannelService : IChannelService
         // Hash password
         var passwordHash = PasswordHasher.HashPassword(request.Password);
 
-        // Create channel
+        // Create channel and add owner as first member in a transaction
         var entity = ChannelMapper.ToEntity(request, owner.Id, passwordHash);
         var savedEntity = await _channelRepository.AddAsync(entity);
 
@@ -49,6 +49,9 @@ public class ChannelService : IChannelService
             LastSyncedAt = DateTime.UtcNow
         };
         await _channelRepository.AddMemberAsync(membership);
+
+        // Increment member count for the owner
+        await _channelRepository.IncrementMemberCountAsync(savedEntity.Id);
 
         // Reload with owner navigation
         savedEntity = await _channelRepository.GetByIdAsync(savedEntity.Id);

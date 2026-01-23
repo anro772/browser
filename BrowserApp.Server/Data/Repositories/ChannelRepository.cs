@@ -77,12 +77,25 @@ public class ChannelRepository : IChannelRepository
 
         if (!string.IsNullOrWhiteSpace(query))
         {
+            // Escape SQL wildcards to prevent wildcard injection
+            var escapedQuery = EscapeSqlWildcards(query);
             queryable = queryable.Where(c =>
-                EF.Functions.ILike(c.Name, $"%{query}%") ||
-                EF.Functions.ILike(c.Description, $"%{query}%"));
+                EF.Functions.ILike(c.Name, $"%{escapedQuery}%") ||
+                EF.Functions.ILike(c.Description, $"%{escapedQuery}%"));
         }
 
         return queryable;
+    }
+
+    /// <summary>
+    /// Escapes SQL wildcard characters in a search query.
+    /// </summary>
+    private static string EscapeSqlWildcards(string query)
+    {
+        return query
+            .Replace("\\", "\\\\")
+            .Replace("%", "\\%")
+            .Replace("_", "\\_");
     }
 
     public async Task<ChannelEntity> AddAsync(ChannelEntity entity)
@@ -218,24 +231,22 @@ public class ChannelRepository : IChannelRepository
 
     public async Task IncrementMemberCountAsync(Guid channelId)
     {
-        var channel = await _context.Channels.FindAsync(channelId);
-        if (channel != null)
-        {
-            channel.MemberCount++;
-            channel.UpdatedAt = DateTime.UtcNow;
-            await _context.SaveChangesAsync();
-        }
+        // Use raw SQL for atomic update to prevent race conditions
+        await _context.Database.ExecuteSqlInterpolatedAsync(
+            $@"UPDATE ""Channels""
+               SET ""MemberCount"" = ""MemberCount"" + 1,
+                   ""UpdatedAt"" = {DateTime.UtcNow}
+               WHERE ""Id"" = {channelId}");
     }
 
     public async Task DecrementMemberCountAsync(Guid channelId)
     {
-        var channel = await _context.Channels.FindAsync(channelId);
-        if (channel != null && channel.MemberCount > 0)
-        {
-            channel.MemberCount--;
-            channel.UpdatedAt = DateTime.UtcNow;
-            await _context.SaveChangesAsync();
-        }
+        // Use raw SQL for atomic update to prevent race conditions
+        await _context.Database.ExecuteSqlInterpolatedAsync(
+            $@"UPDATE ""Channels""
+               SET ""MemberCount"" = GREATEST(""MemberCount"" - 1, 0),
+                   ""UpdatedAt"" = {DateTime.UtcNow}
+               WHERE ""Id"" = {channelId}");
     }
 
     #endregion

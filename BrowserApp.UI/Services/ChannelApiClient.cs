@@ -9,9 +9,10 @@ namespace BrowserApp.UI.Services;
 /// <summary>
 /// HTTP client for channel API operations.
 /// </summary>
-public class ChannelApiClient : IChannelApiClient
+public class ChannelApiClient : IChannelApiClient, IDisposable
 {
     private readonly HttpClient _httpClient;
+    private bool _disposed;
 
     public ChannelApiClient(IConfiguration configuration)
     {
@@ -177,5 +178,15 @@ public class ChannelApiClient : IChannelApiClient
         {
             return false;
         }
+    }
+
+    public void Dispose()
+    {
+        if (!_disposed)
+        {
+            _httpClient?.Dispose();
+            _disposed = true;
+        }
+        GC.SuppressFinalize(this);
     }
 }
