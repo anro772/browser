@@ -1,6 +1,7 @@
 using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Microsoft.Extensions.DependencyInjection;
 using BrowserApp.Core.Models;
 using BrowserApp.Data.Interfaces;
 using BrowserApp.UI.Services;
@@ -14,8 +15,7 @@ namespace BrowserApp.UI.ViewModels;
 public partial class SettingsViewModel : ObservableObject
 {
     private readonly SettingsService _settingsService;
-    private readonly IBrowsingHistoryRepository _historyRepository;
-    private readonly INetworkLogRepository _networkLogRepository;
+    private readonly IServiceScopeFactory _scopeFactory;
 
     [ObservableProperty]
     private PrivacyMode _selectedPrivacyMode;
@@ -38,12 +38,10 @@ public partial class SettingsViewModel : ObservableObject
 
     public SettingsViewModel(
         SettingsService settingsService,
-        IBrowsingHistoryRepository historyRepository,
-        INetworkLogRepository networkLogRepository)
+        IServiceScopeFactory scopeFactory)
     {
         _settingsService = settingsService;
-        _historyRepository = historyRepository;
-        _networkLogRepository = networkLogRepository;
+        _scopeFactory = scopeFactory;
 
         // Load current settings
         SelectedPrivacyMode = _settingsService.PrivacyMode;
@@ -85,7 +83,9 @@ public partial class SettingsViewModel : ObservableObject
         {
             try
             {
-                await _historyRepository.ClearAllAsync();
+                using var scope = _scopeFactory.CreateScope();
+                var historyRepository = scope.ServiceProvider.GetRequiredService<IBrowsingHistoryRepository>();
+                await historyRepository.ClearAllAsync();
                 MessageBox.Show(
                     "Browsing history has been cleared.",
                     "Success",
@@ -119,7 +119,9 @@ public partial class SettingsViewModel : ObservableObject
         {
             try
             {
-                await _networkLogRepository.ClearAllAsync();
+                using var scope = _scopeFactory.CreateScope();
+                var networkLogRepository = scope.ServiceProvider.GetRequiredService<INetworkLogRepository>();
+                await networkLogRepository.ClearAllAsync();
                 MessageBox.Show(
                     "Network logs have been cleared.",
                     "Success",

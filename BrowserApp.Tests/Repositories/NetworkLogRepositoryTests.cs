@@ -189,6 +189,107 @@ public class NetworkLogRepositoryTests : IDisposable
         Assert.Equal(0, await _repository.GetCountAsync());
     }
 
+    [Fact]
+    public async Task GetTopBlockedDomainsAsync_ReturnsCorrectDomainsAndCounts()
+    {
+        // Add blocked requests from different domains
+        await _repository.AddAsync(CreateTestEntity("https://tracker.com/script1.js", wasBlocked: true));
+        await _repository.AddAsync(CreateTestEntity("https://tracker.com/script2.js", wasBlocked: true));
+        await _repository.AddAsync(CreateTestEntity("https://tracker.com/script3.js", wasBlocked: true));
+        await _repository.AddAsync(CreateTestEntity("https://ads.com/ad1.js", wasBlocked: true));
+        await _repository.AddAsync(CreateTestEntity("https://ads.com/ad2.js", wasBlocked: true));
+        await _repository.AddAsync(CreateTestEntity("https://analytics.com/track.js", wasBlocked: true));
+        await _repository.AddAsync(CreateTestEntity("https://example.com/page.html", wasBlocked: false)); // Not blocked
+
+        var topDomains = await _repository.GetTopBlockedDomainsAsync(3);
+
+        Assert.Equal(3, topDomains.Count);
+        Assert.Equal("tracker.com", topDomains[0].Domain);
+        Assert.Equal(3, topDomains[0].Count);
+        Assert.Equal("ads.com", topDomains[1].Domain);
+        Assert.Equal(2, topDomains[1].Count);
+        Assert.Equal("analytics.com", topDomains[2].Domain);
+        Assert.Equal(1, topDomains[2].Count);
+    }
+
+    [Fact]
+    public async Task GetTopBlockedDomainsAsync_ReturnsEmptyList_WhenNoBlockedRequests()
+    {
+        await _repository.AddAsync(CreateTestEntity("https://example.com/page.html", wasBlocked: false));
+
+        var topDomains = await _repository.GetTopBlockedDomainsAsync(5);
+
+        Assert.Empty(topDomains);
+    }
+
+    [Fact]
+    public async Task GetResourceTypeBreakdownAsync_ReturnsCorrectBreakdown()
+    {
+        await _repository.AddAsync(CreateTestEntity("https://a.com/1.js", resourceType: "Script"));
+        await _repository.AddAsync(CreateTestEntity("https://a.com/2.js", resourceType: "Script"));
+        await _repository.AddAsync(CreateTestEntity("https://a.com/3.js", resourceType: "Script"));
+        await _repository.AddAsync(CreateTestEntity("https://a.com/1.png", resourceType: "Image"));
+        await _repository.AddAsync(CreateTestEntity("https://a.com/2.png", resourceType: "Image"));
+        await _repository.AddAsync(CreateTestEntity("https://a.com/page.html", resourceType: "Document"));
+
+        var breakdown = await _repository.GetResourceTypeBreakdownAsync();
+
+        Assert.Equal(3, breakdown.Count);
+        Assert.Equal("Script", breakdown[0].Type);
+        Assert.Equal(3, breakdown[0].Count);
+        Assert.Equal("Image", breakdown[1].Type);
+        Assert.Equal(2, breakdown[1].Count);
+        Assert.Equal("Document", breakdown[2].Type);
+        Assert.Equal(1, breakdown[2].Count);
+    }
+
+    [Fact]
+    public async Task GetResourceTypeBreakdownAsync_GroupsAllResourceTypes()
+    {
+        // All entries have resource types since it's a required field
+        await _repository.AddAsync(CreateTestEntity("https://a.com/1.js", resourceType: "Script"));
+        await _repository.AddAsync(CreateTestEntity("https://a.com/2.js", resourceType: "Script"));
+        await _repository.AddAsync(CreateTestEntity("https://a.com/page.html", resourceType: "Document"));
+
+        var breakdown = await _repository.GetResourceTypeBreakdownAsync();
+
+        Assert.Equal(2, breakdown.Count);
+        // Ordered by count descending
+        Assert.Equal("Script", breakdown[0].Type);
+        Assert.Equal(2, breakdown[0].Count);
+        Assert.Equal("Document", breakdown[1].Type);
+        Assert.Equal(1, breakdown[1].Count);
+    }
+
+    [Fact]
+    public async Task GetBlockedTodayCountAsync_ReturnsOnlyTodaysBlocked()
+    {
+        // Add requests from today
+        await _repository.AddAsync(CreateTestEntity("https://today1.com", wasBlocked: true));
+        await _repository.AddAsync(CreateTestEntity("https://today2.com", wasBlocked: true));
+        await _repository.AddAsync(CreateTestEntity("https://today3.com", wasBlocked: false)); // Not blocked
+
+        // Add a request from yesterday
+        var yesterday = CreateTestEntity("https://yesterday.com", wasBlocked: true);
+        yesterday.Timestamp = DateTime.Today.AddDays(-1);
+        await _repository.AddAsync(yesterday);
+
+        var blockedToday = await _repository.GetBlockedTodayCountAsync();
+
+        Assert.Equal(2, blockedToday);
+    }
+
+    [Fact]
+    public async Task GetBlockedTodayCountAsync_ReturnsZero_WhenNoBlockedToday()
+    {
+        // Add only non-blocked requests
+        await _repository.AddAsync(CreateTestEntity("https://example.com", wasBlocked: false));
+
+        var blockedToday = await _repository.GetBlockedTodayCountAsync();
+
+        Assert.Equal(0, blockedToday);
+    }
+
     private async Task SeedTestData()
     {
         var entities = new[]

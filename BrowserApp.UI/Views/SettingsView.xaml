@@ -80,7 +80,7 @@
                         Margin="0,0,0,12">
                     <StackPanel>
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
-                            <ui:SymbolIcon Symbol="Server24"
+                            <ui:SymbolIcon Symbol="Globe24"
                                            FontSize="20"
                                            Foreground="#0078D4"
                                            Margin="0,0,8,0"/>

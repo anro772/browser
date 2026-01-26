@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Microsoft.Extensions.DependencyInjection;
 using BrowserApp.Core.Models;
 using BrowserApp.Data.Interfaces;
 
@@ -13,7 +14,7 @@ namespace BrowserApp.UI.ViewModels;
 /// </summary>
 public partial class PrivacyDashboardViewModel : ObservableObject
 {
-    private readonly INetworkLogRepository _networkLogRepository;
+    private readonly IServiceScopeFactory _scopeFactory;
 
     [ObservableProperty]
     private PrivacyMode _currentPrivacyMode = PrivacyMode.Standard;
@@ -36,9 +37,9 @@ public partial class PrivacyDashboardViewModel : ObservableObject
     [ObservableProperty]
     private bool _isLoading;
 
-    public PrivacyDashboardViewModel(INetworkLogRepository networkLogRepository)
+    public PrivacyDashboardViewModel(IServiceScopeFactory scopeFactory)
     {
-        _networkLogRepository = networkLogRepository;
+        _scopeFactory = scopeFactory;
     }
 
     /// <summary>
@@ -51,12 +52,15 @@ public partial class PrivacyDashboardViewModel : ObservableObject
 
         try
         {
+            using var scope = _scopeFactory.CreateScope();
+            var networkLogRepository = scope.ServiceProvider.GetRequiredService<INetworkLogRepository>();
+
             // Get stats in parallel
-            var blockedTodayTask = _networkLogRepository.GetBlockedTodayCountAsync();
-            var totalBlockedTask = _networkLogRepository.GetBlockedCountAsync();
-            var dataSavedTask = _networkLogRepository.GetTotalSizeAsync();
-            var topDomainsTask = _networkLogRepository.GetTopBlockedDomainsAsync(5);
-            var resourceTypesTask = _networkLogRepository.GetResourceTypeBreakdownAsync();
+            var blockedTodayTask = networkLogRepository.GetBlockedTodayCountAsync();
+            var totalBlockedTask = networkLogRepository.GetBlockedCountAsync();
+            var dataSavedTask = networkLogRepository.GetTotalSizeAsync();
+            var topDomainsTask = networkLogRepository.GetTopBlockedDomainsAsync(5);
+            var resourceTypesTask = networkLogRepository.GetResourceTypeBreakdownAsync();
 
             await Task.WhenAll(blockedTodayTask, totalBlockedTask, dataSavedTask, topDomainsTask, resourceTypesTask);
 
@@ -74,7 +78,7 @@ public partial class PrivacyDashboardViewModel : ObservableObject
 
                 // Update top blocked domains
                 TopBlockedDomains.Clear();
-                var maxCount = topDomains.FirstOrDefault().Count;
+                var maxCount = topDomains.Count > 0 ? topDomains[0].Count : 0;
                 foreach (var (domain, count) in topDomains)
                 {
                     TopBlockedDomains.Add(new BlockedDomainItem

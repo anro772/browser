@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Microsoft.Extensions.DependencyInjection;
 using BrowserApp.Data.Entities;
 using BrowserApp.Data.Interfaces;
 using BrowserApp.Core.Interfaces;
@@ -14,7 +15,7 @@ namespace BrowserApp.UI.ViewModels;
 /// </summary>
 public partial class HistoryViewModel : ObservableObject
 {
-    private readonly IBrowsingHistoryRepository _historyRepository;
+    private readonly IServiceScopeFactory _scopeFactory;
     private readonly INavigationService _navigationService;
 
     [ObservableProperty]
@@ -32,10 +33,10 @@ public partial class HistoryViewModel : ObservableObject
     private const int MaxDisplayedEntries = 200;
 
     public HistoryViewModel(
-        IBrowsingHistoryRepository historyRepository,
+        IServiceScopeFactory scopeFactory,
         INavigationService navigationService)
     {
-        _historyRepository = historyRepository;
+        _scopeFactory = scopeFactory;
         _navigationService = navigationService;
     }
 
@@ -49,7 +50,9 @@ public partial class HistoryViewModel : ObservableObject
 
         try
         {
-            var entries = await _historyRepository.GetRecentAsync(MaxDisplayedEntries);
+            using var scope = _scopeFactory.CreateScope();
+            var historyRepository = scope.ServiceProvider.GetRequiredService<IBrowsingHistoryRepository>();
+            var entries = await historyRepository.GetRecentAsync(MaxDisplayedEntries);
 
             Application.Current?.Dispatcher.Invoke(() =>
             {
@@ -80,15 +83,18 @@ public partial class HistoryViewModel : ObservableObject
 
         try
         {
+            using var scope = _scopeFactory.CreateScope();
+            var historyRepository = scope.ServiceProvider.GetRequiredService<IBrowsingHistoryRepository>();
+
             IEnumerable<BrowsingHistoryEntity> entries;
 
             if (string.IsNullOrWhiteSpace(SearchQuery))
             {
-                entries = await _historyRepository.GetRecentAsync(MaxDisplayedEntries);
+                entries = await historyRepository.GetRecentAsync(MaxDisplayedEntries);
             }
             else
             {
-                entries = await _historyRepository.SearchAsync(SearchQuery);
+                entries = await historyRepository.SearchAsync(SearchQuery);
             }
 
             Application.Current?.Dispatcher.Invoke(() =>
@@ -137,7 +143,9 @@ public partial class HistoryViewModel : ObservableObject
         {
             try
             {
-                await _historyRepository.ClearAllAsync();
+                using var scope = _scopeFactory.CreateScope();
+                var historyRepository = scope.ServiceProvider.GetRequiredService<IBrowsingHistoryRepository>();
+                await historyRepository.ClearAllAsync();
 
                 Application.Current?.Dispatcher.Invoke(() =>
                 {
