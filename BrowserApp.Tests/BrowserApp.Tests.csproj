@@ -26,6 +26,7 @@
   <ItemGroup>
     <ProjectReference Include="..\BrowserApp.Core\BrowserApp.Core.csproj" />
     <ProjectReference Include="..\BrowserApp.Data\BrowserApp.Data.csproj" />
+    <ProjectReference Include="..\BrowserApp.UI\BrowserApp.UI.csproj" />
   </ItemGroup>
 
 </Project>
