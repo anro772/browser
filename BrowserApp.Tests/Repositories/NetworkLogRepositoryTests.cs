@@ -165,11 +165,13 @@ public class NetworkLogRepositoryTests : IDisposable
     }
 
     [Fact]
-    public async Task GetTotalSizeAsync_ReturnsSumOfSizes()
+    public async Task GetTotalSizeAsync_ReturnsSumOfBlockedSizes()
     {
-        await _repository.AddAsync(CreateTestEntity("https://a.com", size: 100));
-        await _repository.AddAsync(CreateTestEntity("https://b.com", size: 200));
-        await _repository.AddAsync(CreateTestEntity("https://c.com", size: null));
+        // GetTotalSizeAsync sums only blocked requests (represents data savings)
+        await _repository.AddAsync(CreateTestEntity("https://a.com", size: 100, wasBlocked: true));
+        await _repository.AddAsync(CreateTestEntity("https://b.com", size: 200, wasBlocked: true));
+        await _repository.AddAsync(CreateTestEntity("https://c.com", size: null, wasBlocked: true));
+        await _repository.AddAsync(CreateTestEntity("https://d.com", size: 500, wasBlocked: false)); // Not counted
 
         var totalSize = await _repository.GetTotalSizeAsync();
 

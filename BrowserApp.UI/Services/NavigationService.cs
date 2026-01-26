@@ -154,7 +154,8 @@ public class NavigationService : INavigationService
         {
             Url = CurrentUrl,
             IsSuccess = e.IsSuccess,
-            HttpStatusCode = e.HttpStatusCode
+            HttpStatusCode = e.HttpStatusCode,
+            Title = _coreWebView2?.DocumentTitle
         });
 
         // Execute content injections if navigation was successful

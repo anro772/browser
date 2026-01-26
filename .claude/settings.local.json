@@ -52,7 +52,9 @@
       "Bash(timeout:*)",
       "WebFetch(domain:wpfui.lepo.co)",
       "Bash(dotnet ef migrations has-pending-model-changes:*)",
-      "Bash(PGPASSWORD=1234 psql:*)"
+      "Bash(PGPASSWORD=1234 psql:*)",
+      "Bash(git show:*)",
+      "Bash(dotnet ef migrations:*)"
     ],
     "deny": [],
     "ask": []

@@ -2,6 +2,8 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using BrowserApp.Core.Interfaces;
 using BrowserApp.Core.Models;
+using BrowserApp.Data.Entities;
+using BrowserApp.Data.Interfaces;
 
 namespace BrowserApp.UI.ViewModels;
 
@@ -13,6 +15,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
 {
     private readonly INavigationService _navigationService;
     private readonly ISearchEngineService _searchEngineService;
+    private readonly IBrowsingHistoryRepository _historyRepository;
     private bool _isDisposed;
 
     [ObservableProperty]
@@ -32,10 +35,12 @@ public partial class MainViewModel : ObservableObject, IDisposable
 
     public MainViewModel(
         INavigationService navigationService,
-        ISearchEngineService searchEngineService)
+        ISearchEngineService searchEngineService,
+        IBrowsingHistoryRepository historyRepository)
     {
         _navigationService = navigationService;
         _searchEngineService = searchEngineService;
+        _historyRepository = historyRepository;
 
         // Subscribe to navigation events
         _navigationService.SourceChanged += OnSourceChanged;
@@ -117,10 +122,28 @@ public partial class MainViewModel : ObservableObject, IDisposable
         IsLoading = true;
     }
 
-    private void OnNavigationCompleted(object? sender, NavigationEventArgs e)
+    private async void OnNavigationCompleted(object? sender, NavigationEventArgs e)
     {
         IsLoading = false;
         NotifyNavigationStateChanged();
+
+        // Record browsing history for successful navigations
+        if (e.IsSuccess && !string.IsNullOrEmpty(e.Url))
+        {
+            try
+            {
+                await _historyRepository.AddAsync(new BrowsingHistoryEntity
+                {
+                    Url = e.Url,
+                    Title = e.Title,
+                    VisitedAt = DateTime.UtcNow
+                });
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[MainViewModel] Failed to record history: {ex.Message}");
+            }
+        }
     }
 
     private void NotifyNavigationStateChanged()
