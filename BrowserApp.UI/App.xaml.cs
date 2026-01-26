@@ -86,6 +86,16 @@ public partial class App : Application
 
         ErrorLogger.LogInfo("Network logger started");
 
+        // Wire RequestInterceptor to NetworkLogger so ALL requests are logged to DB
+        // This ensures logging happens regardless of which UI views are loaded
+        var requestInterceptor = _serviceProvider.GetRequiredService<IRequestInterceptor>();
+        requestInterceptor.RequestCaptured += async (sender, request) =>
+        {
+            await networkLogger.LogRequestAsync(request);
+        };
+
+        ErrorLogger.LogInfo("Request interceptor wired to network logger");
+
         ErrorLogger.LogInfo("Channel sync service initialized (manual sync only)");
 
         // Show main window

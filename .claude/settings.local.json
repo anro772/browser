@@ -60,7 +60,12 @@
       "WebFetch(domain:medium.com)",
       "WebFetch(domain:covisian.com)",
       "WebFetch(domain:www.starkinsider.com)",
-      "Bash(dotnet run:*)"
+      "Bash(dotnet run:*)",
+      "Bash(Get-ChildItem \"$env:LOCALAPPDATA\\\\BrowserApp\\\\Logs\" -ErrorAction SilentlyContinue)",
+      "Bash(Sort-Object LastWriteTime -Descending)",
+      "Bash(Select-Object -First 3)",
+      "Bash(Get-Content $_FullName -Tail 100 })",
+      "Bash(sqlite3:*)"
     ],
     "deny": [],
     "ask": []
