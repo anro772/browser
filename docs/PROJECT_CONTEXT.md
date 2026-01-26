@@ -7,9 +7,8 @@
 ## Project Vision
 
 > **This browser must be visually stunning and modern - like Comet Browser.**
-> It is NOT just a business tool. The end product should appeal to:
-> 1. **Power Users** - Who want a beautiful, fast browser with AI-powered privacy controls
-> 2. **Businesses** - Who need policy enforcement via channels
+> 1. **Power Users** - Beautiful, fast browser with AI-powered privacy controls
+> 2. **Businesses** - Policy enforcement via channels
 >
 > **Design Goal:** Modern consumer app that happens to have business features.
 
@@ -24,860 +23,356 @@ A Windows-native, Chromium-based browser with:
 
 ### Key Decisions
 
-- **Database:** PostgreSQL for server, SQLite for client
-- **Deployment:** Docker for easy portability
-- **Auth:** Skip for now - just username field (add proper auth later)
-- **Marketplace:** Upload/download rules with user attribution
-- **Channels:** Phase 5 - enforced rules for businesses
-- **AI Copilot:** Phase 6 - Ollama integration
+- **Database:** PostgreSQL (server), SQLite (client)
+- **Auth:** Username field only (proper auth later)
+- **Development:** Run locally, Docker for deployment only
 
 ---
 
 ## Tech Stack
 
-### Client Application
-- **Framework:** C# / .NET 8
-- **UI:** WPF with WPF UI (Fluent Design 2.0)
-- **Browser Engine:** WebView2 Evergreen Runtime (Edge/Chromium)
-- **Database:** SQLite with Entity Framework Core
-- **Architecture:** MVVM pattern
-
-### Server (Self-Hosted)
-- **API:** .NET 8 Web API (REST)
-- **Database:** PostgreSQL
-- **LLM:** Ollama (7B model - Llama 3.2 or Mistral)
-- **Deployment:** Docker containers
+| Layer | Technology |
+|-------|------------|
+| **Client UI** | WPF + WPF UI (Fluent Design 2.0) |
+| **Browser Engine** | WebView2 (Edge/Chromium) |
+| **Client DB** | SQLite + EF Core |
+| **Server API** | .NET 8 Web API |
+| **Server DB** | PostgreSQL |
+| **LLM** | Ollama (Llama 3.2 / Mistral 7B) |
+| **Architecture** | MVVM pattern |
 
 ### Key Libraries
-- **WPF UI** (lepoco/wpfui) - Modern Fluent controls, Mica/Acrylic
+- **WPF UI** (lepoco/wpfui) - Modern Fluent controls
 - **Microsoft.Web.WebView2** - Browser engine
-- **Microsoft.EntityFrameworkCore.Sqlite** - Local data
+- **Microsoft.EntityFrameworkCore.Sqlite** - Client data
 - **Npgsql.EntityFrameworkCore.PostgreSQL** - Server data
+- **CommunityToolkit.Mvvm** - MVVM helpers
 
 ---
 
-## Development Tools
+## Phase Status
 
-### Skills (User-Invocable via `/command`)
-
-| Skill | Command | When to Use |
-|-------|---------|-------------|
-| Feature Development | `/feature-dev` | Starting new features - guided development with architecture focus |
-| Frontend Design | `/frontend-design` | UI work - creates distinctive, production-grade interfaces |
-| Create Commit | `/commit` | After completing work |
-| Commit + PR | `/commit-push-pr` | Ready for review |
-| Code Review | `/code-review` | Reviewing PRs |
-
-**Important:** Always use `/feature-dev` for new features and `/frontend-design` for UI work.
-
-### Task Agents (via Task tool)
-
-| Agent | Type | When to Use |
-|-------|------|-------------|
-| Explore | `Explore` | Finding code, understanding structure. Levels: "quick", "medium", "very thorough" |
-| Plan | `Plan` | Designing implementation approach, step-by-step plans |
-| Code Architect | `feature-dev:code-architect` | Design feature architecture - specific files, data flows |
-| Code Explorer | `feature-dev:code-explorer` | Deep analysis - trace execution paths, map layers |
-| Code Reviewer | `feature-dev:code-reviewer` | Review for bugs, security, quality. Use after EVERY implementation |
-
-### MCP Servers & Tools
-
-> **Important:** Use the **plugin versions** of MCP tools (prefixed with `mcp__plugin_`)
-
-#### context7 - Library Documentation
-
-**Purpose:** Fetch up-to-date documentation for any library
-
-**Tools:**
-- `mcp__plugin_context7_context7__resolve-library-id` - Find library ID
-- `mcp__plugin_context7_context7__query-docs` - Query documentation
-
-**Example Usage:**
-```
-1. resolve-library-id:
-   libraryName="WebView2"
-   query="how to intercept network requests"
-
-2. query-docs:
-   libraryId="/microsoftedge/webview2browser" (from step 1)
-   query="intercept HTTP requests"
-```
-
-#### playwright - Browser Automation
-
-**Purpose:** Automate browser testing and interactions
-
-**Key Tools:**
-- `browser_navigate` - Go to URL
-- `browser_snapshot` - Accessibility snapshot (better than screenshot)
-- `browser_click` - Click elements
-- `browser_type` - Type text
-- `browser_take_screenshot` - Capture screenshot
-- `browser_console_messages` - Get console logs
-- `browser_network_requests` - Get network activity
-
-**Example Usage:**
-```
-1. browser_navigate: url="http://localhost:5000"
-2. browser_snapshot: Get page structure
-3. browser_click: element="Submit button", ref="button[0]"
-4. browser_take_screenshot: filename="test-result.png"
-```
-
-#### shadcn-ui - UI Component Reference
-
-**Purpose:** Access shadcn/ui v4 component source code and demos
-
-**Tools:**
-- `mcp__shadcn-ui__list_components` - List all 46 available components
-- `mcp__shadcn-ui__get_component_demo` - Get usage demo code
-- `mcp__shadcn-ui__list_blocks` - List pre-built UI blocks
-
-**Note:** shadcn-ui is React/Tailwind-based. Use for **design patterns only**, adapt to WPF.
+| Phase | Status | Key Features |
+|-------|--------|--------------|
+| **1. Core Browser** | ✅ | WebView2, navigation, SQLite, MVVM |
+| **2. Network Monitoring** | ✅ | RequestInterceptor, NetworkLogger, filtering |
+| **3. Rule System** | ✅ | RuleEngine, CSS/JS injection, templates |
+| **4. Marketplace** | ✅ | Server API, MarketplaceView, rule sync |
+| **5. Channels** | ✅ | Channel CRUD, join/leave, audit logging |
+| **6. AI Integration** | 🔄 Current | Ollama, CopilotSidebar, rule generation |
+| **7. Profiles** | ⏳ | Profile switching, settings panel |
+| **8. Polish** | ⏳ | Bug fixes, performance, demo prep |
 
 ---
 
-## Standard Workflows
+## Local Development (Preferred)
 
-### Workflow 1: Implementing a New Feature
+> **IMPORTANT:** Run locally for development. Docker is for deployment only.
 
-```
-┌─────────────────────────────────────────┐
-│ New Feature Request                      │
-└─────────────────────────────────────────┘
-            │
-            ▼
-    ┌──────────────────────┐
-    │ 1. CODE-EXPLORER     │  Analyze existing code
-    │ (Task agent)         │  relevant to feature
-    └──────────────────────┘
-            │
-            ▼
-    ┌──────────────────────┐
-    │ 2. CODE-ARCHITECT    │  Design architecture
-    │ (Task agent)         │  files, components, flows
-    └──────────────────────┘
-            │
-            ▼
-    ┌──────────────────────┐
-    │ 3. CONTEXT7          │  Query documentation
-    │ (MCP)                │  for APIs needed
-    └──────────────────────┘
-            │
-            ▼
-    ┌──────────────────────┐
-    │ 4. IMPLEMENT         │  Write code with TDD
-    │                      │  (test first)
-    └──────────────────────┘
-            │
-            ▼
-    ┌──────────────────────┐
-    │ 5. CODE-REVIEWER     │  Deep quality check
-    │ (Task agent)         │  bugs, security, quality
-    └──────────────────────┘
-            │
-            ▼
-    ┌──────────────────────┐
-    │ 6. PLAYWRIGHT        │  Test functionality
-    │ (MCP)                │  visual verification
-    └──────────────────────┘
-            │
-            ▼
-    ┌──────────────────────┐
-    │ 7. /COMMIT           │  Commit changes
-    │ (Skill)              │
-    └──────────────────────┘
-            │
-            ▼
-         DONE
+### Prerequisites
+- PostgreSQL installed locally
+- Connection: `localhost:5432`, database `browserapp`, user `postgres`, password `1234`
+
+### Quick Start
+```bash
+# Terminal 1: Start server
+dotnet run --project BrowserApp.Server
+
+# Terminal 2: Start client
+dotnet run --project BrowserApp.UI
 ```
 
-### Workflow 2: Fixing a Bug
+### URLs
+- **Server:** http://localhost:5000
+- **Swagger:** http://localhost:5000/swagger
+- **Database GUI:** DBeaver or pgAdmin (localhost:5432, browserapp, postgres/1234)
 
-```
-1. EXPLORE      → Find relevant code (Explore agent)
-2. CONTEXT7     → Check API documentation if needed
-3. TEST         → Write failing test (TDD)
-4. FIX          → Implement fix
-5. VERIFY       → Ensure test passes
-6. REVIEW       → Check for regressions (code-reviewer)
-```
-
-### Workflow 3: Research Unknown API
-
-```
-1. context7: resolve-library-id for the library
-2. context7: query-docs with specific question
-3. Apply knowledge to implementation
-```
-
-### Workflow 4: Test UI Visually
-
-```
-1. playwright: browser_navigate to test page
-2. playwright: browser_snapshot (accessibility tree)
-3. playwright: browser_click / browser_type (interact)
-4. playwright: browser_take_screenshot (visual check)
+### Docker (Deployment Only)
+```bash
+docker compose up --build    # Start
+docker compose down          # Stop
 ```
 
 ---
 
-## Project Structure
+## Key Files Reference
 
-```
-BrowserApp/
-├── BrowserApp.sln
-│
-├── BrowserApp.UI/                      # WPF Application
-│   ├── App.xaml / App.xaml.cs
-│   ├── MainWindow.xaml / MainWindow.xaml.cs
-│   │
-│   ├── Views/
-│   │   ├── SidebarPanel.xaml
-│   │   ├── CopilotView.xaml
-│   │   ├── NetworkMonitorView.xaml
-│   │   ├── RuleBuilderView.xaml
-│   │   ├── SettingsView.xaml
-│   │   ├── MarketplaceView.xaml
-│   │   └── ChannelManagerView.xaml
-│   │
-│   ├── ViewModels/
-│   │   ├── MainViewModel.cs
-│   │   ├── SidebarViewModel.cs
-│   │   ├── NetworkMonitorViewModel.cs
-│   │   └── SettingsViewModel.cs
-│   │
-│   ├── Styles/
-│   │   ├── BasicTheme.xaml
-│   │   └── Colors.xaml
-│   │
-│   └── Resources/
-│       └── DefaultRules/               # Pre-built templates
-│
-├── BrowserApp.Core/                    # Business Logic
-│   ├── Services/
-│   │   ├── NavigationService.cs
-│   │   ├── RequestInterceptor.cs
-│   │   ├── RuleEngine.cs
-│   │   ├── BlockingService.cs
-│   │   ├── CSSInjector.cs
-│   │   ├── JSInjector.cs
-│   │   └── RuleSyncService.cs
-│   │
-│   ├── Models/
-│   │   ├── Rule.cs
-│   │   ├── NetworkRequest.cs
-│   │   ├── Profile.cs
-│   │   └── Channel.cs
-│   │
-│   └── Interfaces/
-│       ├── IRuleEngine.cs
-│       └── INetworkService.cs
-│
-├── BrowserApp.Data/                    # Data Access (Client)
-│   ├── BrowserDbContext.cs
-│   ├── Entities/
-│   │   ├── RuleEntity.cs
-│   │   ├── ProfileEntity.cs
-│   │   └── NetworkLogEntity.cs
-│   └── Repositories/
-│       └── RuleRepository.cs
-│
-├── BrowserApp.AI/                      # AI Integration
-│   ├── LLMClient.cs
-│   └── RuleGeneratorService.cs
-│
-├── BrowserApp.Server/                  # Server Application
-│   ├── Controllers/
-│   │   ├── MarketplaceController.cs
-│   │   ├── ChannelsController.cs
-│   │   └── AIController.cs
-│   ├── Services/
-│   │   └── OllamaService.cs
-│   └── Data/
-│       └── ServerDbContext.cs
-│
-└── BrowserApp.Tests/                   # Tests
-```
+### Client Application (BrowserApp.UI)
+
+| Purpose | File |
+|---------|------|
+| Entry point, DI setup | `App.xaml.cs` |
+| Main window shell | `MainWindow.xaml` / `.cs` |
+| Marketplace UI | `Views/MarketplaceView.xaml` |
+| Channels UI | `Views/ChannelsView.xaml` |
+| Password dialog | `Views/PasswordDialog.xaml` |
+| Network monitor | `Views/NetworkMonitorView.xaml` |
+| Marketplace logic | `ViewModels/MarketplaceViewModel.cs` |
+| Channels logic | `ViewModels/ChannelsViewModel.cs` |
+| Marketplace API calls | `Services/MarketplaceApiClient.cs` |
+| Channel API calls | `Services/ChannelApiClient.cs` |
+| Rule download/sync | `Services/RuleSyncService.cs` |
+| Channel membership sync | `Services/ChannelSyncService.cs` |
+| Client settings | `appsettings.json` |
+
+### Core Library (BrowserApp.Core)
+
+| Purpose | File |
+|---------|------|
+| Rule blocking logic | `Services/RuleEngine.cs` |
+| Network interception | `Services/RequestInterceptor.cs` |
+| CSS injection | `Services/CSSInjector.cs` |
+| JS injection | `Services/JSInjector.cs` |
+| API interfaces | `Interfaces/IMarketplaceApiClient.cs` |
+| | `Interfaces/IChannelApiClient.cs` |
+| | `Interfaces/IChannelSyncService.cs` |
+| | `Interfaces/IRuleSyncService.cs` |
+| Shared DTOs | `DTOs/*.cs` |
+
+### Data Layer (BrowserApp.Data)
+
+| Purpose | File |
+|---------|------|
+| Client DB context | `BrowserDbContext.cs` |
+| Rule entity | `Entities/RuleEntity.cs` |
+| Channel membership | `Entities/ChannelMembershipEntity.cs` |
+| Network log entity | `Entities/NetworkLogEntity.cs` |
+| Rule repository | `Repositories/RuleRepository.cs` |
+| Membership repository | `Repositories/ChannelMembershipRepository.cs` |
+| Migrations | `Migrations/*.cs` |
+
+### Server (BrowserApp.Server)
+
+| Purpose | File |
+|---------|------|
+| Server entry, migrations | `Program.cs` |
+| Marketplace endpoints | `Controllers/MarketplaceController.cs` |
+| Channel endpoints | `Controllers/ChannelController.cs` |
+| Health check | `Controllers/HealthController.cs` |
+| Channel business logic | `Services/ChannelService.cs` |
+| Marketplace logic | `Services/MarketplaceService.cs` |
+| Server DB context | `Data/ServerDbContext.cs` |
+| Entity mappings | `Mappers/ChannelMapper.cs` |
+| Server settings | `appsettings.Development.json` |
+| Migrations | `Data/Migrations/*.cs` |
+
+### Configuration Files
+
+| Purpose | File |
+|---------|------|
+| Solution file | `BrowserApp.sln` |
+| Docker (deployment) | `docker-compose.yml` |
+| Client config | `BrowserApp.UI/appsettings.json` |
+| Server config | `BrowserApp.Server/appsettings.Development.json` |
+| This document | `docs/PROJECT_CONTEXT.md` |
 
 ---
 
-## Architecture Overview
+## API Endpoints
 
-```
-┌─────────────────────────────────────────────────────┐
-│              Client (Browser App)                    │
-│  ┌───────────────────────────────────────────────┐  │
-│  │ WPF UI Layer (Views, Styles, Animations)      │  │
-│  └───────────────────────────────────────────────┘  │
-│  ┌───────────────────────────────────────────────┐  │
-│  │ ViewModel Layer (UI Logic, Commands)          │  │
-│  └───────────────────────────────────────────────┘  │
-│  ┌───────────────────────────────────────────────┐  │
-│  │ Service Layer (Business Logic)                │  │
-│  │  • BrowserService  • NetworkService           │  │
-│  │  • RuleEngine      • InjectionService         │  │
-│  │  • LLMClient       • SyncService              │  │
-│  └───────────────────────────────────────────────┘  │
-│  ┌───────────────────────────────────────────────┐  │
-│  │ Data Layer (SQLite - EF Core)                 │  │
-│  │  • Rules  • Profiles  • NetworkLogs           │  │
-│  └───────────────────────────────────────────────┘  │
-└─────────────────────────────────────────────────────┘
-                          │
-                  HTTP/JSON │
-                          ▼
-┌─────────────────────────────────────────────────────┐
-│              Server (Self-Hosted)                    │
-│  ┌───────────────────────────────────────────────┐  │
-│  │ REST API (.NET 8 Web API)                     │  │
-│  │  • /api/marketplace/*                         │  │
-│  │  • /api/channels/*                            │  │
-│  │  • /api/ai/chat                               │  │
-│  └───────────────────────────────────────────────┘  │
-│  ┌───────────────────────────────────────────────┐  │
-│  │ PostgreSQL Database                           │  │
-│  │  • MarketplaceRules  • Channels               │  │
-│  │  • Users             • ChannelAuditLog        │  │
-│  └───────────────────────────────────────────────┘  │
-│  ┌───────────────────────────────────────────────┐  │
-│  │ LLM Service (Ollama)                          │  │
-│  │  • Model: Llama 3.2 7B / Mistral 7B           │  │
-│  └───────────────────────────────────────────────┘  │
-└─────────────────────────────────────────────────────┘
-```
+### Health
+| Method | Endpoint | Purpose |
+|--------|----------|---------|
+| GET | `/api/health` | Server health check |
 
-### Design Principles
+### Marketplace (`/api/marketplace`)
+| Method | Endpoint | Purpose |
+|--------|----------|---------|
+| GET | `/rules` | List rules (paginated) |
+| GET | `/rules/{id}` | Get rule by ID |
+| POST | `/rules` | Upload rule |
+| GET | `/search` | Search rules |
+| POST | `/rules/{id}/download` | Increment downloads |
+| DELETE | `/rules/{id}` | Delete rule |
 
-1. **Offline-first:** Browser works without server (cached rules)
-2. **Server-enhanced:** Connect for AI + marketplace features
-3. **MVVM separation:** UI completely independent of business logic
-4. **Modular services:** Each component has single responsibility
-5. **Configuration-driven:** Visual effects toggleable via config
+### Channels (`/api/channel`)
+| Method | Endpoint | Purpose |
+|--------|----------|---------|
+| GET | `/channels` | List channels |
+| GET | `/channels/{id}` | Get channel |
+| POST | `/channels` | Create channel |
+| POST | `/channels/{id}/join` | Join (password required) |
+| POST | `/channels/{id}/leave` | Leave channel |
+| GET | `/channels/{id}/rules` | Get channel rules |
+| POST | `/channels/{id}/rules` | Add rule to channel |
+| GET | `/user/{username}/channels` | Get user's channels |
 
 ---
 
-## Client Modules
+## Database Schemas
 
-### 1. Browser Core Module
-**Responsibility:** Core browsing functionality
+### Server (PostgreSQL)
 
-**Components:**
-- `MainWindow.xaml` - Main shell with navigation
-- `WebView2Host.cs` - WebView2 control wrapper
-- `NavigationService.cs` - URL navigation, history, back/forward
-- `SearchEngineService.cs` - Handle search queries
+**Key Tables:**
+- `Users` - Id, Username, CreatedAt
+- `MarketplaceRules` - Id, Name, Description, Site, RulesJson, AuthorId, DownloadCount, Tags
+- `Channels` - Id, Name, Description, OwnerId, PasswordHash, MemberCount, IsActive
+- `ChannelRules` - Id, ChannelId, Name, RulesJson, IsEnforced
+- `ChannelMembers` - Id, ChannelId, UserId, JoinedAt, LastSyncedAt
+- `ChannelAuditLogs` - Id, ChannelId, UserId, Action, Metadata, Timestamp
 
-**Features:**
-- Address bar with URL/search detection
-- Navigation controls (back, forward, refresh)
-- WebView2 password manager (built-in Edge credentials)
+### Client (SQLite)
 
-### 2. Network Interception Module
-**Responsibility:** Monitor and control network requests
-
-**Components:**
-- `RequestInterceptor.cs` - Hooks `WebResourceRequested` event
-- `RuleEngine.cs` - Evaluates requests against active rules
-- `BlockingService.cs` - Blocks/allows based on rules
-- `NetworkLogger.cs` - Logs to SQLite
-
-**Flow:**
-```
-Request → RequestInterceptor → RuleEngine
-                                    ↓
-                         Match rule? → Block / Allow
-                                    ↓
-                            NetworkLogger (SQLite)
-```
-
-### 3. Content Injection Module
-**Responsibility:** Inject CSS/JS into pages
-
-**Components:**
-- `CSSInjector.cs` - Inject stylesheets via `ExecuteScriptAsync`
-- `JSInjector.cs` - Inject JavaScript for DOM manipulation
-- `InjectionTimingService.cs` - Control timing (DOMContentLoaded, load)
-
-**Capabilities:**
-- Hide elements (cookie banners, ads)
-- Auto-click buttons (reject cookies)
-- Style modifications (dark mode)
-
-### 4. Rule Management Module
-**Responsibility:** Store, sync, and apply rules
-
-**Components:**
-- `Rule.cs` - Model: id, name, site, rules array, enabled, priority
-- `RuleRepository.cs` - SQLite CRUD operations
-- `RuleSyncService.cs` - Sync with server
-- `RuleParser.cs` - Parse JSON rules
+**Key Tables:**
+- `Rules` - Id, Name, Site, RulesJson, Source, ChannelId, IsEnforced, MarketplaceId
+- `ChannelMemberships` - Id, ChannelId, ChannelName, Username, JoinedAt, LastSyncedAt
+- `NetworkLogs` - Id, Url, Method, StatusCode, IsBlocked, Timestamp
 
 ---
 
-## Rule System (Core Feature)
+## Rule System
 
 ### JSON Rule Format
-
 ```json
 {
   "id": "550e8400-e29b-41d4-a716-446655440000",
-  "name": "Privacy Pack - News Sites",
+  "name": "Privacy Pack",
   "description": "Blocks trackers and hides cookie banners",
-  "site": "*.news.com",
+  "site": "*.example.com",
   "enabled": true,
   "priority": 10,
   "rules": [
     {
       "type": "block",
-      "match": {
-        "urlPattern": "*tracker.com/*",
-        "resourceType": "script"
-      }
+      "match": { "urlPattern": "*tracker*", "resourceType": "script" }
     },
     {
       "type": "inject_css",
-      "match": {
-        "urlPattern": "*news.com/*"
-      },
-      "css": ".cookie-banner, .gdpr-wall { display: none !important; }"
+      "css": ".cookie-banner { display: none !important; }"
     },
     {
       "type": "inject_js",
-      "match": {
-        "urlPattern": "*news.com/*"
-      },
       "timing": "dom_ready",
-      "js": "document.querySelector('[data-consent=\"reject\"]')?.click();"
+      "js": "document.querySelector('[data-consent=reject]')?.click();"
     }
   ]
 }
 ```
 
 ### Rule Types
-
-| Type | Description | Parameters |
-|------|-------------|------------|
-| `block` | Cancel network request | `urlPattern`, `resourceType`, `method` |
+| Type | Purpose | Key Parameters |
+|------|---------|----------------|
+| `block` | Cancel network request | `urlPattern`, `resourceType` |
 | `inject_css` | Add CSS to page | `css`, `timing` |
 | `inject_js` | Run JavaScript | `js`, `timing` |
 
-### Resource Types
-- `script` - JavaScript files
-- `stylesheet` - CSS files
-- `image` - Images
-- `xhr` / `fetch` - AJAX requests
-- `document` - Main HTML page
-
 ### Rule Sources
-
 | Source | Description | User Control |
 |--------|-------------|--------------|
-| `local` | User-created | Full control |
+| `local` | User-created rules | Full control |
 | `marketplace` | Downloaded from server | Can disable |
 | `channel` | Business policy | Cannot disable (enforced) |
 
-### Pre-built Templates
-1. **Privacy Mode** - Block trackers
-2. **Hide Cookie Banners** - CSS for consent dialogs
-3. **Block Ads** - Common ad networks
-4. **Dark Mode** - Force dark styles
+### Resource Types
+`script`, `stylesheet`, `image`, `xhr`, `fetch`, `document`
 
 ---
 
-## Profile System
+## Channel System
 
-### Profile Types
+### How Channels Work
 
-**1. Personal Profile (Default)**
-- User's custom rules
-- Marketplace downloads
-- Local storage only
+**Creating a Channel:**
+1. User clicks "Create Channel" in ChannelsView
+2. Enters name, description, password
+3. Server creates channel, adds owner as member
+4. Client saves local membership
 
-**2. Work Profile (Business Mode)**
-- Join business "Channels" via password
-- Channel rules auto-sync from server
-- Rules marked as "enforced" (cannot disable)
+**Joining a Channel:**
+1. User clicks "Join" on a channel
+2. Enters password in PasswordDialog
+3. Server validates password, adds membership
+4. Client saves local membership and syncs rules
 
-**3. Custom Profiles**
-- Named profiles: "Shopping", "Banking"
-- Quick switch between rule sets
-
-### Channel System
-
-**Admin Flow:**
-1. Create channel via API
-2. Set name, description, password
-3. Add rules to channel
-4. Share Channel ID + password
-
-**Employee Flow:**
-1. Settings → Channels → Join
-2. Enter Channel ID + password
-3. Browser downloads all channel rules
-4. Rules auto-sync every 15 minutes
-5. Cannot disable enforced rules
+**Syncing Rules:**
+1. User clicks "Sync Now" or sync happens automatically
+2. Client calls `GET /api/channel/channels/{id}/rules`
+3. Server returns rules, updates LastSyncedAt
+4. Client saves rules locally with `IsEnforced = true`
 
 ---
 
-## Phase Status
+## Architecture
 
-### Completed Phases
+```
+┌─────────────────────────────────────────────────────┐
+│              Client (WPF Browser App)                │
+│  ┌─────────────────────────────────────────────┐    │
+│  │ Views (XAML) → ViewModels → Services        │    │
+│  └─────────────────────────────────────────────┘    │
+│  ┌─────────────────────────────────────────────┐    │
+│  │ SQLite: Rules, Memberships, NetworkLogs     │    │
+│  └─────────────────────────────────────────────┘    │
+└─────────────────────────────────────────────────────┘
+                        │ HTTP/JSON
+                        ▼
+┌─────────────────────────────────────────────────────┐
+│              Server (.NET 8 Web API)                 │
+│  ┌─────────────────────────────────────────────┐    │
+│  │ Controllers → Services → Repositories       │    │
+│  └─────────────────────────────────────────────┘    │
+│  ┌─────────────────────────────────────────────┐    │
+│  │ PostgreSQL: Users, Rules, Channels, Audit   │    │
+│  └─────────────────────────────────────────────┘    │
+│  ┌─────────────────────────────────────────────┐    │
+│  │ Ollama LLM (Phase 6)                        │    │
+│  └─────────────────────────────────────────────┘    │
+└─────────────────────────────────────────────────────┘
+```
 
-**Phase 1: Core Browser** ✅
-- WPF project with WPF UI
-- WebView2 integration
-- Address bar + navigation
-- SQLite database (EF Core)
-- MVVM structure
-- Search engine integration
-- WebView2 password manager
-
-**Phase 2: Network Monitoring** ✅
-- RequestInterceptor implementation
-- NetworkLogger to SQLite
-- NetworkMonitor UI (DataGrid)
-- Filtering (blocked, 3rd party)
-- Export to CSV
-
-**Phase 3: Rule System** ✅
-- Rule model and JSON parser
-- RuleEngine evaluation logic
-- BlockingService
-- CSSInjector and JSInjector
-- RuleRepository (SQLite CRUD)
-- Manual rule creation UI
-- 5 pre-built templates
-
-**Phase 4: Server + Marketplace** ✅
-- .NET Web API setup
-- PostgreSQL database
-- Docker deployment (ready, but use local for dev)
-- 7 marketplace endpoints
-- Client services registered
-- MarketplaceApiClient + RuleSyncService
-- MarketplaceView UI
-
-**Phase 5: Business Channels** ✅
-- Channel creation (name, password)
-- Join channel with password
-- Leave channel
-- Manual sync (background sync deferred)
-- ChannelsView UI with password dialog
-- ChannelApiClient + ChannelSyncService
-- Audit logging on server
-- Local membership tracking
-
-### Current: Phase 6 - AI Integration
-
-**Goal:** AI-powered rule generation and assistance
-
-**Features Needed:**
-- Ollama setup (7B model - Llama 3.2 or Mistral)
-- LLM wrapper API `/api/ai/chat`
-- CopilotSidebar UI
-- Context provider (page info, network requests)
-- Rule generation from natural language
-- Preview + apply flow
-
-### Future Phases
-
-**Phase 7: Profiles & Settings**
-- ProfileManager implementation
-- Work/Personal/Custom profiles
-- Profile switching UI
-- Settings panel (server config)
-
-**Phase 8: Polish & Testing**
-- Bug fixes and edge cases
-- Performance optimization
-- UI consistency
-- Demo preparation
+### Design Principles
+1. **Offline-first** - Browser works without server (cached rules)
+2. **MVVM** - UI completely independent of business logic
+3. **DI** - All services injected via constructor
+4. **Interfaces** - Program to interfaces, not implementations
 
 ---
 
-## Server Reference
-
-### Local Development (Preferred)
-
-> **IMPORTANT:** During development, run the server locally (not Docker) for easier testing and debugging. Docker setup exists but should only be used for final deployment testing.
-
-**Prerequisites:**
-- PostgreSQL installed locally
-- Connection: `Host=localhost;Port=5432;Database=browserapp;Username=postgres;Password=1234`
-
-```bash
-# Start server locally
-dotnet run --project BrowserApp.Server
-
-# Start client
-dotnet run --project BrowserApp.UI
-```
-
-**Server URL:** http://localhost:5000
-**Swagger UI:** http://localhost:5000/swagger
-
-**Database GUI:** Use DBeaver or pgAdmin to inspect PostgreSQL:
-- Host: `localhost`, Port: `5432`, Database: `browserapp`, User: `postgres`, Password: `1234`
-
-### Docker Commands (For Deployment Only)
-
-```bash
-# Start server via Docker (deployment testing only)
-docker compose up --build
-
-# Stop server
-docker compose down
-
-# View logs
-docker logs browserapp-api
-docker logs browserapp-db
-```
-
-### Existing API Endpoints (Phase 4)
-
-| Method | Endpoint | Purpose |
-|--------|----------|---------|
-| GET | `/api/health` | Health check |
-| GET | `/api/marketplace/rules` | List rules (paginated) |
-| GET | `/api/marketplace/rules/{id}` | Get specific rule |
-| POST | `/api/marketplace/rules` | Upload rule |
-| GET | `/api/marketplace/search` | Search rules |
-| POST | `/api/marketplace/rules/{id}/download` | Increment downloads |
-| DELETE | `/api/marketplace/rules/{id}` | Delete rule |
-
-### Sample API Usage
-
-**Upload a Rule:**
-```bash
-curl -X POST http://localhost:5000/api/marketplace/rules \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "Privacy Pack",
-    "description": "Blocks trackers",
-    "site": "*",
-    "priority": 50,
-    "rulesJson": "[{\"type\":\"block\",\"match\":{\"urlPattern\":\"*tracker*\"}}]",
-    "authorUsername": "john_doe",
-    "tags": ["privacy", "tracking"]
-  }'
-```
-
-**Get All Rules:**
-```bash
-curl http://localhost:5000/api/marketplace/rules
-```
-
----
-
-## Database Schemas
-
-### Server Database (PostgreSQL)
-
-**Users:**
-```sql
-CREATE TABLE Users (
-    Id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    Username VARCHAR(50) UNIQUE NOT NULL,
-    CreatedAt TIMESTAMP DEFAULT NOW()
-);
-```
-
-**MarketplaceRules:**
-```sql
-CREATE TABLE MarketplaceRules (
-    Id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    Name VARCHAR(200) NOT NULL,
-    Description VARCHAR(2000),
-    Site VARCHAR(500) NOT NULL,
-    Priority INTEGER DEFAULT 10,
-    RulesJson JSONB NOT NULL,
-    AuthorId UUID REFERENCES Users(Id),
-    DownloadCount INTEGER DEFAULT 0,
-    Tags TEXT[],
-    CreatedAt TIMESTAMP DEFAULT NOW(),
-    UpdatedAt TIMESTAMP DEFAULT NOW()
-);
-```
-
-**Channels (Phase 5):**
-```sql
-CREATE TABLE Channels (
-    Id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    Name VARCHAR(100) NOT NULL,
-    Description TEXT,
-    PasswordHash VARCHAR(255) NOT NULL,
-    CreatedBy UUID NOT NULL,
-    IsActive BOOLEAN DEFAULT TRUE,
-    CreatedAt TIMESTAMP DEFAULT NOW()
-);
-
-CREATE TABLE ChannelRules (
-    ChannelId UUID REFERENCES Channels(Id) ON DELETE CASCADE,
-    RuleId UUID NOT NULL,
-    RulesJson JSONB NOT NULL,
-    CreatedAt TIMESTAMP DEFAULT NOW(),
-    PRIMARY KEY (ChannelId, RuleId)
-);
-
-CREATE TABLE UserChannels (
-    UserId UUID NOT NULL,
-    ChannelId UUID REFERENCES Channels(Id) ON DELETE CASCADE,
-    JoinedAt TIMESTAMP DEFAULT NOW(),
-    PRIMARY KEY (UserId, ChannelId)
-);
-
-CREATE TABLE ChannelAuditLog (
-    Id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    ChannelId UUID REFERENCES Channels(Id) ON DELETE CASCADE,
-    UserId UUID,
-    Action VARCHAR(50) NOT NULL,
-    Metadata JSONB,
-    Timestamp TIMESTAMP DEFAULT NOW()
-);
-```
-
-### Client Database (SQLite)
-
-**Rules:**
-```sql
-CREATE TABLE Rules (
-    Id TEXT PRIMARY KEY,
-    Name TEXT NOT NULL,
-    Description TEXT,
-    Site TEXT NOT NULL,
-    Enabled INTEGER DEFAULT 1,
-    Priority INTEGER DEFAULT 10,
-    RulesJson TEXT NOT NULL,
-    Source TEXT,              -- "local", "marketplace", "channel"
-    ChannelId TEXT,
-    IsEnforced INTEGER DEFAULT 0,
-    MarketplaceId TEXT,
-    CreatedAt TEXT,
-    UpdatedAt TEXT
-);
-```
-
-**ChannelCache:**
-```sql
-CREATE TABLE ChannelCache (
-    ChannelId TEXT PRIMARY KEY,
-    Name TEXT NOT NULL,
-    Description TEXT,
-    JoinedAt TEXT,
-    LastSyncedAt TEXT
-);
-```
-
----
-
-## Client Services Reference
-
-### Already Registered (App.xaml.cs)
+## Service Registration (App.xaml.cs)
 
 ```csharp
+// API Clients
 services.AddSingleton<MarketplaceApiClient>();
-services.AddSingleton<IMarketplaceApiClient>(...);
+services.AddSingleton<IMarketplaceApiClient>(sp => sp.GetRequiredService<MarketplaceApiClient>());
+services.AddSingleton<ChannelApiClient>();
+services.AddSingleton<IChannelApiClient>(sp => sp.GetRequiredService<ChannelApiClient>());
+
+// Sync Services
 services.AddSingleton<RuleSyncService>();
-services.AddSingleton<IRuleSyncService>(...);
-```
+services.AddSingleton<IRuleSyncService>(sp => sp.GetRequiredService<RuleSyncService>());
+services.AddSingleton<ChannelSyncService>();
+services.AddSingleton<IChannelSyncService>(sp => sp.GetRequiredService<ChannelSyncService>());
 
-### Usage Pattern
-
-```csharp
-// Inject in ViewModel
-public MyViewModel(
-    IMarketplaceApiClient apiClient,
-    IRuleSyncService syncService)
-{
-    _apiClient = apiClient;
-    _syncService = syncService;
-}
-
-// Get rules from server
-var response = await _apiClient.GetRulesTypedAsync(page: 1, pageSize: 20);
-
-// Download and install a rule
-var rule = await _syncService.DownloadAndInstallRuleAsync(marketplaceRuleId);
-
-// Check server availability
-bool isAvailable = await _syncService.IsServerAvailableAsync();
+// ViewModels
+services.AddTransient<MarketplaceViewModel>();
+services.AddTransient<ChannelsViewModel>();
 ```
 
 ---
 
-## UI Layout Reference
+## Data Flows
 
+### User Browses a Page
 ```
-┌────────────────────────────────────────────────────────────┐
-│ ☰  [← → ⟳]  [🔒 example.com                    ] [Profile▼]│
-├────────────────────────────────────────────────────────────┤
-│                                    │                        │
-│                                    │  ┌──────────────────┐ │
-│                                    │  │ [💬] [📊] [⚙️]   │ │
-│                                    │  └──────────────────┘ │
-│        WebView2 Content            │                        │
-│        (Full Chromium Browser)     │  Active Tab:           │
-│                                    │  • AI Copilot          │
-│                                    │  • Network Monitor     │
-│                                    │  • Rules Panel         │
-│                                    │  • Channels (Phase 5)  │
-│                                    │                        │
-│                                    │  [← Collapse]          │
-├────────────────────────────────────┴────────────────────────┤
-│ 🛡️ 47 blocked • 2.3 MB saved • Work Profile Active         │
-└────────────────────────────────────────────────────────────┘
+1. User enters URL → NavigationService
+2. WebView2 starts navigation
+3. RequestInterceptor hooks WebResourceRequested
+4. For each request:
+   - RuleEngine.Evaluate(request, activeRules)
+   - If blocked → cancel request
+   - NetworkLogger.Log(request)
+5. NavigationCompleted fires
+6. CSSInjector/JSInjector apply matching rules
 ```
 
-### Color Scheme
-
-**Light Mode:**
-- Background: `#F3F3F3`
-- Surface: `#FFFFFF`
-- Accent: `#0078D4` (Windows Blue)
-
-**Dark Mode:**
-- Background: `#202020`
-- Surface: `#2C2C2C`
-- Accent: `#0078D4`
-
----
-
-## Configuration Files
-
-### Client: appsettings.json
-
-```json
-{
-  "Server": {
-    "ApiBaseUrl": "http://localhost:5000"
-  },
-  "MarketplaceApi": {
-    "BaseUrl": "http://localhost:5000"
-  },
-  "Browser": {
-    "DefaultSearchEngine": "Google",
-    "UserDataFolder": "%LOCALAPPDATA%/BrowserApp/UserData"
-  },
-  "Sync": {
-    "ChannelSyncIntervalMinutes": 15,
-    "AutoSyncOnStartup": true
-  }
-}
+### Download from Marketplace
 ```
-
-### Server: appsettings.json
-
-```json
-{
-  "ConnectionStrings": {
-    "PostgreSQL": "Host=localhost;Database=browserapp;Username=postgres;Password=***"
-  },
-  "Ollama": {
-    "BaseUrl": "http://localhost:11434",
-    "Model": "llama3.2:7b"
-  }
-}
+1. User opens Marketplace tab
+2. MarketplaceViewModel.LoadRulesAsync()
+3. User clicks "Install" on a rule
+4. RuleSyncService.DownloadAndInstallRuleAsync()
+5. Rule saved to SQLite with Source="marketplace"
+6. RuleEngine reloads active rules
 ```
 
 ---
@@ -885,162 +380,113 @@ bool isAvailable = await _syncService.IsServerAvailableAsync();
 ## Code Conventions
 
 ### C#
-- PascalCase for classes, methods, properties
-- camelCase for private fields, parameters
-- Prefix interfaces with `I` (e.g., `IRuleEngine`)
-- Use `async`/`await` for I/O operations
-- Dependency injection via constructor
+- PascalCase: classes, methods, properties
+- camelCase: private fields (`_fieldName`), parameters
+- Interfaces: prefix with `I` (e.g., `IRuleEngine`)
+- Always use `async/await` for I/O
+- Constructor injection for dependencies
 
 ### XAML
-- Use WPF UI components (Wpf.Ui namespace)
-- Binding over code-behind
-- No business logic in code-behind
-- DataContext set to ViewModel
+- Use WPF UI components (`Wpf.Ui` namespace)
+- Bind to ViewModels, no business logic in code-behind
+- DataContext set in XAML or constructor
 
-### Tests
-- In BrowserApp.Tests project
-- Named: `ClassNameTests.cs`
-- Arrange-Act-Assert pattern
-- Write test first (TDD)
-
----
-
-## Quality Gates
-
-### Feature-Level
-- [ ] Tests written BEFORE implementation
-- [ ] Tests pass
-- [ ] Code follows MVVM (UI ↔ ViewModel ↔ Service)
-- [ ] No business logic in XAML code-behind
-- [ ] Manual verification completed
-
-### Phase-Level
-- [ ] All phase todos completed
-- [ ] All tests pass
-- [ ] Phase deliverable works as specified
-- [ ] Code review completed (code-reviewer agent)
-
-### Never Skip
-- Never claim "it works" without running it
-- Never mark todo complete without verification
-- Never merge phase without code review
-- Never implement without tests
+### Adding New Features
+1. Create interface in `BrowserApp.Core/Interfaces/`
+2. Implement in `BrowserApp.UI/Services/` or `BrowserApp.Core/Services/`
+3. Register in `App.xaml.cs` DI container
+4. Inject into ViewModels via constructor
+5. Create View + ViewModel if UI needed
 
 ---
 
-## Anti-Patterns to Avoid
+## Development Tools
 
-| Bad | Good |
-|-----|------|
-| "It should work now" | "I verified it works by [evidence]" |
-| Skipping tests "to save time" | TDD from start |
-| "Let me try this..." | Systematic debugging |
-| Marking todos complete prematurely | Verify first |
-| Business logic in XAML code-behind | MVVM always |
-| Guess-and-check debugging | Systematic investigation |
+### Skills (invoke with `/command`)
+| Command | Use For |
+|---------|---------|
+| `/feature-dev` | New features (guided development) |
+| `/frontend-design` | UI work (Fluent Design) |
+| `/commit` | Create commits |
+| `/code-review` | Review PRs |
 
----
+### Task Agents
+| Agent | Use For |
+|-------|---------|
+| `Explore` | Find code, understand structure |
+| `code-architect` | Design feature architecture |
+| `code-reviewer` | Review for bugs, security |
 
-## Performance Targets
-
-### Client
-- **Cold Start:** < 2 seconds to main window
-- **Navigation:** < 100ms overhead from interception
-- **Rule Evaluation:** < 10ms per request
-- **UI Responsiveness:** 60 FPS animations
-- **Memory:** < 200MB base + WebView2 overhead
-
-### Server
-- **API Response:** < 200ms for queries
-- **LLM Response:** 2-5 seconds (7B model)
+### MCP Tools
+- **context7** - Query library documentation
+- **playwright** - Browser automation testing
 
 ---
 
-## Session Start Checklist
+## Configuration
 
-1. Read this document (PROJECT_CONTEXT.md)
-2. Check git status
-3. Ask: "Where did we leave off?"
-4. Create TodoWrite for current work
-5. Use appropriate tools for the task
-
----
-
-## Key Reminders
-
-1. **Use skills** - `/feature-dev` for features, `/frontend-design` for UI
-2. **Use agents** - `code-architect` before building, `code-reviewer` after
-3. **Use context7** - Query docs before implementing unknown APIs
-4. **Use playwright** - Test UI behavior, don't assume it works
-5. **Keep it simple** - Don't over-engineer, implement only what's needed
-6. **Verify everything** - Show evidence, don't just claim it works
-
----
-
-## File Quick Reference
-
-| What | Where |
-|------|-------|
-| Main window | `BrowserApp.UI/MainWindow.xaml` |
-| Views | `BrowserApp.UI/Views/` |
-| ViewModels | `BrowserApp.UI/ViewModels/` |
-| Services | `BrowserApp.Core/Services/` |
-| Models | `BrowserApp.Core/Models/` |
-| DB Context (client) | `BrowserApp.Data/BrowserDbContext.cs` |
-| DB Context (server) | `BrowserApp.Server/Data/ServerDbContext.cs` |
-| Server Controllers | `BrowserApp.Server/Controllers/` |
-| Docker config | `docker-compose.yml` |
-| App settings (client) | `BrowserApp.UI/appsettings.json` |
-| App settings (server) | `BrowserApp.Server/appsettings.json` |
-
----
-
-## Data Flow Scenarios
-
-### Scenario 1: User Browses Page
-
-```
-1. User enters URL → NavigationService.Navigate()
-2. WebView2 starts navigation
-3. RequestInterceptor hooks WebResourceRequested
-4. For each request:
-   a. RuleEngine.Evaluate(request, activeRules)
-   b. If blocked → cancel request
-   c. If allowed → NetworkLogger.Log(request)
-5. NavigationCompleted fires
-6. InjectionService checks for inject_css/inject_js rules
-7. Execute injections via ExecuteScriptAsync
+### Client (appsettings.json)
+```json
+{
+  "MarketplaceApi": {
+    "BaseUrl": "http://localhost:5000"
+  },
+  "Browser": {
+    "DefaultSearchEngine": "Google"
+  }
+}
 ```
 
-### Scenario 2: Employee Joins Channel
-
-```
-1. User → Settings → Channels → Join
-2. Enter channel_id, password
-3. POST /api/channels/{id}/join
-4. Server validates password
-5. Server returns channel rules as JSON
-6. Browser:
-   a. RuleRepository.SaveChannelRules(rules)
-   b. Mark rules as "enforced"
-   c. Start background sync (15 min)
-7. UI shows "🔒 Enforced" badges
+### Server (appsettings.Development.json)
+```json
+{
+  "ConnectionStrings": {
+    "PostgreSQL": "Host=localhost;Port=5432;Database=browserapp;Username=postgres;Password=1234"
+  }
+}
 ```
 
-### Scenario 3: Download from Marketplace
+---
 
+## Quality Checklist
+
+Before completing any feature:
+- [ ] Code follows MVVM pattern
+- [ ] Services use interfaces
+- [ ] Registered in DI container
+- [ ] Tested manually (run both server and client)
+- [ ] No hardcoded values (use config)
+- [ ] Error handling in place
+
+---
+
+## Quick Reference
+
+### Start Development
+```bash
+# 1. Start server
+dotnet run --project BrowserApp.Server
+
+# 2. Start client (new terminal)
+dotnet run --project BrowserApp.UI
 ```
-1. User → Marketplace
-2. Browse available rules
-3. Click "Install"
-4. GET /api/marketplace/rules/{id}
-5. Browser shows preview
-6. User confirms → RuleRepository.Save(rule)
-7. Rule enabled immediately
+
+### Build & Test
+```bash
+dotnet build BrowserApp.sln
+dotnet test BrowserApp.Tests
 ```
+
+### Check Database
+- Use DBeaver: localhost:5432, browserapp, postgres/1234
+
+### Common Issues
+- **Server won't start:** Check PostgreSQL is running
+- **Client can't connect:** Ensure server is on http://localhost:5000
+- **Migrations failed:** Delete `browserapp` database and restart server
 
 ---
 
 **End of Project Context**
 
-*This document should be the sole reference for all development sessions.*
+*This document is the sole reference for all development sessions.*
