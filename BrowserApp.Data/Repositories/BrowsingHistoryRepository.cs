@@ -49,4 +49,11 @@ public class BrowsingHistoryRepository : IBrowsingHistoryRepository
             .Take(100)
             .ToListAsync();
     }
+
+    /// <inheritdoc/>
+    public async Task ClearAllAsync()
+    {
+        _context.BrowsingHistory.RemoveRange(_context.BrowsingHistory);
+        await _context.SaveChangesAsync();
+    }
 }

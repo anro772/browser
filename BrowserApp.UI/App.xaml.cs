@@ -151,6 +151,9 @@ public partial class App : Application
         services.AddScoped<INetworkLogRepository, NetworkLogRepository>();
         services.AddScoped<IRuleRepository, RuleRepository>();
 
+        // Settings Service
+        services.AddSingleton<SettingsService>();
+
         // ViewModels
         services.AddTransient<MainViewModel>();
         services.AddTransient<NetworkMonitorViewModel>();
@@ -158,6 +161,9 @@ public partial class App : Application
         services.AddSingleton<LogViewerViewModel>();
         services.AddTransient<ChannelsViewModel>();
         services.AddTransient<MarketplaceViewModel>();
+        services.AddSingleton<PrivacyDashboardViewModel>();
+        services.AddSingleton<HistoryViewModel>();
+        services.AddTransient<SettingsViewModel>();
 
         // Views
         services.AddSingleton<MainWindow>();
@@ -166,6 +172,9 @@ public partial class App : Application
         services.AddSingleton<LogViewerView>();
         services.AddTransient<ChannelsView>();
         services.AddTransient<MarketplaceView>();
+        services.AddSingleton<PrivacyDashboardView>();
+        services.AddSingleton<HistoryView>();
+        services.AddTransient<SettingsView>();
     }
 
     private void EnsureDatabase()

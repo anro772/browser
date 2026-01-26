@@ -23,4 +23,9 @@ public interface IBrowsingHistoryRepository
     /// </summary>
     /// <param name="query">Search query string.</param>
     Task<IEnumerable<BrowsingHistoryEntity>> SearchAsync(string query);
+
+    /// <summary>
+    /// Clears all history entries.
+    /// </summary>
+    Task ClearAllAsync();
 }

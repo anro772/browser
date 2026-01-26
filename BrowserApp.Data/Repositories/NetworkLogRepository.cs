@@ -96,4 +96,67 @@ public class NetworkLogRepository : INetworkLogRepository
         _context.NetworkLogs.RemoveRange(_context.NetworkLogs);
         await _context.SaveChangesAsync();
     }
+
+    /// <inheritdoc/>
+    public async Task<List<(string Domain, int Count)>> GetTopBlockedDomainsAsync(int count = 5)
+    {
+        // Load blocked URLs then process in memory (domain extraction is complex for EF)
+        var blockedUrls = await _context.NetworkLogs
+            .Where(l => l.WasBlocked)
+            .Select(l => l.Url)
+            .ToListAsync();
+
+        var results = blockedUrls
+            .Select(ExtractDomain)
+            .Where(d => !string.IsNullOrEmpty(d))
+            .GroupBy(d => d)
+            .Select(g => (Domain: g.Key!, Count: g.Count()))
+            .OrderByDescending(x => x.Count)
+            .Take(count)
+            .ToList();
+
+        return results;
+    }
+
+    /// <summary>
+    /// Extracts the domain from a URL.
+    /// </summary>
+    private static string? ExtractDomain(string url)
+    {
+        try
+        {
+            if (Uri.TryCreate(url, UriKind.Absolute, out var uri))
+            {
+                return uri.Host;
+            }
+            // Handle relative URLs or malformed URLs
+            var parts = url.Split('/');
+            return parts.Length > 0 ? parts[0] : null;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    /// <inheritdoc/>
+    public async Task<List<(string Type, int Count)>> GetResourceTypeBreakdownAsync()
+    {
+        var results = await _context.NetworkLogs
+            .Where(l => !string.IsNullOrEmpty(l.ResourceType))
+            .GroupBy(l => l.ResourceType)
+            .Select(g => new { Type = g.Key, Count = g.Count() })
+            .OrderByDescending(x => x.Count)
+            .ToListAsync();
+
+        return results.Select(r => (r.Type, r.Count)).ToList();
+    }
+
+    /// <inheritdoc/>
+    public async Task<int> GetBlockedTodayCountAsync()
+    {
+        var today = DateTime.Today;
+        return await _context.NetworkLogs
+            .CountAsync(l => l.WasBlocked && l.Timestamp >= today);
+    }
 }

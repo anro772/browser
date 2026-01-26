@@ -1,0 +1,154 @@
+<ui:FluentWindow x:Class="BrowserApp.UI.Views.SettingsView"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+        xmlns:vm="clr-namespace:BrowserApp.UI.ViewModels"
+        Title="Settings"
+        Height="450" Width="500"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize">
+
+    <Grid Margin="24">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <StackPanel Grid.Row="0" Margin="0,0,0,24">
+            <TextBlock Text="Settings"
+                       FontSize="24"
+                       FontWeight="SemiBold"/>
+            <TextBlock Text="Configure your browsing experience"
+                       Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                       Margin="0,4,0,0"/>
+        </StackPanel>
+
+        <!-- Settings Content -->
+        <ScrollViewer Grid.Row="1"
+                      VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+
+                <!-- Privacy Mode Section -->
+                <Border Background="{DynamicResource ControlFillColorDefaultBrush}"
+                        CornerRadius="4"
+                        Padding="16"
+                        Margin="0,0,0,12">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                            <ui:SymbolIcon Symbol="Shield24"
+                                           FontSize="20"
+                                           Foreground="#107C10"
+                                           Margin="0,0,8,0"/>
+                            <TextBlock Text="Privacy Mode"
+                                       FontSize="14"
+                                       FontWeight="SemiBold"
+                                       VerticalAlignment="Center"/>
+                        </StackPanel>
+
+                        <TextBlock Text="Choose how aggressively to block trackers and ads."
+                                   FontSize="12"
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                   TextWrapping="Wrap"
+                                   Margin="0,0,0,12"/>
+
+                        <ComboBox ItemsSource="{Binding PrivacyModes}"
+                                  SelectedValue="{Binding SelectedPrivacyMode}"
+                                  SelectedValuePath="Mode"
+                                  HorizontalAlignment="Stretch">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate>
+                                    <StackPanel Margin="4">
+                                        <TextBlock Text="{Binding Name}"
+                                                   FontWeight="SemiBold"/>
+                                        <TextBlock Text="{Binding Description}"
+                                                   FontSize="11"
+                                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                                   TextWrapping="Wrap"/>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+                    </StackPanel>
+                </Border>
+
+                <!-- Server Configuration Section -->
+                <Border Background="{DynamicResource ControlFillColorDefaultBrush}"
+                        CornerRadius="4"
+                        Padding="16"
+                        Margin="0,0,0,12">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                            <ui:SymbolIcon Symbol="Server24"
+                                           FontSize="20"
+                                           Foreground="#0078D4"
+                                           Margin="0,0,8,0"/>
+                            <TextBlock Text="Server Configuration"
+                                       FontSize="14"
+                                       FontWeight="SemiBold"
+                                       VerticalAlignment="Center"/>
+                        </StackPanel>
+
+                        <TextBlock Text="URL for marketplace and channel sync services."
+                                   FontSize="12"
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                   Margin="0,0,0,12"/>
+
+                        <ui:TextBox PlaceholderText="Server URL"
+                                    Text="{Binding ServerUrl, UpdateSourceTrigger=PropertyChanged}"
+                                    Icon="{ui:SymbolIcon Globe24}"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- Data Management Section -->
+                <Border Background="{DynamicResource ControlFillColorDefaultBrush}"
+                        CornerRadius="4"
+                        Padding="16">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                            <ui:SymbolIcon Symbol="Delete24"
+                                           FontSize="20"
+                                           Foreground="#D13438"
+                                           Margin="0,0,8,0"/>
+                            <TextBlock Text="Data Management"
+                                       FontSize="14"
+                                       FontWeight="SemiBold"
+                                       VerticalAlignment="Center"/>
+                        </StackPanel>
+
+                        <TextBlock Text="Clear stored browsing data."
+                                   FontSize="12"
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                   Margin="0,0,0,12"/>
+
+                        <StackPanel Orientation="Horizontal">
+                            <ui:Button Content="Clear History"
+                                       Icon="{ui:SymbolIcon History24}"
+                                       Command="{Binding ClearHistoryCommand}"
+                                       Appearance="Secondary"
+                                       Margin="0,0,8,0"/>
+                            <ui:Button Content="Clear Network Logs"
+                                       Icon="{ui:SymbolIcon DocumentDismiss24}"
+                                       Command="{Binding ClearNetworkLogsCommand}"
+                                       Appearance="Secondary"/>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- Footer -->
+        <StackPanel Grid.Row="2"
+                    Orientation="Horizontal"
+                    HorizontalAlignment="Right"
+                    Margin="0,16,0,0">
+            <ui:Button Content="Close"
+                       IsCancel="True"
+                       Click="CloseButton_Click"
+                       Appearance="Primary"
+                       Padding="24,8"/>
+        </StackPanel>
+    </Grid>
+</ui:FluentWindow>

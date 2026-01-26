@@ -54,7 +54,13 @@
       "Bash(dotnet ef migrations has-pending-model-changes:*)",
       "Bash(PGPASSWORD=1234 psql:*)",
       "Bash(git show:*)",
-      "Bash(dotnet ef migrations:*)"
+      "Bash(dotnet ef migrations:*)",
+      "WebFetch(domain:dig.watch)",
+      "WebFetch(domain:www.investing.com)",
+      "WebFetch(domain:medium.com)",
+      "WebFetch(domain:covisian.com)",
+      "WebFetch(domain:www.starkinsider.com)",
+      "Bash(dotnet run:*)"
     ],
     "deny": [],
     "ask": []

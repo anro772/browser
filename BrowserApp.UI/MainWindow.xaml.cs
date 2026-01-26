@@ -18,6 +18,8 @@ public partial class MainWindow : Window
     private readonly RequestInterceptor _requestInterceptor;
     private readonly NetworkMonitorView _networkMonitorView;
     private readonly LogViewerView _logViewerView;
+    private readonly PrivacyDashboardView _dashboardView;
+    private readonly HistoryView _historyView;
     private readonly IServiceProvider _serviceProvider;
 
     public MainWindow(
@@ -26,6 +28,8 @@ public partial class MainWindow : Window
         RequestInterceptor requestInterceptor,
         NetworkMonitorView networkMonitorView,
         LogViewerView logViewerView,
+        PrivacyDashboardView dashboardView,
+        HistoryView historyView,
         IServiceProvider serviceProvider)
     {
         _viewModel = viewModel;
@@ -33,6 +37,8 @@ public partial class MainWindow : Window
         _requestInterceptor = requestInterceptor;
         _networkMonitorView = networkMonitorView;
         _logViewerView = logViewerView;
+        _dashboardView = dashboardView;
+        _historyView = historyView;
         _serviceProvider = serviceProvider;
 
         InitializeComponent();
@@ -40,8 +46,15 @@ public partial class MainWindow : Window
         DataContext = _viewModel;
 
         // Set the sidebar tab contents
+        DashboardContent.Content = _dashboardView;
         NetworkMonitorContent.Content = _networkMonitorView;
+        HistoryContent.Content = _historyView;
         LogViewerContent.Content = _logViewerView;
+
+        // Wire up dashboard quick action events
+        _dashboardView.ViewRulesRequested += (s, e) => RulesButton_Click(this, new RoutedEventArgs());
+        _dashboardView.MarketplaceRequested += (s, e) => MarketplaceButton_Click(this, new RoutedEventArgs());
+        _dashboardView.ChannelsRequested += (s, e) => ChannelsButton_Click(this, new RoutedEventArgs());
 
         // Wire up WebView2 to NavigationService
         Loaded += MainWindow_Loaded;
@@ -120,6 +133,22 @@ public partial class MainWindow : Window
         catch (Exception ex)
         {
             ErrorLogger.LogError("Failed to open Marketplace", ex);
+        }
+    }
+
+    private void SettingsButton_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            ErrorLogger.LogInfo("Opening Settings");
+            var settingsView = _serviceProvider.GetRequiredService<SettingsView>();
+            settingsView.Owner = this;
+            settingsView.ShowDialog();
+            ErrorLogger.LogInfo("Settings closed");
+        }
+        catch (Exception ex)
+        {
+            ErrorLogger.LogError("Failed to open Settings", ex);
         }
     }
 }

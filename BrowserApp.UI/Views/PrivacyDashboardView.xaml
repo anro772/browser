@@ -1,0 +1,293 @@
+<UserControl x:Class="BrowserApp.UI.Views.PrivacyDashboardView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+             xmlns:vm="clr-namespace:BrowserApp.UI.ViewModels"
+             mc:Ignorable="d"
+             d:DesignHeight="600"
+             d:DesignWidth="350"
+             d:DataContext="{d:DesignInstance vm:PrivacyDashboardViewModel}"
+             Loaded="OnLoaded">
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="8">
+
+            <!-- Header -->
+            <Border Background="{DynamicResource ControlFillColorDefaultBrush}"
+                    CornerRadius="4"
+                    Padding="12"
+                    Margin="0,0,0,8">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Grid.Column="0">
+                        <TextBlock Text="Privacy Dashboard"
+                                   FontSize="16"
+                                   FontWeight="SemiBold"
+                                   Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                        <TextBlock Text="Your browsing protection overview"
+                                   FontSize="12"
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                   Margin="0,4,0,0"/>
+                    </StackPanel>
+
+                    <ui:Button Grid.Column="1"
+                               Icon="{ui:SymbolIcon ArrowSync24}"
+                               Command="{Binding RefreshStatsCommand}"
+                               ToolTip="Refresh stats"
+                               Appearance="Secondary"
+                               VerticalAlignment="Center"/>
+                </Grid>
+            </Border>
+
+            <!-- Stats Cards -->
+            <Grid Margin="0,0,0,8">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- Privacy Mode Card -->
+                <Border Grid.Column="0"
+                        Background="{DynamicResource ControlFillColorDefaultBrush}"
+                        CornerRadius="4"
+                        Padding="12"
+                        Margin="0,0,4,0">
+                    <StackPanel HorizontalAlignment="Center">
+                        <ui:SymbolIcon Symbol="Shield24"
+                                       FontSize="24"
+                                       Foreground="#107C10"
+                                       HorizontalAlignment="Center"/>
+                        <TextBlock Text="{Binding PrivacyModeDisplay}"
+                                   FontSize="14"
+                                   FontWeight="SemiBold"
+                                   HorizontalAlignment="Center"
+                                   Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                                   Margin="0,4,0,0"/>
+                        <TextBlock Text="Mode"
+                                   FontSize="10"
+                                   HorizontalAlignment="Center"
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- Blocked Today Card -->
+                <Border Grid.Column="1"
+                        Background="{DynamicResource ControlFillColorDefaultBrush}"
+                        CornerRadius="4"
+                        Padding="12"
+                        Margin="2,0">
+                    <StackPanel HorizontalAlignment="Center">
+                        <TextBlock Text="{Binding BlockedToday}"
+                                   FontSize="22"
+                                   FontWeight="Bold"
+                                   HorizontalAlignment="Center"
+                                   Foreground="#D13438"/>
+                        <TextBlock Text="Blocked"
+                                   FontSize="10"
+                                   HorizontalAlignment="Center"
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                        <TextBlock Text="Today"
+                                   FontSize="10"
+                                   HorizontalAlignment="Center"
+                                   Foreground="{DynamicResource TextFillColorTertiaryBrush}"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- Data Saved Card -->
+                <Border Grid.Column="2"
+                        Background="{DynamicResource ControlFillColorDefaultBrush}"
+                        CornerRadius="4"
+                        Padding="12"
+                        Margin="4,0,0,0">
+                    <StackPanel HorizontalAlignment="Center">
+                        <TextBlock Text="{Binding DataSaved}"
+                                   FontSize="14"
+                                   FontWeight="Bold"
+                                   HorizontalAlignment="Center"
+                                   Foreground="#107C10"/>
+                        <TextBlock Text="Data"
+                                   FontSize="10"
+                                   HorizontalAlignment="Center"
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                        <TextBlock Text="Saved"
+                                   FontSize="10"
+                                   HorizontalAlignment="Center"
+                                   Foreground="{DynamicResource TextFillColorTertiaryBrush}"/>
+                    </StackPanel>
+                </Border>
+            </Grid>
+
+            <!-- Top Blocked Domains -->
+            <Border Background="{DynamicResource ControlFillColorDefaultBrush}"
+                    CornerRadius="4"
+                    Padding="12"
+                    Margin="0,0,0,8">
+                <StackPanel>
+                    <TextBlock Text="Top Blocked Domains"
+                               FontSize="14"
+                               FontWeight="SemiBold"
+                               Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                               Margin="0,0,0,12"/>
+
+                    <ItemsControl ItemsSource="{Binding TopBlockedDomains}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Grid Margin="0,0,0,8">
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                    </Grid.RowDefinitions>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <TextBlock Grid.Row="0" Grid.Column="0"
+                                               Text="{Binding Domain}"
+                                               FontSize="12"
+                                               Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                                               TextTrimming="CharacterEllipsis"/>
+                                    <TextBlock Grid.Row="0" Grid.Column="1"
+                                               Text="{Binding Count}"
+                                               FontSize="12"
+                                               FontWeight="SemiBold"
+                                               Foreground="#D13438"
+                                               Margin="8,0,0,0"/>
+
+                                    <!-- Progress Bar -->
+                                    <Border Grid.Row="1" Grid.ColumnSpan="2"
+                                            Background="{DynamicResource ControlFillColorSecondaryBrush}"
+                                            CornerRadius="2"
+                                            Height="4"
+                                            Margin="0,4,0,0">
+                                        <Border Background="#D13438"
+                                                CornerRadius="2"
+                                                HorizontalAlignment="Left"
+                                                Width="{Binding Percentage, Converter={StaticResource PercentToWidth}}"/>
+                                    </Border>
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <!-- Empty State -->
+                    <TextBlock Text="No blocked domains yet"
+                               FontSize="12"
+                               Foreground="{DynamicResource TextFillColorTertiaryBrush}"
+                               HorizontalAlignment="Center"
+                               Visibility="{Binding TopBlockedDomains.Count, Converter={StaticResource CountToVisibility}}"/>
+                </StackPanel>
+            </Border>
+
+            <!-- Resource Type Breakdown -->
+            <Border Background="{DynamicResource ControlFillColorDefaultBrush}"
+                    CornerRadius="4"
+                    Padding="12"
+                    Margin="0,0,0,8">
+                <StackPanel>
+                    <TextBlock Text="Request Types"
+                               FontSize="14"
+                               FontWeight="SemiBold"
+                               Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                               Margin="0,0,0,12"/>
+
+                    <ItemsControl ItemsSource="{Binding ResourceTypeBreakdown}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Grid Margin="0,0,0,6">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="70"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="40"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <TextBlock Grid.Column="0"
+                                               Text="{Binding Type}"
+                                               FontSize="11"
+                                               Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+
+                                    <!-- Progress Bar -->
+                                    <Border Grid.Column="1"
+                                            Background="{DynamicResource ControlFillColorSecondaryBrush}"
+                                            CornerRadius="2"
+                                            Height="8"
+                                            Margin="8,0">
+                                        <Border Background="#0078D4"
+                                                CornerRadius="2"
+                                                HorizontalAlignment="Left"
+                                                Width="{Binding Percentage, Converter={StaticResource PercentToWidth}}"/>
+                                    </Border>
+
+                                    <TextBlock Grid.Column="2"
+                                               Text="{Binding Count}"
+                                               FontSize="11"
+                                               Foreground="{DynamicResource TextFillColorTertiaryBrush}"
+                                               HorizontalAlignment="Right"/>
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <!-- Empty State -->
+                    <TextBlock Text="No request data yet"
+                               FontSize="12"
+                               Foreground="{DynamicResource TextFillColorTertiaryBrush}"
+                               HorizontalAlignment="Center"
+                               Visibility="{Binding ResourceTypeBreakdown.Count, Converter={StaticResource CountToVisibility}}"/>
+                </StackPanel>
+            </Border>
+
+            <!-- Quick Actions -->
+            <Border Background="{DynamicResource ControlFillColorDefaultBrush}"
+                    CornerRadius="4"
+                    Padding="12">
+                <StackPanel>
+                    <TextBlock Text="Quick Actions"
+                               FontSize="14"
+                               FontWeight="SemiBold"
+                               Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                               Margin="0,0,0,12"/>
+
+                    <UniformGrid Columns="3" Rows="1">
+                        <ui:Button x:Name="ViewRulesButton"
+                                   Content="Rules"
+                                   Icon="{ui:SymbolIcon Shield24}"
+                                   Appearance="Secondary"
+                                   HorizontalAlignment="Stretch"
+                                   Margin="0,0,4,0"
+                                   Click="ViewRulesButton_Click"/>
+                        <ui:Button x:Name="MarketplaceButton"
+                                   Content="Market"
+                                   Icon="{ui:SymbolIcon BuildingShop24}"
+                                   Appearance="Secondary"
+                                   HorizontalAlignment="Stretch"
+                                   Margin="2,0"
+                                   Click="MarketplaceButton_Click"/>
+                        <ui:Button x:Name="ChannelsButton"
+                                   Content="Channels"
+                                   Icon="{ui:SymbolIcon PeopleTeam24}"
+                                   Appearance="Secondary"
+                                   HorizontalAlignment="Stretch"
+                                   Margin="4,0,0,0"
+                                   Click="ChannelsButton_Click"/>
+                    </UniformGrid>
+                </StackPanel>
+            </Border>
+
+            <!-- Loading Overlay -->
+            <ui:ProgressRing IsIndeterminate="True"
+                             Width="40"
+                             Height="40"
+                             VerticalAlignment="Center"
+                             HorizontalAlignment="Center"
+                             Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisibility}}"/>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

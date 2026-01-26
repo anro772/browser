@@ -111,10 +111,18 @@
                            Appearance="Secondary"
                            Margin="4,0"/>
 
-                <!-- Network Monitor Toggle -->
-                <ui:Button Icon="{ui:SymbolIcon NetworkCheck24}"
-                           ToolTip="Toggle Network Monitor (Ctrl+Shift+N)"
+                <!-- Sidebar Toggle -->
+                <ui:Button Icon="{ui:SymbolIcon PanelRight24}"
+                           ToolTip="Toggle Sidebar (Ctrl+Shift+N)"
                            Command="{Binding ToggleSidebarCommand}"
+                           Appearance="Secondary"
+                           Margin="4,0"/>
+
+                <!-- Settings -->
+                <ui:Button Icon="{ui:SymbolIcon Settings24}"
+                           ToolTip="Settings (Ctrl+,)"
+                           x:Name="SettingsButton"
+                           Click="SettingsButton_Click"
                            Appearance="Secondary"
                            Margin="4,0"/>
             </StackPanel>
@@ -134,16 +142,22 @@
 
             <!-- Sidebar Panel with Tabs -->
             <Border Grid.Column="1"
-                    Width="900"
+                    Width="400"
                     Background="{DynamicResource ApplicationBackgroundBrush}"
                     BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
                     BorderThickness="1,0,0,0"
                     Visibility="{Binding IsSidebarVisible, Converter={StaticResource BoolToVisibility}}">
                 <TabControl>
-                    <TabItem Header="Network Monitor">
+                    <TabItem Header="Dashboard">
+                        <ContentControl x:Name="DashboardContent"/>
+                    </TabItem>
+                    <TabItem Header="Network">
                         <ContentControl x:Name="NetworkMonitorContent"/>
                     </TabItem>
-                    <TabItem Header="Debug Console">
+                    <TabItem Header="History">
+                        <ContentControl x:Name="HistoryContent"/>
+                    </TabItem>
+                    <TabItem Header="Logs">
                         <ContentControl x:Name="LogViewerContent"/>
                     </TabItem>
                 </TabControl>

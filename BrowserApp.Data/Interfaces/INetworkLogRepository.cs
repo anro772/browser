@@ -55,4 +55,20 @@ public interface INetworkLogRepository
     /// Clears all network log entries.
     /// </summary>
     Task ClearAllAsync();
+
+    /// <summary>
+    /// Gets the top blocked domains with their block counts.
+    /// </summary>
+    /// <param name="count">Maximum number of domains to return.</param>
+    Task<List<(string Domain, int Count)>> GetTopBlockedDomainsAsync(int count = 5);
+
+    /// <summary>
+    /// Gets a breakdown of requests by resource type.
+    /// </summary>
+    Task<List<(string Type, int Count)>> GetResourceTypeBreakdownAsync();
+
+    /// <summary>
+    /// Gets the count of blocked requests for today only.
+    /// </summary>
+    Task<int> GetBlockedTodayCountAsync();
 }
