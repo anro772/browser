@@ -5,6 +5,7 @@ using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.DependencyInjection;
 using BrowserApp.Core.Models;
 using BrowserApp.Data.Interfaces;
+using BrowserApp.UI.Services;
 
 namespace BrowserApp.UI.ViewModels;
 
@@ -15,6 +16,7 @@ namespace BrowserApp.UI.ViewModels;
 public partial class PrivacyDashboardViewModel : ObservableObject
 {
     private readonly IServiceScopeFactory _scopeFactory;
+    private readonly SettingsService _settingsService;
 
     [ObservableProperty]
     private PrivacyMode _currentPrivacyMode = PrivacyMode.Standard;
@@ -37,9 +39,25 @@ public partial class PrivacyDashboardViewModel : ObservableObject
     [ObservableProperty]
     private bool _isLoading;
 
-    public PrivacyDashboardViewModel(IServiceScopeFactory scopeFactory)
+    public PrivacyDashboardViewModel(IServiceScopeFactory scopeFactory, SettingsService settingsService)
     {
         _scopeFactory = scopeFactory;
+        _settingsService = settingsService;
+
+        // Load current privacy mode from settings
+        CurrentPrivacyMode = _settingsService.PrivacyMode;
+
+        // Subscribe to privacy mode changes
+        _settingsService.PrivacyModeChanged += (s, mode) =>
+        {
+            Application.Current?.Dispatcher.Invoke(() =>
+            {
+                CurrentPrivacyMode = mode;
+                OnPropertyChanged(nameof(PrivacyModeDisplay));
+                OnPropertyChanged(nameof(PrivacyModeDescription));
+                OnPropertyChanged(nameof(PrivacyModeColor));
+            });
+        };
     }
 
     /// <summary>
@@ -125,6 +143,17 @@ public partial class PrivacyDashboardViewModel : ObservableObject
     };
 
     /// <summary>
+    /// Gets the description for the current privacy mode.
+    /// </summary>
+    public string PrivacyModeDescription => CurrentPrivacyMode switch
+    {
+        PrivacyMode.Relaxed => "Minimal blocking - sites work best",
+        PrivacyMode.Standard => "Balanced - recommended",
+        PrivacyMode.Strict => "Maximum blocking - may break sites",
+        _ => "Balanced blocking"
+    };
+
+    /// <summary>
     /// Gets the icon color for the current privacy mode.
     /// </summary>
     public string PrivacyModeColor => CurrentPrivacyMode switch
@@ -134,6 +163,36 @@ public partial class PrivacyDashboardViewModel : ObservableObject
         PrivacyMode.Strict => "#D13438",   // Red
         _ => "#107C10"
     };
+
+    /// <summary>
+    /// Resets all network statistics (clears logs from database).
+    /// </summary>
+    [RelayCommand]
+    private async Task ResetStatsAsync()
+    {
+        var result = System.Windows.MessageBox.Show(
+            "Are you sure you want to reset all network statistics? This will clear all logged requests.",
+            "Reset Statistics",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Warning);
+
+        if (result == MessageBoxResult.Yes)
+        {
+            try
+            {
+                using var scope = _scopeFactory.CreateScope();
+                var networkLogRepository = scope.ServiceProvider.GetRequiredService<INetworkLogRepository>();
+                await networkLogRepository.ClearAllAsync();
+
+                // Refresh stats to show zeroed values
+                await RefreshStatsAsync();
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Reset stats error: {ex.Message}");
+            }
+        }
+    }
 
     private static string FormatBytes(long bytes)
     {

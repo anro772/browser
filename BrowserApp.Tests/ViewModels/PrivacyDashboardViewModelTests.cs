@@ -1,5 +1,6 @@
 using BrowserApp.Core.Models;
 using BrowserApp.Data.Interfaces;
+using BrowserApp.UI.Services;
 using BrowserApp.UI.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
@@ -13,6 +14,7 @@ public class PrivacyDashboardViewModelTests
     private readonly Mock<IServiceScope> _scopeMock;
     private readonly Mock<IServiceProvider> _serviceProviderMock;
     private readonly Mock<INetworkLogRepository> _repositoryMock;
+    private readonly SettingsService _settingsService;
     private readonly PrivacyDashboardViewModel _viewModel;
 
     public PrivacyDashboardViewModelTests()
@@ -21,6 +23,7 @@ public class PrivacyDashboardViewModelTests
         _scopeMock = new Mock<IServiceScope>();
         _serviceProviderMock = new Mock<IServiceProvider>();
         _repositoryMock = new Mock<INetworkLogRepository>();
+        _settingsService = new SettingsService();
 
         // Setup the scope factory chain
         _scopeFactoryMock.Setup(x => x.CreateScope()).Returns(_scopeMock.Object);
@@ -28,13 +31,14 @@ public class PrivacyDashboardViewModelTests
         _serviceProviderMock.Setup(x => x.GetService(typeof(INetworkLogRepository)))
             .Returns(_repositoryMock.Object);
 
-        _viewModel = new PrivacyDashboardViewModel(_scopeFactoryMock.Object);
+        _viewModel = new PrivacyDashboardViewModel(_scopeFactoryMock.Object, _settingsService);
     }
 
     [Fact]
     public void DefaultValues_AreSetCorrectly()
     {
-        Assert.Equal(PrivacyMode.Standard, _viewModel.CurrentPrivacyMode);
+        // Privacy mode is loaded from SettingsService, so check it matches
+        Assert.Equal(_settingsService.PrivacyMode, _viewModel.CurrentPrivacyMode);
         Assert.Equal("0 B", _viewModel.DataSaved);
         Assert.Equal(0, _viewModel.BlockedToday);
         Assert.Equal(0, _viewModel.TotalBlocked);

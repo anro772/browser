@@ -71,6 +71,31 @@ public partial class NetworkMonitorViewModel : ObservableObject, IDisposable
         };
         _updateTimer.Tick += FlushPendingRequests;
         _updateTimer.Start();
+
+        // Load initial stats from database (fire-and-forget, errors handled internally)
+        _ = LoadInitialStatsAsync();
+    }
+
+    /// <summary>
+    /// Loads initial statistics from the database on startup.
+    /// </summary>
+    private async Task LoadInitialStatsAsync()
+    {
+        try
+        {
+            var stats = await _networkLogger.GetStatsAsync();
+
+            Application.Current?.Dispatcher.Invoke(() =>
+            {
+                TotalRequests = stats.TotalRequests;
+                BlockedCount = stats.BlockedRequests;
+                DataSaved = stats.FormattedDataSaved;
+            });
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Initial stats load error: {ex.Message}");
+        }
     }
 
     /// <summary>
@@ -81,10 +106,8 @@ public partial class NetworkMonitorViewModel : ObservableObject, IDisposable
     {
         if (!IsMonitoringEnabled) return;
 
-        // Log to database (async, non-blocking)
-        // NOTE: Intentionally fire-and-forget for performance - we don't want to block on DB writes.
-        // The NetworkLogger handles errors internally and has its own batching/buffering.
-        _ = _networkLogger.LogRequestAsync(request);
+        // NOTE: Database logging is handled globally in App.xaml.cs via RequestInterceptor -> NetworkLogger wiring.
+        // This ViewModel only handles UI updates.
 
         // Add to buffer for batched UI update
         _pendingRequests.Enqueue(request);
