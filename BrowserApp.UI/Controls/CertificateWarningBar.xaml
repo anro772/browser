@@ -1,0 +1,48 @@
+<UserControl x:Class="BrowserApp.UI.Controls.CertificateWarningBar"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+             Visibility="Collapsed"
+             x:Name="CertWarningRoot">
+
+    <Border Background="#FFF3CD"
+            BorderBrush="#FFC107"
+            BorderThickness="0,0,0,2"
+            Padding="12,8">
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <ui:SymbolIcon Grid.Column="0"
+                           Symbol="ShieldError24"
+                           FontSize="20"
+                           Margin="0,0,12,0"
+                           VerticalAlignment="Center"
+                           Foreground="#D32F2F"/>
+
+            <TextBlock Grid.Column="1"
+                       x:Name="WarningText"
+                       Text="This site has a certificate error. Your connection is not private."
+                       FontSize="13"
+                       Foreground="#333333"
+                       TextWrapping="Wrap"
+                       VerticalAlignment="Center"/>
+
+            <Button Grid.Column="2"
+                    Content="Go Back"
+                    Padding="12,4"
+                    Margin="8,0"
+                    Click="GoBackButton_Click"/>
+
+            <Button Grid.Column="3"
+                    Content="Proceed Anyway"
+                    Padding="12,4"
+                    Foreground="#D32F2F"
+                    Click="ProceedButton_Click"/>
+        </Grid>
+    </Border>
+</UserControl>

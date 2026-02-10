@@ -10,14 +10,35 @@ public interface ISearchEngineService
     /// If input is a URL, formats it properly.
     /// If input is a search query, returns a search engine URL.
     /// </summary>
-    /// <param name="input">User input from address bar.</param>
-    /// <returns>A fully qualified URL for navigation.</returns>
     string GetNavigationUrl(string input);
 
     /// <summary>
     /// Checks if the input appears to be a valid URL.
     /// </summary>
-    /// <param name="input">User input to check.</param>
-    /// <returns>True if input looks like a URL, false if it's a search query.</returns>
     bool IsValidUrl(string input);
+
+    /// <summary>
+    /// Sets the active search engine by name.
+    /// </summary>
+    void SetSearchEngine(string engineName);
+
+    /// <summary>
+    /// Sets a custom search engine URL with {query} placeholder.
+    /// </summary>
+    void SetCustomSearchEngine(string urlTemplate);
+
+    /// <summary>
+    /// Gets the home page URL for the current search engine.
+    /// </summary>
+    string GetHomePageUrl();
+
+    /// <summary>
+    /// Gets the list of available built-in search engine names.
+    /// </summary>
+    IReadOnlyList<string> AvailableEngines { get; }
+
+    /// <summary>
+    /// Gets the current search engine name.
+    /// </summary>
+    string CurrentEngine { get; }
 }

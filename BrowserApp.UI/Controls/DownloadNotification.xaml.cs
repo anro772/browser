@@ -10,6 +10,21 @@ public partial class DownloadNotification : UserControl
 {
     private string? _downloadPath;
 
+    /// <summary>
+    /// Fired when a download starts.
+    /// </summary>
+    public event EventHandler<DownloadStartedEventArgs>? DownloadStarted;
+
+    /// <summary>
+    /// Fired when download progress changes.
+    /// </summary>
+    public event EventHandler<DownloadProgressEventArgs>? DownloadProgressChanged;
+
+    /// <summary>
+    /// Fired when a download completes or fails.
+    /// </summary>
+    public event EventHandler<DownloadCompletedEventArgs>? DownloadCompleted;
+
     public DownloadNotification()
     {
         InitializeComponent();
@@ -35,6 +50,15 @@ public partial class DownloadNotification : UserControl
             OpenButton.Visibility = Visibility.Collapsed;
             ShowInFolderButton.Visibility = Visibility.Collapsed;
             Visibility = Visibility.Visible;
+
+            // Fire download started event
+            DownloadStarted?.Invoke(this, new DownloadStartedEventArgs
+            {
+                FileName = fileName,
+                SourceUrl = e.DownloadOperation.Uri,
+                DestinationPath = e.ResultFilePath,
+                TotalBytes = (long)(e.DownloadOperation.TotalBytesToReceive ?? 0)
+            });
         });
 
         e.DownloadOperation.BytesReceivedChanged += (s, _) =>
@@ -48,6 +72,14 @@ public partial class DownloadNotification : UserControl
                     DownloadProgress.Maximum = (double)op.TotalBytesToReceive;
                     DownloadProgress.Value = (double)op.BytesReceived;
                 }
+
+                // Fire progress event
+                DownloadProgressChanged?.Invoke(this, new DownloadProgressEventArgs
+                {
+                    DestinationPath = e.ResultFilePath,
+                    ReceivedBytes = (long)op.BytesReceived,
+                    TotalBytes = (long)(op.TotalBytesToReceive ?? 0)
+                });
             });
         };
 
@@ -63,11 +95,23 @@ public partial class DownloadNotification : UserControl
                     DownloadProgress.Value = DownloadProgress.Maximum;
                     OpenButton.Visibility = Visibility.Visible;
                     ShowInFolderButton.Visibility = Visibility.Visible;
+
+                    DownloadCompleted?.Invoke(this, new DownloadCompletedEventArgs
+                    {
+                        DestinationPath = e.ResultFilePath,
+                        Success = true
+                    });
                 }
                 else if (state == CoreWebView2DownloadState.Interrupted)
                 {
                     FileNameText.Text = "Download failed";
                     DownloadProgress.IsIndeterminate = false;
+
+                    DownloadCompleted?.Invoke(this, new DownloadCompletedEventArgs
+                    {
+                        DestinationPath = e.ResultFilePath,
+                        Success = false
+                    });
                 }
             });
         };
@@ -101,4 +145,25 @@ public partial class DownloadNotification : UserControl
     {
         Visibility = Visibility.Collapsed;
     }
+}
+
+public class DownloadStartedEventArgs : EventArgs
+{
+    public string FileName { get; set; } = string.Empty;
+    public string SourceUrl { get; set; } = string.Empty;
+    public string DestinationPath { get; set; } = string.Empty;
+    public long TotalBytes { get; set; }
+}
+
+public class DownloadProgressEventArgs : EventArgs
+{
+    public string DestinationPath { get; set; } = string.Empty;
+    public long ReceivedBytes { get; set; }
+    public long TotalBytes { get; set; }
+}
+
+public class DownloadCompletedEventArgs : EventArgs
+{
+    public string DestinationPath { get; set; } = string.Empty;
+    public bool Success { get; set; }
 }

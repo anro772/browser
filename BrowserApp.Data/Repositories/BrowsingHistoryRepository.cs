@@ -87,4 +87,44 @@ public class BrowsingHistoryRepository : IBrowsingHistoryRepository
             VisitCount = g.VisitCount
         });
     }
+
+    /// <inheritdoc/>
+    public async Task<IEnumerable<HistorySuggestion>> SearchWithCountAsync(string query, int limit)
+    {
+        if (string.IsNullOrWhiteSpace(query))
+        {
+            return Enumerable.Empty<HistorySuggestion>();
+        }
+
+        string lowerQuery = query.ToLowerInvariant();
+
+        // Group by URL and count visits, filtering by query
+        var grouped = await _context.BrowsingHistory
+            .Where(h => h.Url.ToLower().Contains(lowerQuery) ||
+                       (h.Title != null && h.Title.ToLower().Contains(lowerQuery)))
+            .GroupBy(h => h.Url)
+            .Select(g => new { Url = g.Key, VisitCount = g.Count() })
+            .OrderByDescending(x => x.VisitCount)
+            .Take(limit)
+            .ToListAsync();
+
+        // Fetch titles for matched URLs
+        var urls = grouped.Select(g => g.Url).ToList();
+        var latestEntries = await _context.BrowsingHistory
+            .Where(h => urls.Contains(h.Url))
+            .ToListAsync();
+
+        var titleMap = latestEntries
+            .GroupBy(h => h.Url)
+            .ToDictionary(
+                g => g.Key,
+                g => g.OrderByDescending(h => h.VisitedAt).First().Title);
+
+        return grouped.Select(g => new HistorySuggestion
+        {
+            Url = g.Url,
+            Title = titleMap.GetValueOrDefault(g.Url),
+            VisitCount = g.VisitCount
+        });
+    }
 }

@@ -5,11 +5,23 @@ namespace BrowserApp.Core.Services;
 
 /// <summary>
 /// Service for detecting URLs vs search queries and building navigation URLs.
-/// Supports URL detection, localhost, IP addresses, and search query encoding.
+/// Supports multiple search engines and custom search URLs.
 /// </summary>
 public partial class SearchEngineService : ISearchEngineService
 {
-    private const string DefaultSearchEngine = "https://www.google.com/search?q=";
+    private static readonly Dictionary<string, (string SearchUrl, string HomeUrl)> EngineMap = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["Google"] = ("https://www.google.com/search?q=", "https://www.google.com"),
+        ["Bing"] = ("https://www.bing.com/search?q=", "https://www.bing.com"),
+        ["DuckDuckGo"] = ("https://duckduckgo.com/?q=", "https://duckduckgo.com"),
+        ["Brave"] = ("https://search.brave.com/search?q=", "https://search.brave.com"),
+        ["Ecosia"] = ("https://www.ecosia.org/search?q=", "https://www.ecosia.org"),
+    };
+
+    private string _currentEngine = "Google";
+    private string _searchUrl = "https://www.google.com/search?q=";
+    private string _homeUrl = "https://www.google.com";
+    private string? _customUrlTemplate;
 
     // Regex for IP address detection
     [GeneratedRegex(@"^(\d{1,3}\.){3}\d{1,3}(:\d+)?(/.*)?$")]
@@ -20,11 +32,50 @@ public partial class SearchEngineService : ISearchEngineService
     private static partial Regex LocalhostRegex();
 
     /// <inheritdoc/>
+    public IReadOnlyList<string> AvailableEngines { get; } = new List<string>(EngineMap.Keys).Concat(new[] { "Custom" }).ToList().AsReadOnly();
+
+    /// <inheritdoc/>
+    public string CurrentEngine => _currentEngine;
+
+    /// <inheritdoc/>
+    public void SetSearchEngine(string engineName)
+    {
+        if (engineName == "Custom" && _customUrlTemplate != null)
+        {
+            _currentEngine = "Custom";
+            return;
+        }
+
+        if (EngineMap.TryGetValue(engineName, out var engine))
+        {
+            _currentEngine = engineName;
+            _searchUrl = engine.SearchUrl;
+            _homeUrl = engine.HomeUrl;
+            _customUrlTemplate = null;
+        }
+    }
+
+    /// <inheritdoc/>
+    public void SetCustomSearchEngine(string urlTemplate)
+    {
+        if (!string.IsNullOrWhiteSpace(urlTemplate))
+        {
+            _customUrlTemplate = urlTemplate;
+            _currentEngine = "Custom";
+            _searchUrl = urlTemplate.Replace("{query}", "");
+            _homeUrl = "about:blank";
+        }
+    }
+
+    /// <inheritdoc/>
+    public string GetHomePageUrl() => _homeUrl;
+
+    /// <inheritdoc/>
     public string GetNavigationUrl(string input)
     {
         if (string.IsNullOrWhiteSpace(input))
         {
-            return DefaultSearchEngine;
+            return _homeUrl;
         }
 
         input = input.Trim();
@@ -103,12 +154,15 @@ public partial class SearchEngineService : ISearchEngineService
         return false;
     }
 
-    /// <summary>
-    /// Builds a search engine URL from a query string.
-    /// </summary>
-    private static string BuildSearchUrl(string query)
+    private string BuildSearchUrl(string query)
     {
         string encodedQuery = Uri.EscapeDataString(query);
-        return DefaultSearchEngine + encodedQuery;
+
+        if (_customUrlTemplate != null)
+        {
+            return _customUrlTemplate.Replace("{query}", encodedQuery);
+        }
+
+        return _searchUrl + encodedQuery;
     }
 }

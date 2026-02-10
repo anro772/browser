@@ -73,6 +73,41 @@
                     </StackPanel>
                 </Border>
 
+                <!-- Search Engine Section -->
+                <Border Background="{DynamicResource ControlFillColorDefaultBrush}"
+                        CornerRadius="4"
+                        Padding="16"
+                        Margin="0,0,0,12">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                            <ui:SymbolIcon Symbol="Search24"
+                                           FontSize="20"
+                                           Foreground="#0078D4"
+                                           Margin="0,0,8,0"/>
+                            <TextBlock Text="Search Engine"
+                                       FontSize="14"
+                                       FontWeight="SemiBold"
+                                       VerticalAlignment="Center"/>
+                        </StackPanel>
+
+                        <TextBlock Text="Choose your default search engine for address bar queries."
+                                   FontSize="12"
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                   TextWrapping="Wrap"
+                                   Margin="0,0,0,12"/>
+
+                        <ComboBox ItemsSource="{Binding SearchEngines}"
+                                  SelectedItem="{Binding SelectedSearchEngine}"
+                                  HorizontalAlignment="Stretch"
+                                  Margin="0,0,0,8"/>
+
+                        <ui:TextBox PlaceholderText="Custom search URL (use {query} as placeholder)"
+                                    Text="{Binding CustomSearchEngineUrl, UpdateSourceTrigger=PropertyChanged}"
+                                    Icon="{ui:SymbolIcon Globe24}"
+                                    Visibility="{Binding IsCustomEngineVisible, Converter={StaticResource BoolToVisibility}}"/>
+                    </StackPanel>
+                </Border>
+
                 <!-- Server Configuration Section -->
                 <Border Background="{DynamicResource ControlFillColorDefaultBrush}"
                         CornerRadius="4"

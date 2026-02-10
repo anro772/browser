@@ -1,8 +1,12 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Web.WebView2.Core;
 using BrowserApp.Core.Interfaces;
+using BrowserApp.Data;
+using BrowserApp.Data.Entities;
 using BrowserApp.UI.Models;
 
 namespace BrowserApp.UI.ViewModels;
@@ -187,6 +191,91 @@ public partial class TabStripViewModel : ObservableObject, IDisposable
         var index = Tabs.IndexOf(ActiveTab);
         var prevIndex = (index - 1 + Tabs.Count) % Tabs.Count;
         ActivateTab(Tabs[prevIndex]);
+    }
+
+    /// <summary>
+    /// Saves current tab session to the database.
+    /// </summary>
+    public async Task SaveSessionAsync(IServiceScopeFactory scopeFactory)
+    {
+        try
+        {
+            using var scope = scopeFactory.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<BrowserDbContext>();
+
+            // Clear existing session
+            var existing = await db.TabSessions.ToListAsync();
+            db.TabSessions.RemoveRange(existing);
+
+            // Save current tabs
+            for (int i = 0; i < Tabs.Count; i++)
+            {
+                var tab = Tabs[i];
+                if (!string.IsNullOrEmpty(tab.Url))
+                {
+                    db.TabSessions.Add(new TabSessionEntity
+                    {
+                        Url = tab.Url,
+                        Title = tab.Title,
+                        TabOrder = i,
+                        IsActive = tab.IsActive,
+                        SavedAt = DateTime.UtcNow
+                    });
+                }
+            }
+
+            await db.SaveChangesAsync();
+            System.Diagnostics.Debug.WriteLine($"[TabStrip] Session saved: {Tabs.Count} tabs");
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[TabStrip] Failed to save session: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Restores tab session from the database. Returns true if session was restored.
+    /// </summary>
+    public async Task<bool> RestoreSessionAsync(IServiceScopeFactory scopeFactory)
+    {
+        try
+        {
+            using var scope = scopeFactory.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<BrowserDbContext>();
+
+            var sessions = await db.TabSessions
+                .OrderBy(s => s.TabOrder)
+                .ToListAsync();
+
+            if (sessions.Count == 0)
+                return false;
+
+            BrowserTabItem? activeTab = null;
+
+            foreach (var session in sessions)
+            {
+                await NewTabAsync(session.Url);
+
+                var tab = Tabs.LastOrDefault();
+                if (tab != null && session.IsActive)
+                {
+                    activeTab = tab;
+                }
+            }
+
+            if (activeTab != null)
+            {
+                ActivateTab(activeTab);
+            }
+
+            System.Diagnostics.Debug.WriteLine($"[TabStrip] Session restored: {sessions.Count} tabs");
+            return true;
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[TabStrip] Failed to restore session: {ex.Message}");
+            return false;
+        }
     }
 
     partial void OnActiveTabChanged(BrowserTabItem? value)

@@ -1,3 +1,4 @@
+using BrowserApp.Core.Interfaces;
 using BrowserApp.Core.Models;
 using BrowserApp.Data.Interfaces;
 using BrowserApp.UI.Services;
@@ -15,6 +16,7 @@ public class SettingsViewModelTests
     private readonly Mock<IServiceProvider> _serviceProviderMock;
     private readonly Mock<IBrowsingHistoryRepository> _historyRepositoryMock;
     private readonly Mock<INetworkLogRepository> _networkLogRepositoryMock;
+    private readonly Mock<ISearchEngineService> _searchEngineServiceMock;
     private readonly SettingsService _settingsService;
     private readonly SettingsViewModel _viewModel;
 
@@ -25,6 +27,7 @@ public class SettingsViewModelTests
         _serviceProviderMock = new Mock<IServiceProvider>();
         _historyRepositoryMock = new Mock<IBrowsingHistoryRepository>();
         _networkLogRepositoryMock = new Mock<INetworkLogRepository>();
+        _searchEngineServiceMock = new Mock<ISearchEngineService>();
         _settingsService = new SettingsService();
 
         // Setup the scope factory chain
@@ -35,7 +38,9 @@ public class SettingsViewModelTests
         _serviceProviderMock.Setup(x => x.GetService(typeof(INetworkLogRepository)))
             .Returns(_networkLogRepositoryMock.Object);
 
-        _viewModel = new SettingsViewModel(_settingsService, _scopeFactoryMock.Object);
+        _searchEngineServiceMock.Setup(x => x.AvailableEngines).Returns(new List<string> { "Google", "Bing", "Custom" });
+
+        _viewModel = new SettingsViewModel(_settingsService, _scopeFactoryMock.Object, _searchEngineServiceMock.Object);
     }
 
     [Fact]

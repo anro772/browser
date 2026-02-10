@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Windows.Data;
+using BrowserApp.UI.Models;
 using Wpf.Ui.Controls;
 
 namespace BrowserApp.UI.Converters;
@@ -50,6 +51,58 @@ public class UriToSecurityColorConverter : IValueConverter
             }
         }
         return new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(120, 120, 120)); // Gray
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        throw new NotImplementedException();
+    }
+}
+
+/// <summary>
+/// Converts a CertificateStatus to a security icon, overriding the URL-based icon when cert errors exist.
+/// </summary>
+public class CertificateStatusToIconConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        if (value is CertificateStatus status)
+        {
+            return status switch
+            {
+                CertificateStatus.Error => SymbolRegular.ShieldError24,
+                CertificateStatus.Warning => SymbolRegular.Warning24,
+                CertificateStatus.Valid => SymbolRegular.LockClosed24,
+                _ => SymbolRegular.Globe24,
+            };
+        }
+        return SymbolRegular.Globe24;
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        throw new NotImplementedException();
+    }
+}
+
+/// <summary>
+/// Converts a CertificateStatus to a security color.
+/// </summary>
+public class CertificateStatusToColorConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        if (value is CertificateStatus status)
+        {
+            return status switch
+            {
+                CertificateStatus.Error => new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(209, 52, 56)), // Red
+                CertificateStatus.Warning => new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(255, 140, 0)), // Orange
+                CertificateStatus.Valid => new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(16, 124, 16)), // Green
+                _ => new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(120, 120, 120)), // Gray
+            };
+        }
+        return new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(120, 120, 120));
     }
 
     public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)

@@ -1,5 +1,6 @@
 using System.IO;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Web.WebView2.Core;
@@ -25,12 +26,15 @@ public partial class MainWindow : FluentWindow
     private readonly LogViewerView _logViewerView;
     private readonly PrivacyDashboardView _dashboardView;
     private readonly HistoryView _historyView;
+    private readonly DownloadManagerView _downloadManagerView;
     private readonly IServiceProvider _serviceProvider;
     private readonly INetworkLogger _networkLogger;
+    private readonly DownloadManagerViewModel _downloadManagerViewModel;
     private bool _isFullScreen;
     private WindowState _previousWindowState;
     private WindowStyle _previousWindowStyle;
     private BrowserTabItem? _overlayTrackedTab;
+    private BrowserTabItem? _certTrackedTab;
 
     public MainWindow(
         MainViewModel viewModel,
@@ -40,6 +44,8 @@ public partial class MainWindow : FluentWindow
         PrivacyDashboardView dashboardView,
         HistoryView historyView,
         BookmarksPanel bookmarksPanel,
+        DownloadManagerView downloadManagerView,
+        DownloadManagerViewModel downloadManagerViewModel,
         INetworkLogger networkLogger,
         IServiceProvider serviceProvider)
     {
@@ -49,6 +55,8 @@ public partial class MainWindow : FluentWindow
         _logViewerView = logViewerView;
         _dashboardView = dashboardView;
         _historyView = historyView;
+        _downloadManagerView = downloadManagerView;
+        _downloadManagerViewModel = downloadManagerViewModel;
         _networkLogger = networkLogger;
         _serviceProvider = serviceProvider;
 
@@ -59,6 +67,7 @@ public partial class MainWindow : FluentWindow
         // Set the sidebar tab contents
         DashboardContent.Content = _dashboardView;
         BookmarksContent.Content = bookmarksPanel;
+        DownloadsContent.Content = _downloadManagerView;
         NetworkMonitorContent.Content = _networkMonitorView;
         HistoryContent.Content = _historyView;
         LogViewerContent.Content = _logViewerView;
@@ -84,6 +93,10 @@ public partial class MainWindow : FluentWindow
         _viewModel.ToggleFullScreenRequested += (s, e) => ToggleFullScreen();
         _viewModel.FindInPageRequested += (s, e) => OpenFindInPage();
 
+        // Wire certificate warning bar events
+        CertificateWarningBarControl.ProceedClicked += OnCertificateProceedClicked;
+        CertificateWarningBarControl.GoBackClicked += OnCertificateGoBackClicked;
+
         Loaded += MainWindow_Loaded;
     }
 
@@ -100,12 +113,20 @@ public partial class MainWindow : FluentWindow
 
             await _tabStrip.InitializeAsync(userDataPath);
 
-            ErrorLogger.LogInfo("[MainWindow] WebView2 environment created, creating first tab");
+            ErrorLogger.LogInfo("[MainWindow] WebView2 environment created");
 
-            // Open first tab and navigate to home
-            await _tabStrip.NewTabAsync("https://www.google.com");
+            // Try to restore previous session
+            var scopeFactory = _serviceProvider.GetRequiredService<IServiceScopeFactory>();
+            bool restored = await _tabStrip.RestoreSessionAsync(scopeFactory);
 
-            ErrorLogger.LogInfo("[MainWindow] Tab system initialized with first tab");
+            if (!restored)
+            {
+                // No saved session — open first tab and navigate to home
+                var searchEngine = _serviceProvider.GetRequiredService<ISearchEngineService>();
+                await _tabStrip.NewTabAsync(searchEngine.GetHomePageUrl());
+            }
+
+            ErrorLogger.LogInfo($"[MainWindow] Tab system initialized ({_tabStrip.Tabs.Count} tabs)");
         }
         catch (Exception ex)
         {
@@ -158,7 +179,7 @@ public partial class MainWindow : FluentWindow
 
     /// <summary>
     /// Called after CoreWebView2 is fully initialized on a tab.
-    /// Wires up network logging and download notifications.
+    /// Wires up network logging, download notifications, and download tracking.
     /// </summary>
     private void OnTabReady(object? sender, BrowserTabItem tab)
     {
@@ -176,6 +197,20 @@ public partial class MainWindow : FluentWindow
         {
             DownloadNotificationControl.WireToWebView(tab.CoreWebView2);
         }
+
+        // Wire download events to download manager
+        DownloadNotificationControl.DownloadStarted += (s, args) =>
+        {
+            _downloadManagerViewModel.AddDownload(args.FileName, args.SourceUrl, args.DestinationPath, args.TotalBytes);
+        };
+        DownloadNotificationControl.DownloadProgressChanged += (s, args) =>
+        {
+            _downloadManagerViewModel.UpdateDownloadProgress(args.DestinationPath, args.ReceivedBytes);
+        };
+        DownloadNotificationControl.DownloadCompleted += (s, args) =>
+        {
+            _downloadManagerViewModel.CompleteDownload(args.DestinationPath, args.Success);
+        };
     }
 
     /// <summary>
@@ -201,6 +236,14 @@ public partial class MainWindow : FluentWindow
             _overlayTrackedTab = null;
         }
 
+        // Unsubscribe from previous tab's cert events
+        if (_certTrackedTab != null)
+        {
+            _certTrackedTab.CertificateStatusChanged -= OnCertStatusChanged;
+            _certTrackedTab.CertificateErrorDetected -= OnCertErrorDetected;
+            _certTrackedTab = null;
+        }
+
         foreach (var child in WebViewHost.Children)
         {
             if (child is Microsoft.Web.WebView2.Wpf.WebView2 wv)
@@ -212,6 +255,28 @@ public partial class MainWindow : FluentWindow
         if (activeTab?.WebView != null)
         {
             activeTab.WebView.Visibility = Visibility.Visible;
+        }
+
+        // Wire cert tracking for new active tab
+        if (activeTab != null)
+        {
+            _certTrackedTab = activeTab;
+            activeTab.CertificateStatusChanged += OnCertStatusChanged;
+            activeTab.CertificateErrorDetected += OnCertErrorDetected;
+
+            // Update cert warning bar state
+            if (activeTab.CertificateStatus == CertificateStatus.Error)
+            {
+                CertificateWarningBarControl.Show(activeTab.CertificateErrorMessage);
+            }
+            else
+            {
+                CertificateWarningBarControl.Hide();
+            }
+        }
+        else
+        {
+            CertificateWarningBarControl.Hide();
         }
 
         // Show new tab page if the tab has no URL
@@ -229,6 +294,40 @@ public partial class MainWindow : FluentWindow
         }
     }
 
+    private void OnCertStatusChanged(object? sender, EventArgs e)
+    {
+        if (_certTrackedTab != null)
+        {
+            if (_certTrackedTab.CertificateStatus == CertificateStatus.Error)
+            {
+                CertificateWarningBarControl.Show(_certTrackedTab.CertificateErrorMessage);
+            }
+            else
+            {
+                CertificateWarningBarControl.Hide();
+            }
+        }
+    }
+
+    private void OnCertErrorDetected(object? sender, CertificateErrorEventArgs e)
+    {
+        CertificateWarningBarControl.Show(_certTrackedTab?.CertificateErrorMessage ?? "Certificate error detected");
+    }
+
+    private void OnCertificateProceedClicked(object? sender, EventArgs e)
+    {
+        if (_certTrackedTab != null)
+        {
+            CertificateWarningBarControl.Hide();
+            _certTrackedTab.ProceedPastCertificateError();
+        }
+    }
+
+    private void OnCertificateGoBackClicked(object? sender, EventArgs e)
+    {
+        _tabStrip.ActiveTab?.GoBack();
+    }
+
     private void OnActiveTabSourceChangedForOverlay(object? sender, string newUrl)
     {
         if (!string.IsNullOrEmpty(newUrl))
@@ -241,6 +340,59 @@ public partial class MainWindow : FluentWindow
                 _overlayTrackedTab.SourceChanged -= OnActiveTabSourceChangedForOverlay;
                 _overlayTrackedTab = null;
             }
+        }
+    }
+
+    // Autocomplete keyboard navigation
+    private void AddressBar_PreviewKeyDown(object sender, KeyEventArgs e)
+    {
+        if (!_viewModel.IsSuggestionsOpen) return;
+
+        if (e.Key == Key.Down)
+        {
+            if (SuggestionsListBox.SelectedIndex < SuggestionsListBox.Items.Count - 1)
+            {
+                SuggestionsListBox.SelectedIndex++;
+            }
+            e.Handled = true;
+        }
+        else if (e.Key == Key.Up)
+        {
+            if (SuggestionsListBox.SelectedIndex > 0)
+            {
+                SuggestionsListBox.SelectedIndex--;
+            }
+            e.Handled = true;
+        }
+        else if (e.Key == Key.Escape)
+        {
+            _viewModel.CloseSuggestions();
+            e.Handled = true;
+        }
+        else if (e.Key == Key.Return && SuggestionsListBox.SelectedItem is AutocompleteSuggestion suggestion)
+        {
+            _viewModel.AcceptSuggestionCommand.Execute(suggestion);
+            e.Handled = true;
+        }
+    }
+
+    private void AddressBar_LostFocus(object sender, RoutedEventArgs e)
+    {
+        // Delay to allow click on popup item to register
+        Dispatcher.BeginInvoke(new Action(() =>
+        {
+            if (!SuggestionsListBox.IsMouseOver)
+            {
+                _viewModel.CloseSuggestions();
+            }
+        }), System.Windows.Threading.DispatcherPriority.Background);
+    }
+
+    private void SuggestionsListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (SuggestionsListBox.SelectedItem is AutocompleteSuggestion suggestion && Mouse.LeftButton == MouseButtonState.Pressed)
+        {
+            _viewModel.AcceptSuggestionCommand.Execute(suggestion);
         }
     }
 
@@ -327,6 +479,22 @@ public partial class MainWindow : FluentWindow
         catch (Exception ex)
         {
             ErrorLogger.LogError("Failed to open Marketplace", ex);
+        }
+    }
+
+    private void ExtensionsButton_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            ErrorLogger.LogInfo("Opening Extensions Manager");
+            var extensionView = _serviceProvider.GetRequiredService<ExtensionManagerView>();
+            extensionView.Owner = this;
+            extensionView.ShowDialog();
+            ErrorLogger.LogInfo("Extensions Manager closed");
+        }
+        catch (Exception ex)
+        {
+            ErrorLogger.LogError("Failed to open Extensions Manager", ex);
         }
     }
 

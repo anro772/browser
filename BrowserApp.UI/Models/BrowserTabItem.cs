@@ -10,6 +10,17 @@ using BrowserApp.UI.Services;
 namespace BrowserApp.UI.Models;
 
 /// <summary>
+/// Certificate validation status for a tab.
+/// </summary>
+public enum CertificateStatus
+{
+    Unknown,
+    Valid,
+    Warning,
+    Error
+}
+
+/// <summary>
 /// Represents a single browser tab with its own WebView2 instance.
 /// Each tab is fully independent with its own navigation, request interception, and content injection.
 /// </summary>
@@ -44,6 +55,12 @@ public partial class BrowserTabItem : ObservableObject, IDisposable
     [ObservableProperty]
     private double _zoomLevel = 1.0;
 
+    [ObservableProperty]
+    private CertificateStatus _certificateStatus = CertificateStatus.Unknown;
+
+    [ObservableProperty]
+    private string _certificateErrorMessage = string.Empty;
+
     public WebView2? WebView => _webView;
     public CoreWebView2? CoreWebView2 => _coreWebView2;
     public RequestInterceptor? RequestInterceptor => _requestInterceptor;
@@ -75,6 +92,17 @@ public partial class BrowserTabItem : ObservableObject, IDisposable
     /// Fired when StatusBar text changes (link hover).
     /// </summary>
     public event EventHandler<string>? StatusBarTextChanged;
+
+    /// <summary>
+    /// Fired when the certificate status changes.
+    /// </summary>
+    public event EventHandler? CertificateStatusChanged;
+
+    /// <summary>
+    /// Fired when a certificate error is detected and user decision is needed.
+    /// The event args contain the deferral to allow proceeding or blocking.
+    /// </summary>
+    public event EventHandler<CertificateErrorEventArgs>? CertificateErrorDetected;
 
     /// <summary>
     /// Phase 1: Creates the WebView2 control (must be added to visual tree before Phase 2).
@@ -118,6 +146,9 @@ public partial class BrowserTabItem : ObservableObject, IDisposable
 
         // Wire navigation completed to execute injections (named method for proper cleanup)
         _coreWebView2.NavigationCompleted += OnNavigationCompletedForInjection;
+
+        // Wire certificate error detection
+        _coreWebView2.ServerCertificateErrorDetected += OnServerCertificateErrorDetected;
     }
 
     private async void OnNavigationCompletedForInjection(object? sender, CoreWebView2NavigationCompletedEventArgs e)
@@ -126,6 +157,30 @@ public partial class BrowserTabItem : ObservableObject, IDisposable
         {
             await ExecuteInjectionsAsync(_ruleEngine);
         }
+    }
+
+    private void OnServerCertificateErrorDetected(object? sender, CoreWebView2ServerCertificateErrorDetectedEventArgs e)
+    {
+        Application.Current?.Dispatcher.Invoke(() =>
+        {
+            CertificateStatus = CertificateStatus.Error;
+            CertificateErrorMessage = $"Certificate error: {e.ErrorStatus}";
+            CertificateStatusChanged?.Invoke(this, EventArgs.Empty);
+
+            // Raise event for UI to handle (show warning bar)
+            var args = new CertificateErrorEventArgs(e);
+            CertificateErrorDetected?.Invoke(this, args);
+
+            if (args.ShouldProceed)
+            {
+                e.Action = CoreWebView2ServerCertificateErrorAction.AlwaysAllow;
+            }
+            else
+            {
+                // Default: don't allow, let the UI decide via the warning bar
+                e.Action = CoreWebView2ServerCertificateErrorAction.Cancel;
+            }
+        });
     }
 
     private void ConfigureSettings()
@@ -155,6 +210,10 @@ public partial class BrowserTabItem : ObservableObject, IDisposable
     {
         IsLoading = true;
         NavigationStarting?.Invoke(this, EventArgs.Empty);
+
+        // Reset cert status on new navigation
+        CertificateStatus = CertificateStatus.Unknown;
+        CertificateErrorMessage = string.Empty;
     }
 
     private void OnNavigationCompleted(object? sender, CoreWebView2NavigationCompletedEventArgs e)
@@ -163,6 +222,21 @@ public partial class BrowserTabItem : ObservableObject, IDisposable
         OnPropertyChanged(nameof(CanGoBack));
         OnPropertyChanged(nameof(CanGoForward));
         NavigationCompleted?.Invoke(this, e.IsSuccess);
+
+        // Update certificate status based on URL
+        if (e.IsSuccess && CertificateStatus != CertificateStatus.Error)
+        {
+            var currentUrl = _coreWebView2?.Source ?? string.Empty;
+            if (currentUrl.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+            {
+                CertificateStatus = CertificateStatus.Valid;
+            }
+            else if (currentUrl.StartsWith("http://", StringComparison.OrdinalIgnoreCase))
+            {
+                CertificateStatus = CertificateStatus.Warning;
+            }
+            CertificateStatusChanged?.Invoke(this, EventArgs.Empty);
+        }
     }
 
     private void OnSourceChanged(object? sender, CoreWebView2SourceChangedEventArgs e)
@@ -241,6 +315,19 @@ public partial class BrowserTabItem : ObservableObject, IDisposable
     }
 
     /// <summary>
+    /// Allows proceeding past a certificate error for the current navigation.
+    /// </summary>
+    public void ProceedPastCertificateError()
+    {
+        if (_coreWebView2 != null && !string.IsNullOrEmpty(Url))
+        {
+            // Re-navigate — the ServerCertificateErrorDetected handler will get called again,
+            // but this time the cert warning bar has told us to proceed.
+            _coreWebView2.Navigate(Url);
+        }
+    }
+
+    /// <summary>
     /// Navigate this tab to a URL.
     /// </summary>
     public void Navigate(string url)
@@ -286,6 +373,7 @@ public partial class BrowserTabItem : ObservableObject, IDisposable
             _coreWebView2.DocumentTitleChanged -= OnDocumentTitleChanged;
             _coreWebView2.StatusBarTextChanged -= OnStatusBarTextChanged;
             _coreWebView2.FaviconChanged -= OnFaviconChanged;
+            _coreWebView2.ServerCertificateErrorDetected -= OnServerCertificateErrorDetected;
         }
 
         _cssInjector?.Dispose();
@@ -296,5 +384,19 @@ public partial class BrowserTabItem : ObservableObject, IDisposable
         _coreWebView2 = null;
 
         GC.SuppressFinalize(this);
+    }
+}
+
+/// <summary>
+/// Event args for certificate error events.
+/// </summary>
+public class CertificateErrorEventArgs : EventArgs
+{
+    public CoreWebView2ServerCertificateErrorDetectedEventArgs OriginalArgs { get; }
+    public bool ShouldProceed { get; set; }
+
+    public CertificateErrorEventArgs(CoreWebView2ServerCertificateErrorDetectedEventArgs args)
+    {
+        OriginalArgs = args;
     }
 }

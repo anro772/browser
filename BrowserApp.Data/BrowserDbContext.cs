@@ -15,6 +15,9 @@ public class BrowserDbContext : DbContext
     public DbSet<RuleEntity> Rules { get; set; } = null!;
     public DbSet<ChannelMembershipEntity> ChannelMemberships { get; set; } = null!;
     public DbSet<BookmarkEntity> Bookmarks { get; set; } = null!;
+    public DbSet<TabSessionEntity> TabSessions { get; set; } = null!;
+    public DbSet<DownloadEntity> Downloads { get; set; } = null!;
+    public DbSet<ExtensionEntity> Extensions { get; set; } = null!;
 
     public BrowserDbContext()
     {
@@ -88,6 +91,35 @@ public class BrowserDbContext : DbContext
             entity.Property(e => e.Title).IsRequired().HasMaxLength(500);
             entity.HasIndex(e => e.Url).IsUnique();
             entity.HasIndex(e => e.CreatedAt);
+        });
+
+        modelBuilder.Entity<TabSessionEntity>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Url).IsRequired();
+            entity.HasIndex(e => e.SavedAt);
+        });
+
+        modelBuilder.Entity<DownloadEntity>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.FileName).IsRequired();
+            entity.Property(e => e.SourceUrl).IsRequired();
+            entity.Property(e => e.DestinationPath).IsRequired();
+            entity.Property(e => e.Status).HasDefaultValue("downloading");
+            entity.HasIndex(e => e.StartedAt);
+            entity.HasIndex(e => e.Status);
+        });
+
+        modelBuilder.Entity<ExtensionEntity>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Name).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.Version).IsRequired().HasMaxLength(50);
+            entity.Property(e => e.FolderPath).IsRequired();
+            entity.Property(e => e.IsEnabled).HasDefaultValue(true);
+            entity.HasIndex(e => e.IsEnabled);
+            entity.HasIndex(e => e.InstalledAt);
         });
 
         modelBuilder.Entity<ChannelMembershipEntity>(entity =>

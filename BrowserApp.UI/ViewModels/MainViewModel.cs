@@ -1,5 +1,8 @@
+using System.Collections.ObjectModel;
+using System.Windows.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Microsoft.Extensions.DependencyInjection;
 using BrowserApp.Core.Interfaces;
 using BrowserApp.Data.Entities;
 using BrowserApp.Data.Interfaces;
@@ -15,9 +18,11 @@ public partial class MainViewModel : ObservableObject, IDisposable
 {
     private readonly ISearchEngineService _searchEngineService;
     private readonly IBrowsingHistoryRepository _historyRepository;
+    private readonly IServiceScopeFactory _scopeFactory;
     private readonly TabStripViewModel _tabStrip;
     private readonly BookmarkViewModel _bookmarkViewModel;
     private bool _isDisposed;
+    private DispatcherTimer? _debounceTimer;
 
     [ObservableProperty]
     private string _addressBarText = string.Empty;
@@ -37,6 +42,23 @@ public partial class MainViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private bool _isCurrentPageBookmarked;
 
+    // Autocomplete
+    [ObservableProperty]
+    private ObservableCollection<AutocompleteSuggestion> _suggestions = new();
+
+    [ObservableProperty]
+    private bool _isSuggestionsOpen;
+
+    [ObservableProperty]
+    private AutocompleteSuggestion? _selectedSuggestion;
+
+    // Certificate status
+    [ObservableProperty]
+    private CertificateStatus _certificateStatus = CertificateStatus.Unknown;
+
+    [ObservableProperty]
+    private string _certificateErrorMessage = string.Empty;
+
     public TabStripViewModel TabStrip => _tabStrip;
     public BookmarkViewModel BookmarkViewModel => _bookmarkViewModel;
 
@@ -46,19 +68,30 @@ public partial class MainViewModel : ObservableObject, IDisposable
     public MainViewModel(
         ISearchEngineService searchEngineService,
         IBrowsingHistoryRepository historyRepository,
+        IServiceScopeFactory scopeFactory,
         TabStripViewModel tabStrip,
         BookmarkViewModel bookmarkViewModel)
     {
         _searchEngineService = searchEngineService;
         _historyRepository = historyRepository;
+        _scopeFactory = scopeFactory;
         _tabStrip = tabStrip;
         _bookmarkViewModel = bookmarkViewModel;
 
         // Subscribe to active tab changes
         _tabStrip.ActiveTabChanged += OnActiveTabChanged;
+
+        // Setup debounce timer for autocomplete
+        _debounceTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(200) };
+        _debounceTimer.Tick += async (s, e) =>
+        {
+            _debounceTimer.Stop();
+            await UpdateSuggestionsAsync(AddressBarText);
+        };
     }
 
     private BrowserTabItem? _subscribedTab;
+    private bool _suppressSuggestions;
 
     private void OnActiveTabChanged(object? sender, BrowserTabItem? tab)
     {
@@ -70,6 +103,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
             _subscribedTab.NavigationCompleted -= OnTabNavigationCompleted;
             _subscribedTab.TitleChanged -= OnTabTitleChanged;
             _subscribedTab.StatusBarTextChanged -= OnTabStatusBarTextChanged;
+            _subscribedTab.CertificateStatusChanged -= OnTabCertificateStatusChanged;
         }
 
         _subscribedTab = tab;
@@ -82,13 +116,18 @@ public partial class MainViewModel : ObservableObject, IDisposable
             tab.NavigationCompleted += OnTabNavigationCompleted;
             tab.TitleChanged += OnTabTitleChanged;
             tab.StatusBarTextChanged += OnTabStatusBarTextChanged;
+            tab.CertificateStatusChanged += OnTabCertificateStatusChanged;
 
             // Update UI to match active tab state
+            _suppressSuggestions = true;
             AddressBarText = tab.Url;
+            _suppressSuggestions = false;
             PageTitle = string.IsNullOrEmpty(tab.Title) || tab.Title == "New Tab"
                 ? "Privacy Browser"
                 : $"{tab.Title} - Privacy Browser";
             IsLoading = tab.IsLoading;
+            CertificateStatus = tab.CertificateStatus;
+            CertificateErrorMessage = tab.CertificateErrorMessage;
         }
 
         NotifyNavigationStateChanged();
@@ -96,7 +135,10 @@ public partial class MainViewModel : ObservableObject, IDisposable
 
     private void OnTabSourceChanged(object? sender, string newUrl)
     {
+        _suppressSuggestions = true;
         AddressBarText = newUrl;
+        _suppressSuggestions = false;
+        IsSuggestionsOpen = false;
         NotifyNavigationStateChanged();
     }
 
@@ -147,6 +189,114 @@ public partial class MainViewModel : ObservableObject, IDisposable
         StatusBarText = string.IsNullOrEmpty(text) ? "Ready" : text;
     }
 
+    private void OnTabCertificateStatusChanged(object? sender, EventArgs e)
+    {
+        if (_subscribedTab != null)
+        {
+            CertificateStatus = _subscribedTab.CertificateStatus;
+            CertificateErrorMessage = _subscribedTab.CertificateErrorMessage;
+        }
+    }
+
+    partial void OnAddressBarTextChanged(string value)
+    {
+        if (_suppressSuggestions) return;
+
+        if (string.IsNullOrWhiteSpace(value) || value.Length < 2)
+        {
+            IsSuggestionsOpen = false;
+            Suggestions.Clear();
+            return;
+        }
+
+        _debounceTimer?.Stop();
+        _debounceTimer?.Start();
+    }
+
+    private async Task UpdateSuggestionsAsync(string query)
+    {
+        if (string.IsNullOrWhiteSpace(query) || query.Length < 2)
+        {
+            IsSuggestionsOpen = false;
+            return;
+        }
+
+        try
+        {
+            using var scope = _scopeFactory.CreateScope();
+            var historyRepo = scope.ServiceProvider.GetRequiredService<IBrowsingHistoryRepository>();
+            var bookmarkRepo = scope.ServiceProvider.GetRequiredService<IBookmarkRepository>();
+
+            var historyTask = historyRepo.SearchWithCountAsync(query, 5);
+            var bookmarkTask = bookmarkRepo.GetAllAsync();
+
+            await Task.WhenAll(historyTask, bookmarkTask);
+
+            var historySuggestions = (await historyTask).Select(h => new AutocompleteSuggestion
+            {
+                Url = h.Url,
+                Title = h.Title ?? h.Url,
+                Source = "history",
+                VisitCount = h.VisitCount
+            });
+
+            string lowerQuery = query.ToLowerInvariant();
+            var bookmarkSuggestions = (await bookmarkTask)
+                .Where(b => b.Url.Contains(lowerQuery, StringComparison.OrdinalIgnoreCase) ||
+                           b.Title.Contains(lowerQuery, StringComparison.OrdinalIgnoreCase))
+                .Take(3)
+                .Select(b => new AutocompleteSuggestion
+                {
+                    Url = b.Url,
+                    Title = b.Title,
+                    Source = "bookmark",
+                    VisitCount = 0
+                });
+
+            var merged = historySuggestions
+                .Concat(bookmarkSuggestions)
+                .GroupBy(s => s.Url)
+                .Select(g => g.OrderByDescending(s => s.VisitCount).First())
+                .OrderByDescending(s => s.VisitCount)
+                .Take(8)
+                .ToList();
+
+            Suggestions.Clear();
+            foreach (var s in merged)
+            {
+                Suggestions.Add(s);
+            }
+
+            IsSuggestionsOpen = Suggestions.Count > 0;
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[MainViewModel] Autocomplete error: {ex.Message}");
+        }
+    }
+
+    [RelayCommand]
+    private void AcceptSuggestion(AutocompleteSuggestion? suggestion)
+    {
+        if (suggestion == null) return;
+
+        _suppressSuggestions = true;
+        AddressBarText = suggestion.Url;
+        _suppressSuggestions = false;
+        IsSuggestionsOpen = false;
+
+        var tab = _tabStrip.ActiveTab;
+        if (tab != null)
+        {
+            tab.Navigate(suggestion.Url);
+        }
+    }
+
+    public void CloseSuggestions()
+    {
+        IsSuggestionsOpen = false;
+    }
+
     /// <summary>
     /// Navigates to the URL or search query in the address bar.
     /// </summary>
@@ -158,6 +308,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         var tab = _tabStrip.ActiveTab;
         if (tab == null) return;
 
+        IsSuggestionsOpen = false;
         string url = _searchEngineService.GetNavigationUrl(AddressBarText);
         tab.Navigate(url);
     }
@@ -185,15 +336,18 @@ public partial class MainViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private async Task HomeAsync()
     {
+        var homeUrl = _searchEngineService.GetHomePageUrl();
         var tab = _tabStrip.ActiveTab;
         if (tab != null)
         {
-            AddressBarText = "https://www.google.com";
-            tab.Navigate("https://www.google.com");
+            _suppressSuggestions = true;
+            AddressBarText = homeUrl;
+            _suppressSuggestions = false;
+            tab.Navigate(homeUrl);
         }
         else
         {
-            await _tabStrip.NewTabAsync("https://www.google.com");
+            await _tabStrip.NewTabAsync(homeUrl);
         }
     }
 
@@ -282,6 +436,9 @@ public partial class MainViewModel : ObservableObject, IDisposable
         if (_isDisposed) return;
         _isDisposed = true;
 
+        _debounceTimer?.Stop();
+        _debounceTimer = null;
+
         _tabStrip.ActiveTabChanged -= OnActiveTabChanged;
 
         if (_subscribedTab != null)
@@ -291,6 +448,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
             _subscribedTab.NavigationCompleted -= OnTabNavigationCompleted;
             _subscribedTab.TitleChanged -= OnTabTitleChanged;
             _subscribedTab.StatusBarTextChanged -= OnTabStatusBarTextChanged;
+            _subscribedTab.CertificateStatusChanged -= OnTabCertificateStatusChanged;
         }
 
         GC.SuppressFinalize(this);

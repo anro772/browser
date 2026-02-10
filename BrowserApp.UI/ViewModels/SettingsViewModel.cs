@@ -2,6 +2,7 @@ using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.DependencyInjection;
+using BrowserApp.Core.Interfaces;
 using BrowserApp.Core.Models;
 using BrowserApp.Data.Interfaces;
 using BrowserApp.UI.Services;
@@ -10,18 +11,28 @@ namespace BrowserApp.UI.ViewModels;
 
 /// <summary>
 /// ViewModel for the settings dialog.
-/// Manages user preferences including privacy mode and server configuration.
+/// Manages user preferences including privacy mode, search engine, and server configuration.
 /// </summary>
 public partial class SettingsViewModel : ObservableObject
 {
     private readonly SettingsService _settingsService;
     private readonly IServiceScopeFactory _scopeFactory;
+    private readonly ISearchEngineService _searchEngineService;
 
     [ObservableProperty]
     private PrivacyMode _selectedPrivacyMode;
 
     [ObservableProperty]
     private string _serverUrl = string.Empty;
+
+    [ObservableProperty]
+    private string _selectedSearchEngine = "Google";
+
+    [ObservableProperty]
+    private string _customSearchEngineUrl = string.Empty;
+
+    [ObservableProperty]
+    private bool _isCustomEngineVisible;
 
     [ObservableProperty]
     private bool _isSaving;
@@ -36,16 +47,25 @@ public partial class SettingsViewModel : ObservableObject
         new(PrivacyMode.Strict, "Strict", "Maximum blocking - may break some site functionality")
     };
 
+    public IReadOnlyList<string> SearchEngines { get; }
+
     public SettingsViewModel(
         SettingsService settingsService,
-        IServiceScopeFactory scopeFactory)
+        IServiceScopeFactory scopeFactory,
+        ISearchEngineService searchEngineService)
     {
         _settingsService = settingsService;
         _scopeFactory = scopeFactory;
+        _searchEngineService = searchEngineService;
+
+        SearchEngines = searchEngineService.AvailableEngines;
 
         // Load current settings
         SelectedPrivacyMode = _settingsService.PrivacyMode;
         ServerUrl = _settingsService.ServerUrl;
+        SelectedSearchEngine = _settingsService.SearchEngine;
+        CustomSearchEngineUrl = _settingsService.CustomSearchEngineUrl;
+        IsCustomEngineVisible = SelectedSearchEngine == "Custom";
     }
 
     /// <summary>
@@ -149,6 +169,30 @@ public partial class SettingsViewModel : ObservableObject
     {
         // Auto-save when server URL changes
         _settingsService.ServerUrl = value;
+    }
+
+    partial void OnSelectedSearchEngineChanged(string value)
+    {
+        IsCustomEngineVisible = value == "Custom";
+        _settingsService.SearchEngine = value;
+
+        if (value == "Custom" && !string.IsNullOrWhiteSpace(CustomSearchEngineUrl))
+        {
+            _searchEngineService.SetCustomSearchEngine(CustomSearchEngineUrl);
+        }
+        else
+        {
+            _searchEngineService.SetSearchEngine(value);
+        }
+    }
+
+    partial void OnCustomSearchEngineUrlChanged(string value)
+    {
+        _settingsService.CustomSearchEngineUrl = value;
+        if (SelectedSearchEngine == "Custom" && !string.IsNullOrWhiteSpace(value))
+        {
+            _searchEngineService.SetCustomSearchEngine(value);
+        }
     }
 }
 

@@ -32,8 +32,12 @@ public interface IBrowsingHistoryRepository
     /// <summary>
     /// Gets the most frequently visited sites (by visit count), grouped by domain.
     /// </summary>
-    /// <param name="count">Maximum number of sites to return.</param>
     Task<IEnumerable<FrequentSite>> GetFrequentSitesAsync(int count);
+
+    /// <summary>
+    /// Searches history with visit count aggregation for autocomplete suggestions.
+    /// </summary>
+    Task<IEnumerable<HistorySuggestion>> SearchWithCountAsync(string query, int limit);
 }
 
 /// <summary>
@@ -43,5 +47,15 @@ public class FrequentSite
 {
     public string Url { get; set; } = string.Empty;
     public string Title { get; set; } = string.Empty;
+    public int VisitCount { get; set; }
+}
+
+/// <summary>
+/// Represents a history suggestion for autocomplete with visit count.
+/// </summary>
+public class HistorySuggestion
+{
+    public string Url { get; set; } = string.Empty;
+    public string? Title { get; set; }
     public int VisitCount { get; set; }
 }

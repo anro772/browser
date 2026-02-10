@@ -5,6 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
         xmlns:controls="clr-namespace:BrowserApp.UI.Controls"
+        xmlns:converters="clr-namespace:BrowserApp.UI.Converters"
         xmlns:vm="clr-namespace:BrowserApp.UI.ViewModels"
         xmlns:views="clr-namespace:BrowserApp.UI.Views"
         mc:Ignorable="d"
@@ -16,6 +17,11 @@
         WindowStartupLocation="CenterScreen"
         WindowState="Maximized"
         ExtendsContentIntoTitleBar="True">
+
+    <ui:FluentWindow.Resources>
+        <converters:CertificateStatusToIconConverter x:Key="CertStatusToIcon"/>
+        <converters:CertificateStatusToColorConverter x:Key="CertStatusToColor"/>
+    </ui:FluentWindow.Resources>
 
     <ui:FluentWindow.InputBindings>
         <!-- Tab management -->
@@ -135,37 +141,97 @@
                            Margin="2,0"/>
             </StackPanel>
 
-            <!-- Address Bar with Security Indicator -->
-            <Border Grid.Column="1" Style="{StaticResource AddressBarContainerStyle}">
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="*"/>
-                    </Grid.ColumnDefinitions>
+            <!-- Address Bar with Security Indicator and Autocomplete Popup -->
+            <Grid Grid.Column="1">
+                <Border Style="{StaticResource AddressBarContainerStyle}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
 
-                    <!-- Security lock icon -->
-                    <ui:SymbolIcon Grid.Column="0"
-                                   Symbol="{Binding AddressBarText, Converter={StaticResource UriToSecurityIcon}}"
-                                   Foreground="{Binding AddressBarText, Converter={StaticResource UriToSecurityColor}}"
-                                   Style="{StaticResource SecurityIndicatorStyle}"/>
+                        <!-- Security lock icon - uses cert status when available -->
+                        <ui:SymbolIcon Grid.Column="0"
+                                       Symbol="{Binding CertificateStatus, Converter={StaticResource CertStatusToIcon}}"
+                                       Foreground="{Binding CertificateStatus, Converter={StaticResource CertStatusToColor}}"
+                                       Style="{StaticResource SecurityIndicatorStyle}"/>
 
-                    <!-- Address text box -->
-                    <TextBox Grid.Column="1"
-                             x:Name="AddressBar"
-                             Text="{Binding AddressBarText, UpdateSourceTrigger=PropertyChanged}"
-                             FontSize="14"
-                             Padding="4,6"
-                             Background="Transparent"
-                             BorderThickness="0"
-                             Foreground="{DynamicResource TextFillColorPrimaryBrush}"
-                             CaretBrush="{DynamicResource TextFillColorPrimaryBrush}"
-                             VerticalAlignment="Center">
-                        <TextBox.InputBindings>
-                            <KeyBinding Key="Return" Command="{Binding NavigateCommand}"/>
-                        </TextBox.InputBindings>
-                    </TextBox>
-                </Grid>
-            </Border>
+                        <!-- Address text box -->
+                        <TextBox Grid.Column="1"
+                                 x:Name="AddressBar"
+                                 Text="{Binding AddressBarText, UpdateSourceTrigger=PropertyChanged}"
+                                 FontSize="14"
+                                 Padding="4,6"
+                                 Background="Transparent"
+                                 BorderThickness="0"
+                                 Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                                 CaretBrush="{DynamicResource TextFillColorPrimaryBrush}"
+                                 VerticalAlignment="Center"
+                                 PreviewKeyDown="AddressBar_PreviewKeyDown"
+                                 LostFocus="AddressBar_LostFocus">
+                            <TextBox.InputBindings>
+                                <KeyBinding Key="Return" Command="{Binding NavigateCommand}"/>
+                            </TextBox.InputBindings>
+                        </TextBox>
+                    </Grid>
+                </Border>
+
+                <!-- Autocomplete Popup -->
+                <Popup x:Name="AutocompletePopup"
+                       PlacementTarget="{Binding ElementName=AddressBar}"
+                       Placement="Bottom"
+                       StaysOpen="False"
+                       IsOpen="{Binding IsSuggestionsOpen, Mode=TwoWay}"
+                       Width="{Binding ActualWidth, ElementName=AddressBar}"
+                       AllowsTransparency="True"
+                       PopupAnimation="Fade">
+                    <Border Background="{DynamicResource ApplicationBackgroundBrush}"
+                            BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
+                            BorderThickness="1"
+                            CornerRadius="0,0,4,4"
+                            MaxHeight="320">
+                        <ListBox x:Name="SuggestionsListBox"
+                                 ItemsSource="{Binding Suggestions}"
+                                 SelectedItem="{Binding SelectedSuggestion}"
+                                 Background="Transparent"
+                                 BorderThickness="0"
+                                 SelectionChanged="SuggestionsListBox_SelectionChanged">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid Margin="8,6">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                        </Grid.RowDefinitions>
+
+                                        <ui:SymbolIcon Grid.Column="0" Grid.RowSpan="2"
+                                                       Symbol="Globe24"
+                                                       FontSize="16"
+                                                       Margin="0,0,8,0"
+                                                       VerticalAlignment="Center"
+                                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+
+                                        <TextBlock Grid.Column="1" Grid.Row="0"
+                                                   Text="{Binding Title}"
+                                                   FontSize="13"
+                                                   Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                                                   TextTrimming="CharacterEllipsis"/>
+                                        <TextBlock Grid.Column="1" Grid.Row="1"
+                                                   Text="{Binding Url}"
+                                                   FontSize="11"
+                                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                                   TextTrimming="CharacterEllipsis"/>
+                                    </Grid>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                    </Border>
+                </Popup>
+            </Grid>
 
             <!-- Toolbar Buttons -->
             <StackPanel Grid.Column="2"
@@ -189,6 +255,14 @@
                                        Filled="{Binding BookmarkViewModel.IsCurrentPageBookmarked}"/>
                     </ui:Button.Icon>
                 </ui:Button>
+
+                <!-- Extensions Manager -->
+                <ui:Button Icon="{ui:SymbolIcon PuzzlePiece24}"
+                           ToolTip="Manage Extensions"
+                           x:Name="ExtensionsButton"
+                           Click="ExtensionsButton_Click"
+                           Appearance="Secondary"
+                           Margin="4,0"/>
 
                 <!-- Rules Manager -->
                 <ui:Button Icon="{ui:SymbolIcon Shield24}"
@@ -246,9 +320,10 @@
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
 
-            <!-- Browser content area with find bar and download notification -->
+            <!-- Browser content area with find bar, certificate warning, and download notification -->
             <Grid Grid.Column="0">
                 <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
                     <RowDefinition Height="Auto"/>
@@ -257,17 +332,20 @@
                 <!-- Find Bar (top, initially hidden) -->
                 <controls:FindBar Grid.Row="0" x:Name="FindBarControl" Panel.ZIndex="20"/>
 
+                <!-- Certificate Warning Bar (initially hidden) -->
+                <controls:CertificateWarningBar Grid.Row="1" x:Name="CertificateWarningBarControl" Panel.ZIndex="19"/>
+
                 <!-- WebView2 Content Host -->
-                <Grid Grid.Row="1" x:Name="WebViewHost"/>
+                <Grid Grid.Row="2" x:Name="WebViewHost"/>
 
                 <!-- New Tab Page Overlay -->
-                <ContentControl Grid.Row="1"
+                <ContentControl Grid.Row="2"
                                 x:Name="NewTabPageOverlay"
                                 Visibility="Collapsed"
                                 Panel.ZIndex="10"/>
 
                 <!-- Download Notification (bottom, initially hidden) -->
-                <controls:DownloadNotification Grid.Row="2" x:Name="DownloadNotificationControl"/>
+                <controls:DownloadNotification Grid.Row="3" x:Name="DownloadNotificationControl"/>
             </Grid>
 
             <!-- Sidebar Panel with Tabs -->
@@ -283,6 +361,9 @@
                     </TabItem>
                     <TabItem Header="Bookmarks">
                         <ContentControl x:Name="BookmarksContent"/>
+                    </TabItem>
+                    <TabItem Header="Downloads">
+                        <ContentControl x:Name="DownloadsContent"/>
                     </TabItem>
                     <TabItem Header="Network">
                         <ContentControl x:Name="NetworkMonitorContent"/>

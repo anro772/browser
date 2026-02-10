@@ -97,6 +97,20 @@ public partial class App : Application
 
         ErrorLogger.LogInfo("Network logger started");
 
+        // Initialize search engine from saved settings
+        var settingsService = _serviceProvider.GetRequiredService<SettingsService>();
+        var searchEngine = _serviceProvider.GetRequiredService<ISearchEngineService>();
+        if (settingsService.SearchEngine == "Custom" && !string.IsNullOrWhiteSpace(settingsService.CustomSearchEngineUrl))
+        {
+            searchEngine.SetCustomSearchEngine(settingsService.CustomSearchEngineUrl);
+        }
+        else
+        {
+            searchEngine.SetSearchEngine(settingsService.SearchEngine);
+        }
+
+        ErrorLogger.LogInfo($"Search engine set to: {settingsService.SearchEngine}");
+
         ErrorLogger.LogInfo("Channel sync service initialized (manual sync only)");
 
         // Show main window
@@ -115,8 +129,8 @@ public partial class App : Application
             .Build();
         services.AddSingleton<IConfiguration>(config);
 
-        // Core Services
-        services.AddTransient<ISearchEngineService, SearchEngineService>();
+        // Core Services - SearchEngine is Singleton so setting persists
+        services.AddSingleton<ISearchEngineService, SearchEngineService>();
 
         // Phase 3: Rule System Services
         services.AddSingleton<IRuleEngine, RuleEngine>();
@@ -163,6 +177,15 @@ public partial class App : Application
         services.AddScoped<IRuleRepository, RuleRepository>();
         services.AddScoped<IBookmarkRepository, BookmarkRepository>();
 
+        // Phase 9: Downloads
+        services.AddScoped<IDownloadRepository, DownloadRepository>();
+        services.AddSingleton<DownloadManagerViewModel>();
+
+        // Phase 9: Extensions
+        services.AddScoped<IExtensionRepository, ExtensionRepository>();
+        services.AddSingleton<ExtensionService>();
+        services.AddTransient<ExtensionManagerViewModel>();
+
         // Settings Service
         services.AddSingleton<SettingsService>();
 
@@ -199,6 +222,10 @@ public partial class App : Application
         services.AddTransient<ProfileSelectorView>();
         services.AddTransient<NewTabPageView>();
         services.AddSingleton<BookmarksPanel>();
+
+        // Phase 9: New Views
+        services.AddSingleton<DownloadManagerView>();
+        services.AddTransient<ExtensionManagerView>();
     }
 
     private void EnsureDatabase()
@@ -262,9 +289,25 @@ public partial class App : Application
 
     protected override async void OnExit(ExitEventArgs e)
     {
-        // Stop network logger gracefully
         if (_serviceProvider != null)
         {
+            // Save tab session before exit
+            try
+            {
+                var tabStrip = _serviceProvider.GetService<TabStripViewModel>();
+                var scopeFactory = _serviceProvider.GetRequiredService<IServiceScopeFactory>();
+                if (tabStrip != null)
+                {
+                    await tabStrip.SaveSessionAsync(scopeFactory);
+                    ErrorLogger.LogInfo("Tab session saved on exit");
+                }
+            }
+            catch (Exception ex)
+            {
+                ErrorLogger.LogError("Failed to save tab session on exit", ex);
+            }
+
+            // Stop network logger gracefully
             var networkLogger = _serviceProvider.GetService<INetworkLogger>();
             if (networkLogger != null)
             {
@@ -272,8 +315,8 @@ public partial class App : Application
             }
 
             // Dispose tab strip
-            var tabStrip = _serviceProvider.GetService<TabStripViewModel>();
-            tabStrip?.Dispose();
+            var strip = _serviceProvider.GetService<TabStripViewModel>();
+            strip?.Dispose();
         }
 
         if (_serviceProvider is IDisposable disposable)

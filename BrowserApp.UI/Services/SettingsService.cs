@@ -60,7 +60,29 @@ public class SettingsService
         }
     }
 
+    public string SearchEngine
+    {
+        get => _settings.SearchEngine;
+        set
+        {
+            _settings.SearchEngine = value;
+            SaveSettings();
+            SearchEngineChanged?.Invoke(this, value);
+        }
+    }
+
+    public string CustomSearchEngineUrl
+    {
+        get => _settings.CustomSearchEngineUrl;
+        set
+        {
+            _settings.CustomSearchEngineUrl = value;
+            SaveSettings();
+        }
+    }
+
     public event EventHandler<PrivacyMode>? PrivacyModeChanged;
+    public event EventHandler<string>? SearchEngineChanged;
 
     private void LoadSettings()
     {
@@ -106,4 +128,6 @@ public class UserSettings
 {
     public PrivacyMode PrivacyMode { get; set; } = PrivacyMode.Standard;
     public string ServerUrl { get; set; } = "http://localhost:5000";
+    public string SearchEngine { get; set; } = "Google";
+    public string CustomSearchEngineUrl { get; set; } = string.Empty;
 }
