@@ -34,6 +34,8 @@ public partial class BrowserTabItem : ObservableObject, IDisposable
     private IRuleEngine? _ruleEngine;
     private bool _isDisposed;
     private bool _isCoreInitialized;
+    private readonly HashSet<string> _allowedCertErrorUrls = new(StringComparer.OrdinalIgnoreCase);
+    private bool _hasCertificateError;
 
     public Guid Id { get; } = Guid.NewGuid();
 
@@ -163,6 +165,17 @@ public partial class BrowserTabItem : ObservableObject, IDisposable
     {
         Application.Current?.Dispatcher.Invoke(() =>
         {
+            // Bug 2: Check if URL was previously allowed via "Proceed Anyway"
+            var requestUri = e.RequestUri;
+            if (_allowedCertErrorUrls.Contains(requestUri))
+            {
+                e.Action = CoreWebView2ServerCertificateErrorAction.AlwaysAllow;
+                return;
+            }
+
+            // Bug 4: Set flag so OnNavigationCompleted doesn't overwrite Error status
+            _hasCertificateError = true;
+
             CertificateStatus = CertificateStatus.Error;
             CertificateErrorMessage = $"Certificate error: {e.ErrorStatus}";
             CertificateStatusChanged?.Invoke(this, EventArgs.Empty);
@@ -211,6 +224,9 @@ public partial class BrowserTabItem : ObservableObject, IDisposable
         IsLoading = true;
         NavigationStarting?.Invoke(this, EventArgs.Empty);
 
+        // Bug 4: Reset cert error flag on new navigation
+        _hasCertificateError = false;
+
         // Reset cert status on new navigation
         CertificateStatus = CertificateStatus.Unknown;
         CertificateErrorMessage = string.Empty;
@@ -223,8 +239,9 @@ public partial class BrowserTabItem : ObservableObject, IDisposable
         OnPropertyChanged(nameof(CanGoForward));
         NavigationCompleted?.Invoke(this, e.IsSuccess);
 
-        // Update certificate status based on URL
-        if (e.IsSuccess && CertificateStatus != CertificateStatus.Error)
+        // Bug 4: Use _hasCertificateError flag instead of checking CertificateStatus
+        // to avoid race condition where this overwrites Error with Valid
+        if (e.IsSuccess && !_hasCertificateError)
         {
             var currentUrl = _coreWebView2?.Source ?? string.Empty;
             if (currentUrl.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
@@ -321,8 +338,9 @@ public partial class BrowserTabItem : ObservableObject, IDisposable
     {
         if (_coreWebView2 != null && !string.IsNullOrEmpty(Url))
         {
-            // Re-navigate — the ServerCertificateErrorDetected handler will get called again,
-            // but this time the cert warning bar has told us to proceed.
+            // Bug 2: Add URL to allowed set before re-navigating.
+            // OnServerCertificateErrorDetected will check this set and allow navigation.
+            _allowedCertErrorUrls.Add(Url);
             _coreWebView2.Navigate(Url);
         }
     }

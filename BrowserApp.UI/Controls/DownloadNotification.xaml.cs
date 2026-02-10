@@ -38,12 +38,24 @@ public partial class DownloadNotification : UserControl
         coreWebView2.DownloadStarting += OnDownloadStarting;
     }
 
+    /// <summary>
+    /// Unsubscribes from download events on the given CoreWebView2.
+    /// Call this when a tab is closed to prevent memory leaks.
+    /// </summary>
+    public void UnwireFromWebView(CoreWebView2 coreWebView2)
+    {
+        coreWebView2.DownloadStarting -= OnDownloadStarting;
+    }
+
     private void OnDownloadStarting(object? sender, CoreWebView2DownloadStartingEventArgs e)
     {
+        // Bug 3: Capture the per-download result file path in a local variable.
+        // Don't set _downloadPath here — it would be overwritten by concurrent downloads.
+        var downloadResultPath = e.ResultFilePath;
+
         Application.Current?.Dispatcher.Invoke(() =>
         {
-            _downloadPath = e.ResultFilePath;
-            var fileName = Path.GetFileName(e.ResultFilePath);
+            var fileName = Path.GetFileName(downloadResultPath);
             FileNameText.Text = $"Downloading: {fileName}";
             DownloadProgress.IsIndeterminate = false;
             DownloadProgress.Value = 0;
@@ -56,7 +68,7 @@ public partial class DownloadNotification : UserControl
             {
                 FileName = fileName,
                 SourceUrl = e.DownloadOperation.Uri,
-                DestinationPath = e.ResultFilePath,
+                DestinationPath = downloadResultPath,
                 TotalBytes = (long)(e.DownloadOperation.TotalBytesToReceive ?? 0)
             });
         });
@@ -76,7 +88,7 @@ public partial class DownloadNotification : UserControl
                 // Fire progress event
                 DownloadProgressChanged?.Invoke(this, new DownloadProgressEventArgs
                 {
-                    DestinationPath = e.ResultFilePath,
+                    DestinationPath = downloadResultPath,
                     ReceivedBytes = (long)op.BytesReceived,
                     TotalBytes = (long)(op.TotalBytesToReceive ?? 0)
                 });
@@ -90,7 +102,9 @@ public partial class DownloadNotification : UserControl
                 var state = e.DownloadOperation.State;
                 if (state == CoreWebView2DownloadState.Completed)
                 {
-                    var fileName = Path.GetFileName(_downloadPath ?? "file");
+                    // Bug 3: Set _downloadPath only on completion, using the captured per-download path
+                    _downloadPath = downloadResultPath;
+                    var fileName = Path.GetFileName(downloadResultPath);
                     FileNameText.Text = $"Downloaded: {fileName}";
                     DownloadProgress.Value = DownloadProgress.Maximum;
                     OpenButton.Visibility = Visibility.Visible;
@@ -98,7 +112,7 @@ public partial class DownloadNotification : UserControl
 
                     DownloadCompleted?.Invoke(this, new DownloadCompletedEventArgs
                     {
-                        DestinationPath = e.ResultFilePath,
+                        DestinationPath = downloadResultPath,
                         Success = true
                     });
                 }
@@ -109,7 +123,7 @@ public partial class DownloadNotification : UserControl
 
                     DownloadCompleted?.Invoke(this, new DownloadCompletedEventArgs
                     {
-                        DestinationPath = e.ResultFilePath,
+                        DestinationPath = downloadResultPath,
                         Success = false
                     });
                 }

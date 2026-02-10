@@ -108,17 +108,14 @@ public class BrowsingHistoryRepository : IBrowsingHistoryRepository
             .Take(limit)
             .ToListAsync();
 
-        // Fetch titles for matched URLs
+        // Bug 13: Fetch only the latest entry per URL instead of all entries
         var urls = grouped.Select(g => g.Url).ToList();
-        var latestEntries = await _context.BrowsingHistory
+        var titleMap = (await _context.BrowsingHistory
             .Where(h => urls.Contains(h.Url))
-            .ToListAsync();
-
-        var titleMap = latestEntries
             .GroupBy(h => h.Url)
-            .ToDictionary(
-                g => g.Key,
-                g => g.OrderByDescending(h => h.VisitedAt).First().Title);
+            .Select(g => new { Url = g.Key, Title = g.OrderByDescending(h => h.VisitedAt).First().Title })
+            .ToListAsync())
+            .ToDictionary(x => x.Url, x => x.Title);
 
         return grouped.Select(g => new HistorySuggestion
         {

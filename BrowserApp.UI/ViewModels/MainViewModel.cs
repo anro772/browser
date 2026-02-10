@@ -23,6 +23,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private readonly BookmarkViewModel _bookmarkViewModel;
     private bool _isDisposed;
     private DispatcherTimer? _debounceTimer;
+    private CancellationTokenSource? _autocompleteCts;
 
     [ObservableProperty]
     private string _addressBarText = string.Empty;
@@ -81,13 +82,22 @@ public partial class MainViewModel : ObservableObject, IDisposable
         // Subscribe to active tab changes
         _tabStrip.ActiveTabChanged += OnActiveTabChanged;
 
-        // Setup debounce timer for autocomplete
+        // Setup debounce timer for autocomplete (Bug 10: named handler for proper cleanup)
         _debounceTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(200) };
-        _debounceTimer.Tick += async (s, e) =>
-        {
-            _debounceTimer.Stop();
-            await UpdateSuggestionsAsync(AddressBarText);
-        };
+        _debounceTimer.Tick += OnDebounceTimerTick;
+    }
+
+    private async void OnDebounceTimerTick(object? sender, EventArgs e)
+    {
+        _debounceTimer?.Stop();
+
+        // Bug 6: Cancel previous autocomplete operation and create a new token
+        _autocompleteCts?.Cancel();
+        _autocompleteCts?.Dispose();
+        _autocompleteCts = new CancellationTokenSource();
+        var token = _autocompleteCts.Token;
+
+        await UpdateSuggestionsAsync(AddressBarText, token);
     }
 
     private BrowserTabItem? _subscribedTab;
@@ -95,6 +105,10 @@ public partial class MainViewModel : ObservableObject, IDisposable
 
     private void OnActiveTabChanged(object? sender, BrowserTabItem? tab)
     {
+        // Bug 5: Close autocomplete popup on tab switch
+        IsSuggestionsOpen = false;
+        Suggestions.Clear();
+
         // Unsubscribe from previous tab
         if (_subscribedTab != null)
         {
@@ -213,7 +227,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         _debounceTimer?.Start();
     }
 
-    private async Task UpdateSuggestionsAsync(string query)
+    private async Task UpdateSuggestionsAsync(string query, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(query) || query.Length < 2)
         {
@@ -231,6 +245,9 @@ public partial class MainViewModel : ObservableObject, IDisposable
             var bookmarkTask = bookmarkRepo.GetAllAsync();
 
             await Task.WhenAll(historyTask, bookmarkTask);
+
+            // Bug 6: Check cancellation before updating UI
+            if (cancellationToken.IsCancellationRequested) return;
 
             var historySuggestions = (await historyTask).Select(h => new AutocompleteSuggestion
             {
@@ -261,6 +278,9 @@ public partial class MainViewModel : ObservableObject, IDisposable
                 .Take(8)
                 .ToList();
 
+            // Bug 6: Check cancellation again before mutating the collection
+            if (cancellationToken.IsCancellationRequested) return;
+
             Suggestions.Clear();
             foreach (var s in merged)
             {
@@ -268,6 +288,10 @@ public partial class MainViewModel : ObservableObject, IDisposable
             }
 
             IsSuggestionsOpen = Suggestions.Count > 0;
+        }
+        catch (OperationCanceledException)
+        {
+            // Expected when cancellation is requested
         }
         catch (Exception ex)
         {
@@ -436,8 +460,18 @@ public partial class MainViewModel : ObservableObject, IDisposable
         if (_isDisposed) return;
         _isDisposed = true;
 
-        _debounceTimer?.Stop();
-        _debounceTimer = null;
+        // Bug 10: Properly unsubscribe and dispose debounce timer
+        if (_debounceTimer != null)
+        {
+            _debounceTimer.Stop();
+            _debounceTimer.Tick -= OnDebounceTimerTick;
+            _debounceTimer = null;
+        }
+
+        // Bug 6: Dispose cancellation token source
+        _autocompleteCts?.Cancel();
+        _autocompleteCts?.Dispose();
+        _autocompleteCts = null;
 
         _tabStrip.ActiveTabChanged -= OnActiveTabChanged;
 

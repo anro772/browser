@@ -207,10 +207,11 @@ public partial class TabStripViewModel : ObservableObject, IDisposable
             var existing = await db.TabSessions.ToListAsync();
             db.TabSessions.RemoveRange(existing);
 
-            // Save current tabs
-            for (int i = 0; i < Tabs.Count; i++)
+            // Bug 7: Take a snapshot to avoid collection-modified exception
+            var snapshot = Tabs.ToList();
+            for (int i = 0; i < snapshot.Count; i++)
             {
-                var tab = Tabs[i];
+                var tab = snapshot[i];
                 if (!string.IsNullOrEmpty(tab.Url))
                 {
                     db.TabSessions.Add(new TabSessionEntity
@@ -254,6 +255,14 @@ public partial class TabStripViewModel : ObservableObject, IDisposable
 
             foreach (var session in sessions)
             {
+                // Bug 12: Validate URL before restoring
+                if (string.IsNullOrWhiteSpace(session.Url) ||
+                    !Uri.TryCreate(session.Url, UriKind.Absolute, out var uri) ||
+                    (uri.Scheme != "http" && uri.Scheme != "https"))
+                {
+                    continue;
+                }
+
                 await NewTabAsync(session.Url);
 
                 var tab = Tabs.LastOrDefault();

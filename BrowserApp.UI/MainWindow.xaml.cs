@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Web.WebView2.Core;
 using Wpf.Ui.Controls;
 using BrowserApp.Core.Interfaces;
+using BrowserApp.Core.Models;
 using BrowserApp.UI.Controls;
 using BrowserApp.UI.Models;
 using BrowserApp.UI.Services;
@@ -35,6 +36,8 @@ public partial class MainWindow : FluentWindow
     private WindowStyle _previousWindowStyle;
     private BrowserTabItem? _overlayTrackedTab;
     private BrowserTabItem? _certTrackedTab;
+    private readonly Dictionary<BrowserTabItem, EventHandler<NetworkRequest>> _requestCapturedHandlers = new();
+    private readonly Dictionary<BrowserTabItem, CoreWebView2> _wiredWebViews = new();
 
     public MainWindow(
         MainViewModel viewModel,
@@ -96,6 +99,20 @@ public partial class MainWindow : FluentWindow
         // Wire certificate warning bar events
         CertificateWarningBarControl.ProceedClicked += OnCertificateProceedClicked;
         CertificateWarningBarControl.GoBackClicked += OnCertificateGoBackClicked;
+
+        // Wire download events to download manager (one-time registration)
+        DownloadNotificationControl.DownloadStarted += (s, args) =>
+        {
+            _downloadManagerViewModel.AddDownload(args.FileName, args.SourceUrl, args.DestinationPath, args.TotalBytes);
+        };
+        DownloadNotificationControl.DownloadProgressChanged += (s, args) =>
+        {
+            _downloadManagerViewModel.UpdateDownloadProgress(args.DestinationPath, args.ReceivedBytes);
+        };
+        DownloadNotificationControl.DownloadCompleted += (s, args) =>
+        {
+            _downloadManagerViewModel.CompleteDownload(args.DestinationPath, args.Success);
+        };
 
         Loaded += MainWindow_Loaded;
     }
@@ -183,34 +200,23 @@ public partial class MainWindow : FluentWindow
     /// </summary>
     private void OnTabReady(object? sender, BrowserTabItem tab)
     {
-        // Wire this tab's request interceptor to the network logger
+        // Wire this tab's request interceptor to the network logger (Bug 8: use stored handler)
         if (tab.RequestInterceptor != null)
         {
-            tab.RequestInterceptor.RequestCaptured += async (s, request) =>
+            EventHandler<NetworkRequest> handler = async (s, request) =>
             {
                 await _networkLogger.LogRequestAsync(request);
             };
+            _requestCapturedHandlers[tab] = handler;
+            tab.RequestInterceptor.RequestCaptured += handler;
         }
 
-        // Wire download notifications
+        // Wire download notifications (Bug 9: track wired WebViews)
         if (tab.CoreWebView2 != null)
         {
             DownloadNotificationControl.WireToWebView(tab.CoreWebView2);
+            _wiredWebViews[tab] = tab.CoreWebView2;
         }
-
-        // Wire download events to download manager
-        DownloadNotificationControl.DownloadStarted += (s, args) =>
-        {
-            _downloadManagerViewModel.AddDownload(args.FileName, args.SourceUrl, args.DestinationPath, args.TotalBytes);
-        };
-        DownloadNotificationControl.DownloadProgressChanged += (s, args) =>
-        {
-            _downloadManagerViewModel.UpdateDownloadProgress(args.DestinationPath, args.ReceivedBytes);
-        };
-        DownloadNotificationControl.DownloadCompleted += (s, args) =>
-        {
-            _downloadManagerViewModel.CompleteDownload(args.DestinationPath, args.Success);
-        };
     }
 
     /// <summary>
@@ -218,6 +224,20 @@ public partial class MainWindow : FluentWindow
     /// </summary>
     private void OnTabRemoved(object? sender, BrowserTabItem tab)
     {
+        // Bug 8: Unsubscribe request interceptor handler
+        if (tab.RequestInterceptor != null && _requestCapturedHandlers.TryGetValue(tab, out var handler))
+        {
+            tab.RequestInterceptor.RequestCaptured -= handler;
+            _requestCapturedHandlers.Remove(tab);
+        }
+
+        // Bug 9: Unwire download notifications from this tab's WebView
+        if (_wiredWebViews.TryGetValue(tab, out var coreWebView2))
+        {
+            DownloadNotificationControl.UnwireFromWebView(coreWebView2);
+            _wiredWebViews.Remove(tab);
+        }
+
         if (tab.WebView != null && WebViewHost.Children.Contains(tab.WebView))
         {
             WebViewHost.Children.Remove(tab.WebView);

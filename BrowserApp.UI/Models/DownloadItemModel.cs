@@ -32,7 +32,8 @@ public partial class DownloadItemModel : ObservableObject
         ReceivedBytes = receivedBytes;
         if (TotalBytes > 0)
         {
-            Progress = (double)receivedBytes / TotalBytes * 100;
+            // Bug 11: Clamp progress to 0-100 range
+            Progress = Math.Clamp((double)receivedBytes / TotalBytes * 100, 0, 100);
         }
     }
 }
