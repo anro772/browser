@@ -22,6 +22,7 @@ public partial class BrowserTabItem : ObservableObject, IDisposable
     private JSInjector? _jsInjector;
     private IRuleEngine? _ruleEngine;
     private bool _isDisposed;
+    private bool _isCoreInitialized;
 
     public Guid Id { get; } = Guid.NewGuid();
 
@@ -76,17 +77,27 @@ public partial class BrowserTabItem : ObservableObject, IDisposable
     public event EventHandler<string>? StatusBarTextChanged;
 
     /// <summary>
-    /// Initializes the tab's WebView2 instance using a shared environment.
+    /// Phase 1: Creates the WebView2 control (must be added to visual tree before Phase 2).
     /// </summary>
-    public async Task InitializeAsync(
+    public void CreateWebView()
+    {
+        _webView = new WebView2();
+    }
+
+    /// <summary>
+    /// Phase 2: Initializes CoreWebView2 after the WebView2 is in the visual tree.
+    /// The WebView2 must have an HWND (be parented in the visual tree) before this call.
+    /// </summary>
+    public async Task InitializeCoreAsync(
         CoreWebView2Environment environment,
         IBlockingService blockingService,
         IRuleEngine ruleEngine)
     {
-        _webView = new WebView2();
+        if (_webView == null || _isCoreInitialized) return;
 
         await _webView.EnsureCoreWebView2Async(environment);
         _coreWebView2 = _webView.CoreWebView2;
+        _isCoreInitialized = true;
 
         ConfigureSettings();
         SubscribeToEvents();

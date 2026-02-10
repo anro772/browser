@@ -39,6 +39,12 @@ public partial class TabStripViewModel : ObservableObject, IDisposable
     /// </summary>
     public event EventHandler<BrowserTabItem>? TabRemoved;
 
+    /// <summary>
+    /// Fired after a tab's CoreWebView2 is fully initialized (interceptor, injectors ready).
+    /// MainWindow uses this to wire network logging and download notifications.
+    /// </summary>
+    public event EventHandler<BrowserTabItem>? TabReady;
+
     public TabStripViewModel(
         IBlockingService blockingService,
         IRuleEngine ruleEngine,
@@ -61,6 +67,7 @@ public partial class TabStripViewModel : ObservableObject, IDisposable
 
     /// <summary>
     /// Creates a new tab and optionally navigates it to a URL.
+    /// Two-phase init: WebView2 must be in visual tree before CoreWebView2 can initialize.
     /// </summary>
     [RelayCommand]
     public async Task NewTabAsync(string? url = null)
@@ -68,10 +75,20 @@ public partial class TabStripViewModel : ObservableObject, IDisposable
         if (_environment == null) return;
 
         var tab = new BrowserTabItem();
-        await tab.InitializeAsync(_environment, _blockingService, _ruleEngine);
 
+        // Phase 1: Create the WebView2 control
+        tab.CreateWebView();
+
+        // Add to collection and visual tree BEFORE initializing CoreWebView2
+        // (WebView2 needs an HWND from being in the visual tree)
         Tabs.Add(tab);
         TabAdded?.Invoke(this, tab);
+
+        // Phase 2: Initialize CoreWebView2 (now that WebView2 has an HWND)
+        await tab.InitializeCoreAsync(_environment, _blockingService, _ruleEngine);
+
+        // Signal that the tab is fully ready (interceptor, CoreWebView2 available)
+        TabReady?.Invoke(this, tab);
 
         ActivateTab(tab);
 

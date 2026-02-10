@@ -1,6 +1,6 @@
 # AI-Powered Privacy Browser - Project Context
 **Purpose:** Single reference document for all development sessions
-**Last Updated:** January 2026
+**Last Updated:** February 2026
 
 ---
 
@@ -59,9 +59,9 @@ A Windows-native, Chromium-based browser with:
 | **3. Rule System** | ✅ | RuleEngine, CSS/JS injection, templates |
 | **4. Marketplace** | ✅ | Server API, MarketplaceView, rule sync |
 | **5. Channels** | ✅ | Channel CRUD, join/leave, audit logging |
-| **6. AI Integration** | 🔄 Current | Ollama, CopilotSidebar, rule generation |
-| **7. Profiles** | ⏳ | Profile switching, settings panel |
-| **8. Polish** | ⏳ | Bug fixes, performance, demo prep |
+| **6. AI Integration** | 🔄 Partial | Ollama, CopilotSidebar, rule generation |
+| **7. Tabs & Profiles** | ✅ | Tab system, profile switching, bookmarks, settings |
+| **8. Polish** | ✅ | Bug fixes, WebView2 init fix, event leak fixes |
 
 ---
 
@@ -107,6 +107,19 @@ docker compose down          # Stop
 | Channels UI | `Views/ChannelsView.xaml` |
 | Password dialog | `Views/PasswordDialog.xaml` |
 | Network monitor | `Views/NetworkMonitorView.xaml` |
+| Tab strip management | `ViewModels/TabStripViewModel.cs` |
+| Bookmark management | `ViewModels/BookmarkViewModel.cs` |
+| History panel | `ViewModels/HistoryViewModel.cs` |
+| Network monitor | `ViewModels/NetworkMonitorViewModel.cs` |
+| New tab page | `ViewModels/NewTabPageViewModel.cs` |
+| Profile management | `ViewModels/ProfileSelectorViewModel.cs` |
+| Tab model (per-tab WebView2) | `Models/BrowserTabItem.cs` |
+| Bookmarks sidebar | `Views/BookmarksPanel.xaml` |
+| Profile selector dialog | `Views/ProfileSelectorView.xaml` |
+| New tab page overlay | `Views/NewTabPageView.xaml` |
+| Tab strip control | `Controls/TabItemControl.xaml` |
+| Converters (color, visibility) | `Converters/*.cs` |
+| Profile service | `Services/ProfileService.cs` |
 | Marketplace logic | `ViewModels/MarketplaceViewModel.cs` |
 | Channels logic | `ViewModels/ChannelsViewModel.cs` |
 | Marketplace API calls | `Services/MarketplaceApiClient.cs` |
@@ -137,7 +150,11 @@ docker compose down          # Stop
 | Rule entity | `Entities/RuleEntity.cs` |
 | Channel membership | `Entities/ChannelMembershipEntity.cs` |
 | Network log entity | `Entities/NetworkLogEntity.cs` |
+| Bookmark entity | `Entities/BookmarkEntity.cs` |
+| History entity | `Entities/BrowsingHistoryEntity.cs` |
 | Rule repository | `Repositories/RuleRepository.cs` |
+| Bookmark repository | `Repositories/BookmarkRepository.cs` |
+| History repository | `Repositories/BrowsingHistoryRepository.cs` |
 | Membership repository | `Repositories/ChannelMembershipRepository.cs` |
 | Migrations | `Migrations/*.cs` |
 
@@ -217,6 +234,10 @@ docker compose down          # Stop
 - `Rules` - Id, Name, Site, RulesJson, Source, ChannelId, IsEnforced, MarketplaceId
 - `ChannelMemberships` - Id, ChannelId, ChannelName, Username, JoinedAt, LastSyncedAt
 - `NetworkLogs` - Id, Url, Method, StatusCode, IsBlocked, Timestamp
+- `BrowsingHistory` - Id, Url, Title, VisitedAt
+- `Bookmarks` - Id, Url, Title, CreatedAt
+
+**Note:** Each profile has its own SQLite database at `%LOCALAPPDATA%/BrowserApp/Profiles/{guid}/browser.db`
 
 ---
 
@@ -352,17 +373,19 @@ services.AddTransient<ChannelsViewModel>();
 
 ## Data Flows
 
-### User Browses a Page
+### User Browses a Page (Tab System)
 ```
-1. User enters URL → NavigationService
-2. WebView2 starts navigation
-3. RequestInterceptor hooks WebResourceRequested
-4. For each request:
+1. User enters URL → MainViewModel.Navigate()
+2. Gets active tab via TabStripViewModel.ActiveTab
+3. Calls tab.Navigate(url) → per-tab CoreWebView2.Navigate()
+4. Per-tab RequestInterceptor hooks WebResourceRequested
+5. For each request:
    - RuleEngine.Evaluate(request, activeRules)
    - If blocked → cancel request
-   - NetworkLogger.Log(request)
-5. NavigationCompleted fires
-6. CSSInjector/JSInjector apply matching rules
+   - RequestCaptured event → NetworkLogger.LogRequestAsync()
+6. NavigationCompleted fires
+7. Per-tab CSSInjector/JSInjector apply matching rules
+8. MainViewModel records history via IBrowsingHistoryRepository
 ```
 
 ### Download from Marketplace
@@ -484,6 +507,110 @@ dotnet test BrowserApp.Tests
 - **Server won't start:** Check PostgreSQL is running
 - **Client can't connect:** Ensure server is on http://localhost:5000
 - **Migrations failed:** Delete `browserapp` database and restart server
+
+---
+
+## Tab System (Phase 7)
+
+### Architecture
+
+Each tab is a `BrowserTabItem` with its own independent WebView2 instance, `RequestInterceptor`, `CSSInjector`, and `JSInjector`. Tabs share a single `CoreWebView2Environment` (owned by `TabStripViewModel`).
+
+### Two-Phase Tab Initialization (Critical)
+
+WebView2 requires an HWND (window handle) from the visual tree before `EnsureCoreWebView2Async` can complete. Tabs use a two-phase init:
+
+```
+Phase 1: tab.CreateWebView()           → Creates WPF WebView2 control
+         TabAdded event fires           → MainWindow adds to WebViewHost grid (gets HWND)
+Phase 2: tab.InitializeCoreAsync(...)   → EnsureCoreWebView2Async succeeds
+         TabReady event fires           → MainWindow wires network logger + downloads
+         ActivateTab()                  → Shows WebView2, hides others
+```
+
+**WARNING:** Calling `EnsureCoreWebView2Async` before the WebView2 is in the visual tree will cause a silent deadlock (no exception, no timeout — just hangs forever).
+
+### Key Events on TabStripViewModel
+| Event | When | MainWindow Uses It To |
+|-------|------|-----------------------|
+| `TabAdded` | After WebView2 created, before CoreWebView2 init | Add WebView2 to visual tree |
+| `TabReady` | After CoreWebView2 fully initialized | Wire network logger + downloads |
+| `TabRemoved` | Tab being closed | Remove WebView2 from visual tree |
+| `ActiveTabChanged` | User switches tabs | Show/hide WebView2s, manage overlay |
+
+### NewTabPage Overlay
+- `NewTabPageOverlay` (ZIndex=10) shows over WebView2 when a tab has no URL
+- Hidden automatically when active tab's `SourceChanged` fires with a non-empty URL
+- Also hidden via `SearchPerformed` event when user searches from the new tab page
+
+---
+
+## Profile System (Phase 7)
+
+Profiles provide isolated browsing contexts. Each profile gets:
+- Own SQLite database (`browser.db`)
+- Own settings file (`settings.json`)
+- Own WebView2 user data folder (`UserData/`)
+
+Path structure: `%LOCALAPPDATA%/BrowserApp/Profiles/{guid}/`
+
+Profile switching requires app restart (industry standard). The active profile ID is stored in `%LOCALAPPDATA%/BrowserApp/active_profile.txt`.
+
+---
+
+## Bugs Fixed (Phase 8 Review)
+
+### Critical Fixes
+| Bug | Root Cause | Fix |
+|-----|-----------|-----|
+| **WebView2 init deadlock** | `EnsureCoreWebView2Async` called before visual tree | Two-phase init (CreateWebView → add to tree → InitializeCoreAsync) |
+| **NewTabPage overlay stuck** | Overlay shown on activation, never hidden on navigation | Subscribe to `SourceChanged`, hide overlay when URL becomes non-empty |
+| **Network Monitor dead** | Subscribed to global singleton interceptor (never initialized) | Subscribe to active tab's per-tab `RequestInterceptor` via `TabStripViewModel` |
+| **History nav broken** | Used global `INavigationService` (no WebView2 attached) | Navigate via `TabStripViewModel.ActiveTab?.Navigate()` |
+| **Profile colors invisible** | WPF binding `Color="{Binding Color}"` can't convert string→Color | Added `StringToBrushConverter`, use `Background` binding |
+| **FrequentSites LINQ crash** | `.First()` inside EF Core GroupBy projection not translatable | Split into two queries (aggregate in SQL, titles client-side) |
+
+### Memory Leak Fixes
+| Bug | Root Cause | Fix |
+|-----|-----------|-----|
+| **BrowserTabItem lambda leak** | Anonymous lambda on `NavigationCompleted` can't be unsubscribed | Extracted to named method `OnNavigationCompletedForInjection`, unsubscribe in Dispose |
+| **BookmarkViewModel event leak** | `SourceChanged` subscribed on every tab switch, never unsubscribed from previous | Track `_subscribedTab`, unsubscribe before subscribing to new tab |
+
+### Pattern: Global Singleton → Active Tab
+
+The old architecture had global singleton services (`INavigationService`, `IRequestInterceptor`) that were wired to a single WebView2. With the tab system, each tab creates its own instances. ViewModels that need to interact with the browser now take `TabStripViewModel` and access `ActiveTab` instead of the global singletons.
+
+---
+
+## Architecture Assessment (Feb 2026)
+
+**Architecture Score: 8/10 | Implementation Readiness: 4/10**
+
+### Strengths
+- Clean layered separation (Core/Data/UI/Server) with interface boundaries
+- Extensible rule engine with LRU caching (MemoryCache, 100MB limit)
+- Multi-profile support with isolated data directories
+- Marketplace + Channels concept is genuinely differentiating
+- 130 unit tests across services, repositories, ViewModels
+- Proper async/await patterns throughout
+
+### Missing for Production Browser
+- Session persistence (tabs lost on restart)
+- Crash recovery
+- Certificate/security warnings UI
+- Address bar autocomplete/suggestions
+- Password manager / autofill
+- Downloads manager panel (notifications exist, no management)
+- Extension support (WebView2 API exists, not wired up)
+- Search engine customization
+
+### WebView2 Extension Support
+WebView2 supports loading **unpacked** Chromium extensions via `CoreWebView2Profile.AddBrowserExtensionAsync(path)`. Limitations:
+- Must be Manifest V3 (V2 deprecated as of mid-2025)
+- Load from local folder only, no Chrome Web Store browsing
+- Some `chrome.*` APIs are restricted in WebView2
+- Extensions persist per-profile (fits existing profile system)
+- Potential future feature: extension management UI + sideloading popular extensions
 
 ---
 

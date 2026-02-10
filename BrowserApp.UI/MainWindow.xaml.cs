@@ -30,6 +30,7 @@ public partial class MainWindow : FluentWindow
     private bool _isFullScreen;
     private WindowState _previousWindowState;
     private WindowStyle _previousWindowStyle;
+    private BrowserTabItem? _overlayTrackedTab;
 
     public MainWindow(
         MainViewModel viewModel,
@@ -69,6 +70,7 @@ public partial class MainWindow : FluentWindow
 
         // Wire up tab management events
         _tabStrip.TabAdded += OnTabAdded;
+        _tabStrip.TabReady += OnTabReady;
         _tabStrip.TabRemoved += OnTabRemoved;
         _tabStrip.ActiveTabChanged += OnActiveTabChanged;
 
@@ -87,17 +89,29 @@ public partial class MainWindow : FluentWindow
 
     private async void MainWindow_Loaded(object sender, RoutedEventArgs e)
     {
-        // Initialize the shared WebView2 environment using profile's user data path
-        var profileService = _serviceProvider.GetRequiredService<ProfileService>();
-        string userDataPath = profileService.GetUserDataPath();
-        Directory.CreateDirectory(userDataPath);
+        try
+        {
+            // Initialize the shared WebView2 environment using profile's user data path
+            var profileService = _serviceProvider.GetRequiredService<ProfileService>();
+            string userDataPath = profileService.GetUserDataPath();
+            Directory.CreateDirectory(userDataPath);
 
-        await _tabStrip.InitializeAsync(userDataPath);
+            ErrorLogger.LogInfo($"[MainWindow] Initializing WebView2 with user data: {userDataPath}");
 
-        // Open first tab and navigate to home
-        await _tabStrip.NewTabAsync("https://www.google.com");
+            await _tabStrip.InitializeAsync(userDataPath);
 
-        ErrorLogger.LogInfo("[MainWindow] Tab system initialized with first tab");
+            ErrorLogger.LogInfo("[MainWindow] WebView2 environment created, creating first tab");
+
+            // Open first tab and navigate to home
+            await _tabStrip.NewTabAsync("https://www.google.com");
+
+            ErrorLogger.LogInfo("[MainWindow] Tab system initialized with first tab");
+        }
+        catch (Exception ex)
+        {
+            ErrorLogger.LogError("MainWindow_Loaded failed", ex);
+            ErrorLogger.LogInfo($"[MainWindow] FATAL: Tab initialization failed: {ex.Message}");
+        }
     }
 
     private async void ShowNewTabPage()
@@ -130,11 +144,24 @@ public partial class MainWindow : FluentWindow
 
     /// <summary>
     /// When a new tab is created, add its WebView2 to the visual tree.
+    /// Called BEFORE CoreWebView2 initialization (WebView2 needs an HWND first).
     /// </summary>
     private void OnTabAdded(object? sender, BrowserTabItem tab)
     {
         if (tab.WebView == null) return;
 
+        // Add WebView2 to the host grid (hidden by default)
+        // This gives it an HWND so EnsureCoreWebView2Async can succeed
+        tab.WebView.Visibility = Visibility.Collapsed;
+        WebViewHost.Children.Add(tab.WebView);
+    }
+
+    /// <summary>
+    /// Called after CoreWebView2 is fully initialized on a tab.
+    /// Wires up network logging and download notifications.
+    /// </summary>
+    private void OnTabReady(object? sender, BrowserTabItem tab)
+    {
         // Wire this tab's request interceptor to the network logger
         if (tab.RequestInterceptor != null)
         {
@@ -149,10 +176,6 @@ public partial class MainWindow : FluentWindow
         {
             DownloadNotificationControl.WireToWebView(tab.CoreWebView2);
         }
-
-        // Add WebView2 to the host grid (hidden by default)
-        tab.WebView.Visibility = Visibility.Collapsed;
-        WebViewHost.Children.Add(tab.WebView);
     }
 
     /// <summary>
@@ -171,6 +194,13 @@ public partial class MainWindow : FluentWindow
     /// </summary>
     private void OnActiveTabChanged(object? sender, BrowserTabItem? activeTab)
     {
+        // Unsubscribe from previous tab's source changes (overlay tracking)
+        if (_overlayTrackedTab != null)
+        {
+            _overlayTrackedTab.SourceChanged -= OnActiveTabSourceChangedForOverlay;
+            _overlayTrackedTab = null;
+        }
+
         foreach (var child in WebViewHost.Children)
         {
             if (child is Microsoft.Web.WebView2.Wpf.WebView2 wv)
@@ -188,10 +218,29 @@ public partial class MainWindow : FluentWindow
         if (activeTab != null && string.IsNullOrEmpty(activeTab.Url))
         {
             ShowNewTabPage();
+
+            // Subscribe to source changes so we hide the overlay when navigation starts
+            _overlayTrackedTab = activeTab;
+            activeTab.SourceChanged += OnActiveTabSourceChangedForOverlay;
         }
         else
         {
             HideNewTabPage();
+        }
+    }
+
+    private void OnActiveTabSourceChangedForOverlay(object? sender, string newUrl)
+    {
+        if (!string.IsNullOrEmpty(newUrl))
+        {
+            HideNewTabPage();
+
+            // Unsubscribe — no longer needed for this tab
+            if (_overlayTrackedTab != null)
+            {
+                _overlayTrackedTab.SourceChanged -= OnActiveTabSourceChangedForOverlay;
+                _overlayTrackedTab = null;
+            }
         }
     }
 
