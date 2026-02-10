@@ -8,6 +8,7 @@ using CommunityToolkit.Mvvm.Input;
 using Microsoft.Win32;
 using BrowserApp.Core.Interfaces;
 using BrowserApp.Core.Models;
+using BrowserApp.UI.Models;
 
 namespace BrowserApp.UI.ViewModels;
 
@@ -19,9 +20,11 @@ namespace BrowserApp.UI.ViewModels;
 public partial class NetworkMonitorViewModel : ObservableObject, IDisposable
 {
     private readonly INetworkLogger _networkLogger;
-    private readonly IRequestInterceptor _requestInterceptor;
-    private readonly INavigationService _navigationService;
+    private readonly TabStripViewModel _tabStrip;
     private bool _isDisposed;
+
+    // Track the currently subscribed tab's interceptor
+    private BrowserTabItem? _subscribedTab;
 
     // Buffering for high-performance UI updates
     private readonly ConcurrentQueue<NetworkRequest> _pendingRequests = new();
@@ -54,15 +57,19 @@ public partial class NetworkMonitorViewModel : ObservableObject, IDisposable
 
     public NetworkMonitorViewModel(
         INetworkLogger networkLogger,
-        IRequestInterceptor requestInterceptor,
-        INavigationService navigationService)
+        TabStripViewModel tabStrip)
     {
         _networkLogger = networkLogger;
-        _requestInterceptor = requestInterceptor;
-        _navigationService = navigationService;
+        _tabStrip = tabStrip;
 
-        // Subscribe to captured requests
-        _requestInterceptor.RequestCaptured += OnRequestCaptured;
+        // Subscribe to active tab changes to wire up per-tab interceptors
+        _tabStrip.ActiveTabChanged += OnActiveTabChanged;
+
+        // Wire up the current active tab if one already exists
+        if (_tabStrip.ActiveTab != null)
+        {
+            SubscribeToTab(_tabStrip.ActiveTab);
+        }
 
         // Initialize buffered update timer
         _updateTimer = new DispatcherTimer
@@ -74,6 +81,35 @@ public partial class NetworkMonitorViewModel : ObservableObject, IDisposable
 
         // Load initial stats from database (fire-and-forget, errors handled internally)
         _ = LoadInitialStatsAsync();
+    }
+
+    private void OnActiveTabChanged(object? sender, BrowserTabItem? tab)
+    {
+        UnsubscribeFromTab();
+
+        if (tab != null)
+        {
+            SubscribeToTab(tab);
+        }
+    }
+
+    private void SubscribeToTab(BrowserTabItem tab)
+    {
+        _subscribedTab = tab;
+
+        if (tab.RequestInterceptor != null)
+        {
+            tab.RequestInterceptor.RequestCaptured += OnRequestCaptured;
+        }
+    }
+
+    private void UnsubscribeFromTab()
+    {
+        if (_subscribedTab?.RequestInterceptor != null)
+        {
+            _subscribedTab.RequestInterceptor.RequestCaptured -= OnRequestCaptured;
+        }
+        _subscribedTab = null;
     }
 
     /// <summary>
@@ -105,9 +141,6 @@ public partial class NetworkMonitorViewModel : ObservableObject, IDisposable
     private void OnRequestCaptured(object? sender, NetworkRequest request)
     {
         if (!IsMonitoringEnabled) return;
-
-        // NOTE: Database logging is handled globally in App.xaml.cs via RequestInterceptor -> NetworkLogger wiring.
-        // This ViewModel only handles UI updates.
 
         // Add to buffer for batched UI update
         _pendingRequests.Enqueue(request);
@@ -251,13 +284,17 @@ public partial class NetworkMonitorViewModel : ObservableObject, IDisposable
     {
         IsMonitoringEnabled = !IsMonitoringEnabled;
 
-        if (IsMonitoringEnabled)
+        var interceptor = _tabStrip.ActiveTab?.RequestInterceptor;
+        if (interceptor != null)
         {
-            _requestInterceptor.Enable();
-        }
-        else
-        {
-            _requestInterceptor.Disable();
+            if (IsMonitoringEnabled)
+            {
+                interceptor.Enable();
+            }
+            else
+            {
+                interceptor.Disable();
+            }
         }
     }
 
@@ -291,7 +328,7 @@ public partial class NetworkMonitorViewModel : ObservableObject, IDisposable
     {
         try
         {
-            var url = _navigationService.CurrentUrl;
+            var url = _tabStrip.ActiveTab?.Url;
             if (string.IsNullOrEmpty(url)) return null;
 
             return new Uri(url).Host;
@@ -356,8 +393,9 @@ public partial class NetworkMonitorViewModel : ObservableObject, IDisposable
         _updateTimer.Stop();
         _updateTimer.Tick -= FlushPendingRequests;
 
-        // Unsubscribe from events
-        _requestInterceptor.RequestCaptured -= OnRequestCaptured;
+        // Unsubscribe from active tab events
+        _tabStrip.ActiveTabChanged -= OnActiveTabChanged;
+        UnsubscribeFromTab();
 
         GC.SuppressFinalize(this);
     }

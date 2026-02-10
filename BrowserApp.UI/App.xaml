@@ -20,6 +20,7 @@
             <converters:PercentToWidthConverter x:Key="PercentToWidth"/>
             <converters:UriToSecurityIconConverter x:Key="UriToSecurityIcon"/>
             <converters:UriToSecurityColorConverter x:Key="UriToSecurityColor"/>
+            <converters:StringToBrushConverter x:Key="StringToBrush"/>
         </ResourceDictionary>
     </Application.Resources>
 </Application>

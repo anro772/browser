@@ -20,6 +20,7 @@ public partial class BrowserTabItem : ObservableObject, IDisposable
     private RequestInterceptor? _requestInterceptor;
     private CSSInjector? _cssInjector;
     private JSInjector? _jsInjector;
+    private IRuleEngine? _ruleEngine;
     private bool _isDisposed;
 
     public Guid Id { get; } = Guid.NewGuid();
@@ -101,14 +102,19 @@ public partial class BrowserTabItem : ObservableObject, IDisposable
         _jsInjector = new JSInjector();
         _jsInjector.SetCoreWebView2(_coreWebView2);
 
-        // Wire navigation completed to execute injections
-        _coreWebView2.NavigationCompleted += async (s, e) =>
+        // Store rule engine for injection handler
+        _ruleEngine = ruleEngine;
+
+        // Wire navigation completed to execute injections (named method for proper cleanup)
+        _coreWebView2.NavigationCompleted += OnNavigationCompletedForInjection;
+    }
+
+    private async void OnNavigationCompletedForInjection(object? sender, CoreWebView2NavigationCompletedEventArgs e)
+    {
+        if (e.IsSuccess && _ruleEngine != null)
         {
-            if (e.IsSuccess)
-            {
-                await ExecuteInjectionsAsync(ruleEngine);
-            }
-        };
+            await ExecuteInjectionsAsync(_ruleEngine);
+        }
     }
 
     private void ConfigureSettings()
@@ -264,6 +270,7 @@ public partial class BrowserTabItem : ObservableObject, IDisposable
         {
             _coreWebView2.NavigationStarting -= OnNavigationStarting;
             _coreWebView2.NavigationCompleted -= OnNavigationCompleted;
+            _coreWebView2.NavigationCompleted -= OnNavigationCompletedForInjection;
             _coreWebView2.SourceChanged -= OnSourceChanged;
             _coreWebView2.DocumentTitleChanged -= OnDocumentTitleChanged;
             _coreWebView2.StatusBarTextChanged -= OnStatusBarTextChanged;

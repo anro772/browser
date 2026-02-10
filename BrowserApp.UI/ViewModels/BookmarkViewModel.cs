@@ -17,6 +17,7 @@ public partial class BookmarkViewModel : ObservableObject
 {
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly TabStripViewModel _tabStrip;
+    private BrowserTabItem? _subscribedTab;
 
     [ObservableProperty]
     private bool _isCurrentPageBookmarked;
@@ -31,14 +32,29 @@ public partial class BookmarkViewModel : ObservableObject
         _tabStrip = tabStrip;
 
         // Monitor active tab changes to update bookmark state
-        _tabStrip.ActiveTabChanged += async (s, tab) =>
+        _tabStrip.ActiveTabChanged += OnActiveTabChanged;
+    }
+
+    private async void OnActiveTabChanged(object? sender, BrowserTabItem? tab)
+    {
+        // Unsubscribe from previous tab
+        if (_subscribedTab != null)
         {
-            if (tab != null)
-            {
-                tab.SourceChanged += async (s2, url) => await CheckBookmarkStateAsync(url);
-                await CheckBookmarkStateAsync(tab.Url);
-            }
-        };
+            _subscribedTab.SourceChanged -= OnTabSourceChanged;
+        }
+
+        _subscribedTab = tab;
+
+        if (tab != null)
+        {
+            tab.SourceChanged += OnTabSourceChanged;
+            await CheckBookmarkStateAsync(tab.Url);
+        }
+    }
+
+    private async void OnTabSourceChanged(object? sender, string url)
+    {
+        await CheckBookmarkStateAsync(url);
     }
 
     [RelayCommand]

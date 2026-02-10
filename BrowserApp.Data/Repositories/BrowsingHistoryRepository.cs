@@ -60,16 +60,31 @@ public class BrowsingHistoryRepository : IBrowsingHistoryRepository
     /// <inheritdoc/>
     public async Task<IEnumerable<FrequentSite>> GetFrequentSitesAsync(int count)
     {
-        return await _context.BrowsingHistory
+        // EF Core-safe: only use simple aggregation in SQL
+        var grouped = await _context.BrowsingHistory
             .GroupBy(h => h.Url)
-            .Select(g => new FrequentSite
-            {
-                Url = g.Key,
-                Title = g.OrderByDescending(h => h.VisitedAt).First().Title ?? g.Key,
-                VisitCount = g.Count()
-            })
-            .OrderByDescending(f => f.VisitCount)
+            .Select(g => new { Url = g.Key, VisitCount = g.Count() })
+            .OrderByDescending(x => x.VisitCount)
             .Take(count)
             .ToListAsync();
+
+        // Fetch titles client-side for the top URLs
+        var urls = grouped.Select(g => g.Url).ToList();
+        var latestEntries = await _context.BrowsingHistory
+            .Where(h => urls.Contains(h.Url))
+            .ToListAsync();
+
+        var titleMap = latestEntries
+            .GroupBy(h => h.Url)
+            .ToDictionary(
+                g => g.Key,
+                g => g.OrderByDescending(h => h.VisitedAt).First().Title ?? g.Key);
+
+        return grouped.Select(g => new FrequentSite
+        {
+            Url = g.Url,
+            Title = titleMap.GetValueOrDefault(g.Url, g.Url)!,
+            VisitCount = g.VisitCount
+        });
     }
 }

@@ -5,7 +5,6 @@ using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.DependencyInjection;
 using BrowserApp.Data.Entities;
 using BrowserApp.Data.Interfaces;
-using BrowserApp.Core.Interfaces;
 
 namespace BrowserApp.UI.ViewModels;
 
@@ -16,7 +15,7 @@ namespace BrowserApp.UI.ViewModels;
 public partial class HistoryViewModel : ObservableObject
 {
     private readonly IServiceScopeFactory _scopeFactory;
-    private readonly INavigationService _navigationService;
+    private readonly TabStripViewModel _tabStrip;
 
     [ObservableProperty]
     private ObservableCollection<BrowsingHistoryEntity> _historyEntries = new();
@@ -34,10 +33,10 @@ public partial class HistoryViewModel : ObservableObject
 
     public HistoryViewModel(
         IServiceScopeFactory scopeFactory,
-        INavigationService navigationService)
+        TabStripViewModel tabStrip)
     {
         _scopeFactory = scopeFactory;
-        _navigationService = navigationService;
+        _tabStrip = tabStrip;
     }
 
     /// <summary>
@@ -117,14 +116,15 @@ public partial class HistoryViewModel : ObservableObject
     }
 
     /// <summary>
-    /// Navigates to the selected history entry.
+    /// Navigates to the selected history entry in the active tab.
     /// </summary>
     [RelayCommand]
-    private async Task NavigateToEntryAsync(BrowsingHistoryEntity? entry)
+    private Task NavigateToEntryAsync(BrowsingHistoryEntity? entry)
     {
-        if (entry == null) return;
+        if (entry == null) return Task.CompletedTask;
 
-        await _navigationService.NavigateAsync(entry.Url);
+        _tabStrip.ActiveTab?.Navigate(entry.Url);
+        return Task.CompletedTask;
     }
 
     /// <summary>
