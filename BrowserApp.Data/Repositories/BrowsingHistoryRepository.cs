@@ -56,4 +56,20 @@ public class BrowsingHistoryRepository : IBrowsingHistoryRepository
         _context.BrowsingHistory.RemoveRange(_context.BrowsingHistory);
         await _context.SaveChangesAsync();
     }
+
+    /// <inheritdoc/>
+    public async Task<IEnumerable<FrequentSite>> GetFrequentSitesAsync(int count)
+    {
+        return await _context.BrowsingHistory
+            .GroupBy(h => h.Url)
+            .Select(g => new FrequentSite
+            {
+                Url = g.Key,
+                Title = g.OrderByDescending(h => h.VisitedAt).First().Title ?? g.Key,
+                VisitCount = g.Count()
+            })
+            .OrderByDescending(f => f.VisitCount)
+            .Take(count)
+            .ToListAsync();
+    }
 }

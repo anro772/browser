@@ -21,6 +21,7 @@ namespace BrowserApp.UI;
 public partial class App : Application
 {
     private IServiceProvider? _serviceProvider;
+    private ProfileService? _profileService;
 
     protected override async void OnStartup(StartupEventArgs e)
     {
@@ -63,6 +64,16 @@ public partial class App : Application
 
     private async Task InitializeApplicationAsync()
     {
+        // Initialize profile service BEFORE DI container
+        _profileService = new ProfileService();
+        _profileService.Initialize();
+
+        // Set configurable paths based on active profile
+        BrowserDbContext.SetDatabasePath(_profileService.GetDatabasePath());
+        SettingsService.SetSettingsPath(_profileService.GetSettingsPath());
+
+        ErrorLogger.LogInfo($"[Profile] Active: {_profileService.ActiveProfile.Name} ({_profileService.ActiveProfile.Id})");
+
         var services = new ServiceCollection();
         ConfigureServices(services);
         _serviceProvider = services.BuildServiceProvider();
@@ -85,16 +96,6 @@ public partial class App : Application
         await networkLogger.StartAsync();
 
         ErrorLogger.LogInfo("Network logger started");
-
-        // Wire RequestInterceptor to NetworkLogger so ALL requests are logged to DB
-        // This ensures logging happens regardless of which UI views are loaded
-        var requestInterceptor = _serviceProvider.GetRequiredService<IRequestInterceptor>();
-        requestInterceptor.RequestCaptured += async (sender, request) =>
-        {
-            await networkLogger.LogRequestAsync(request);
-        };
-
-        ErrorLogger.LogInfo("Request interceptor wired to network logger");
 
         ErrorLogger.LogInfo("Channel sync service initialized (manual sync only)");
 
@@ -144,7 +145,7 @@ public partial class App : Application
         services.AddSingleton<IChannelSyncService>(sp => sp.GetRequiredService<ChannelSyncService>());
         services.AddScoped<IChannelMembershipRepository, ChannelMembershipRepository>();
 
-        // Navigation Service with injection support
+        // Navigation Service (kept for backward compat, but tabs handle their own nav now)
         services.AddSingleton<NavigationService>(sp => new NavigationService(
             sp.GetRequiredService<IRuleEngine>(),
             sp.GetRequiredService<ICSSInjector>(),
@@ -160,9 +161,19 @@ public partial class App : Application
         services.AddScoped<IBrowsingHistoryRepository, BrowsingHistoryRepository>();
         services.AddScoped<INetworkLogRepository, NetworkLogRepository>();
         services.AddScoped<IRuleRepository, RuleRepository>();
+        services.AddScoped<IBookmarkRepository, BookmarkRepository>();
 
         // Settings Service
         services.AddSingleton<SettingsService>();
+
+        // Profile Service (already initialized before DI)
+        services.AddSingleton(_profileService!);
+        services.AddSingleton<ProfileSelectorViewModel>();
+
+        // Phase 7: Tab System
+        services.AddSingleton<TabStripViewModel>();
+        services.AddTransient<NewTabPageViewModel>();
+        services.AddSingleton<BookmarkViewModel>();
 
         // ViewModels
         services.AddTransient<MainViewModel>();
@@ -185,6 +196,9 @@ public partial class App : Application
         services.AddSingleton<PrivacyDashboardView>();
         services.AddSingleton<HistoryView>();
         services.AddTransient<SettingsView>();
+        services.AddTransient<ProfileSelectorView>();
+        services.AddTransient<NewTabPageView>();
+        services.AddSingleton<BookmarksPanel>();
     }
 
     private void EnsureDatabase()
@@ -256,6 +270,10 @@ public partial class App : Application
             {
                 await networkLogger.DisposeAsync();
             }
+
+            // Dispose tab strip
+            var tabStrip = _serviceProvider.GetService<TabStripViewModel>();
+            tabStrip?.Dispose();
         }
 
         if (_serviceProvider is IDisposable disposable)

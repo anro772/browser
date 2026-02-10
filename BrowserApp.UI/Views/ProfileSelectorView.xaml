@@ -1,0 +1,133 @@
+<Window x:Class="BrowserApp.UI.Views.ProfileSelectorView"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+        Title="Manage Profiles"
+        Width="450"
+        Height="500"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        Background="{DynamicResource ApplicationBackgroundBrush}">
+
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <StackPanel Grid.Row="0" Margin="0,0,0,16">
+            <TextBlock Text="Browser Profiles"
+                       FontSize="22"
+                       FontWeight="SemiBold"
+                       Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+            <TextBlock Text="Each profile has its own bookmarks, history, and settings."
+                       FontSize="13"
+                       Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                       Margin="0,4,0,0"/>
+        </StackPanel>
+
+        <!-- Profiles List -->
+        <ListView Grid.Row="1"
+                  ItemsSource="{Binding Profiles}"
+                  Background="Transparent"
+                  BorderThickness="0">
+            <ListView.ItemTemplate>
+                <DataTemplate>
+                    <Grid Margin="4,4">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <!-- Profile color avatar -->
+                        <Border Grid.Column="0"
+                                Width="36" Height="36"
+                                CornerRadius="18"
+                                Margin="0,0,12,0"
+                                VerticalAlignment="Center">
+                            <Border.Background>
+                                <SolidColorBrush Color="{Binding Color}"/>
+                            </Border.Background>
+                            <TextBlock Text="{Binding Name[0]}"
+                                       FontSize="16"
+                                       FontWeight="Bold"
+                                       Foreground="White"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center"/>
+                        </Border>
+
+                        <!-- Profile name -->
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                            <TextBlock Text="{Binding Name}"
+                                       FontSize="14"
+                                       FontWeight="SemiBold"
+                                       Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                            <TextBlock FontSize="11"
+                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Text" Value=""/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsDefault}" Value="True">
+                                                <Setter Property="Text" Value="Default profile"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                        </StackPanel>
+
+                        <!-- Switch button -->
+                        <ui:Button Grid.Column="2"
+                                   Content="Switch"
+                                   Appearance="Primary"
+                                   Margin="4,0"
+                                   VerticalAlignment="Center"
+                                   Command="{Binding DataContext.SwitchProfileCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                   CommandParameter="{Binding}"/>
+
+                        <!-- Delete button (not for default) -->
+                        <ui:Button Grid.Column="3"
+                                   Icon="{ui:SymbolIcon Delete24}"
+                                   Appearance="Secondary"
+                                   VerticalAlignment="Center"
+                                   ToolTip="Delete profile"
+                                   Visibility="{Binding IsDefault, Converter={StaticResource BoolToVisibilityInverse}}"
+                                   Command="{Binding DataContext.DeleteProfileCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                   CommandParameter="{Binding}"/>
+                    </Grid>
+                </DataTemplate>
+            </ListView.ItemTemplate>
+        </ListView>
+
+        <!-- Separator -->
+        <Separator Grid.Row="2" Margin="0,8"/>
+
+        <!-- Create new profile -->
+        <Grid Grid.Row="3" Margin="0,8,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <ui:TextBox Grid.Column="0"
+                        PlaceholderText="New profile name"
+                        Text="{Binding NewProfileName, UpdateSourceTrigger=PropertyChanged}"
+                        Margin="0,0,8,0">
+                <ui:TextBox.InputBindings>
+                    <KeyBinding Key="Return" Command="{Binding CreateProfileCommand}"/>
+                </ui:TextBox.InputBindings>
+            </ui:TextBox>
+
+            <ui:Button Grid.Column="1"
+                       Content="Create"
+                       Appearance="Primary"
+                       Command="{Binding CreateProfileCommand}"/>
+        </Grid>
+    </Grid>
+</Window>

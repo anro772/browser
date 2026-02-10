@@ -28,4 +28,20 @@ public interface IBrowsingHistoryRepository
     /// Clears all history entries.
     /// </summary>
     Task ClearAllAsync();
+
+    /// <summary>
+    /// Gets the most frequently visited sites (by visit count), grouped by domain.
+    /// </summary>
+    /// <param name="count">Maximum number of sites to return.</param>
+    Task<IEnumerable<FrequentSite>> GetFrequentSitesAsync(int count);
+}
+
+/// <summary>
+/// Represents a frequently visited site for the new tab page.
+/// </summary>
+public class FrequentSite
+{
+    public string Url { get; set; } = string.Empty;
+    public string Title { get; set; } = string.Empty;
+    public int VisitCount { get; set; }
 }

@@ -14,6 +14,7 @@ public class BrowserDbContext : DbContext
     public DbSet<NetworkLogEntity> NetworkLogs { get; set; } = null!;
     public DbSet<RuleEntity> Rules { get; set; } = null!;
     public DbSet<ChannelMembershipEntity> ChannelMemberships { get; set; } = null!;
+    public DbSet<BookmarkEntity> Bookmarks { get; set; } = null!;
 
     public BrowserDbContext()
     {
@@ -80,6 +81,15 @@ public class BrowserDbContext : DbContext
             entity.HasIndex(e => e.Source);
         });
 
+        modelBuilder.Entity<BookmarkEntity>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Url).IsRequired();
+            entity.Property(e => e.Title).IsRequired().HasMaxLength(500);
+            entity.HasIndex(e => e.Url).IsUnique();
+            entity.HasIndex(e => e.CreatedAt);
+        });
+
         modelBuilder.Entity<ChannelMembershipEntity>(entity =>
         {
             entity.HasKey(e => e.Id);
@@ -94,12 +104,33 @@ public class BrowserDbContext : DbContext
         });
     }
 
+    private static string? _customDatabasePath;
+
+    /// <summary>
+    /// Sets a custom database path (for profile support).
+    /// Must be called before any DbContext is created.
+    /// </summary>
+    public static void SetDatabasePath(string path)
+    {
+        _customDatabasePath = path;
+    }
+
     /// <summary>
     /// Gets the path to the SQLite database file.
     /// Creates the directory if it doesn't exist.
     /// </summary>
     public static string GetDatabasePath()
     {
+        if (!string.IsNullOrEmpty(_customDatabasePath))
+        {
+            var dir = Path.GetDirectoryName(_customDatabasePath);
+            if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
+            {
+                Directory.CreateDirectory(dir);
+            }
+            return _customDatabasePath;
+        }
+
         string appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
         string browserAppPath = Path.Combine(appDataPath, "BrowserApp");
 

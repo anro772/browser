@@ -10,10 +10,8 @@ namespace BrowserApp.UI.Services;
 /// </summary>
 public class SettingsService
 {
-    private static readonly string SettingsPath = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-        "BrowserApp",
-        "settings.json");
+    private static string? _customPath;
+    private readonly string _settingsPath;
 
     private UserSettings _settings = new();
     private static readonly JsonSerializerOptions JsonOptions = new()
@@ -21,19 +19,26 @@ public class SettingsService
         WriteIndented = true
     };
 
+    /// <summary>
+    /// Sets a custom settings file path (for profile support).
+    /// Must be called before SettingsService is constructed.
+    /// </summary>
+    public static void SetSettingsPath(string path)
+    {
+        _customPath = path;
+    }
+
     public SettingsService()
     {
+        _settingsPath = _customPath ?? Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "BrowserApp",
+            "settings.json");
         LoadSettings();
     }
 
-    /// <summary>
-    /// Gets the current user settings.
-    /// </summary>
     public UserSettings Settings => _settings;
 
-    /// <summary>
-    /// Gets or sets the current privacy mode.
-    /// </summary>
     public PrivacyMode PrivacyMode
     {
         get => _settings.PrivacyMode;
@@ -45,9 +50,6 @@ public class SettingsService
         }
     }
 
-    /// <summary>
-    /// Gets or sets the server URL for marketplace/channels.
-    /// </summary>
     public string ServerUrl
     {
         get => _settings.ServerUrl;
@@ -58,21 +60,15 @@ public class SettingsService
         }
     }
 
-    /// <summary>
-    /// Event raised when privacy mode changes.
-    /// </summary>
     public event EventHandler<PrivacyMode>? PrivacyModeChanged;
 
-    /// <summary>
-    /// Loads settings from disk.
-    /// </summary>
     private void LoadSettings()
     {
         try
         {
-            if (File.Exists(SettingsPath))
+            if (File.Exists(_settingsPath))
             {
-                var json = File.ReadAllText(SettingsPath);
+                var json = File.ReadAllText(_settingsPath);
                 _settings = JsonSerializer.Deserialize<UserSettings>(json) ?? new UserSettings();
             }
         }
@@ -83,21 +79,18 @@ public class SettingsService
         }
     }
 
-    /// <summary>
-    /// Saves settings to disk.
-    /// </summary>
     private void SaveSettings()
     {
         try
         {
-            var directory = Path.GetDirectoryName(SettingsPath);
+            var directory = Path.GetDirectoryName(_settingsPath);
             if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
             {
                 Directory.CreateDirectory(directory);
             }
 
             var json = JsonSerializer.Serialize(_settings, JsonOptions);
-            File.WriteAllText(SettingsPath, json);
+            File.WriteAllText(_settingsPath, json);
         }
         catch (Exception ex)
         {

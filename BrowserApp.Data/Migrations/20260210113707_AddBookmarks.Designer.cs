@@ -3,6 +3,7 @@ using System;
 using BrowserApp.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BrowserApp.Data.Migrations
 {
     [DbContext(typeof(BrowserDbContext))]
-    partial class BrowserDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260210113707_AddBookmarks")]
+    partial class AddBookmarks
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "8.0.0");
