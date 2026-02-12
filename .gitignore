@@ -54,7 +54,6 @@ project.assets.json
 
 ## User-specific files
 *.rsuser
-*.suo
 *.userprefs
 
 ## Mono Auto Generated Files
@@ -101,16 +100,12 @@ PublishOutput/
 *.swp
 *~
 
-## Local application data (created at runtime)
-# Note: The actual user data is stored in %LOCALAPPDATA%/BrowserApp/
-# This is just in case any gets created locally during development
-
-## SQLite database files (local dev)
+## SQLite database files
 *.db
 *.db-shm
 *.db-wal
 
-## Secrets and credentials (never commit these)
+## Secrets and credentials
 *.pfx
 *.snk
 appsettings.*.json
@@ -125,7 +120,16 @@ credentials.json
 !.vscode/launch.json
 !.vscode/extensions.json
 
-## Claude Code local settings
-.claude/settings.local.json
-network-log-20260115-083815.csv
+## Claude Code
+.claude/
+
+## Logs
+*.log
+*.csv
+
+## Internal docs (not for public repo)
+docs/PROJECT_CONTEXT.md
+
+## Generated files
+*.sql
 nul
