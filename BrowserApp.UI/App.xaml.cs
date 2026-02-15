@@ -186,6 +186,10 @@ public partial class App : Application
         services.AddSingleton<ExtensionService>();
         services.AddTransient<ExtensionManagerViewModel>();
 
+        // Phase 6: AI/Ollama Services
+        services.AddSingleton<IOllamaClient, OllamaClient>();
+        services.AddSingleton<IRuleGenerationService, RuleGenerationService>();
+
         // Settings Service
         services.AddSingleton<SettingsService>();
 
@@ -197,6 +201,9 @@ public partial class App : Application
         services.AddSingleton<TabStripViewModel>();
         services.AddTransient<NewTabPageViewModel>();
         services.AddSingleton<BookmarkViewModel>();
+
+        // Phase 6: AI ViewModels
+        services.AddSingleton<CopilotSidebarViewModel>();
 
         // ViewModels
         services.AddTransient<MainViewModel>();
@@ -222,6 +229,9 @@ public partial class App : Application
         services.AddTransient<ProfileSelectorView>();
         services.AddTransient<NewTabPageView>();
         services.AddSingleton<BookmarksPanel>();
+
+        // Phase 6: AI Views
+        services.AddSingleton<CopilotSidebarView>();
 
         // Phase 9: New Views
         services.AddSingleton<DownloadManagerView>();

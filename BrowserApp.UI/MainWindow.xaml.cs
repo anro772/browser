@@ -28,6 +28,7 @@ public partial class MainWindow : FluentWindow
     private readonly PrivacyDashboardView _dashboardView;
     private readonly HistoryView _historyView;
     private readonly DownloadManagerView _downloadManagerView;
+    private readonly CopilotSidebarView _copilotSidebarView;
     private readonly IServiceProvider _serviceProvider;
     private readonly INetworkLogger _networkLogger;
     private readonly DownloadManagerViewModel _downloadManagerViewModel;
@@ -49,6 +50,7 @@ public partial class MainWindow : FluentWindow
         BookmarksPanel bookmarksPanel,
         DownloadManagerView downloadManagerView,
         DownloadManagerViewModel downloadManagerViewModel,
+        CopilotSidebarView copilotSidebarView,
         INetworkLogger networkLogger,
         IServiceProvider serviceProvider)
     {
@@ -60,6 +62,7 @@ public partial class MainWindow : FluentWindow
         _historyView = historyView;
         _downloadManagerView = downloadManagerView;
         _downloadManagerViewModel = downloadManagerViewModel;
+        _copilotSidebarView = copilotSidebarView;
         _networkLogger = networkLogger;
         _serviceProvider = serviceProvider;
 
@@ -68,6 +71,7 @@ public partial class MainWindow : FluentWindow
         DataContext = _viewModel;
 
         // Set the sidebar tab contents
+        CopilotContent.Content = _copilotSidebarView;
         DashboardContent.Content = _dashboardView;
         BookmarksContent.Content = bookmarksPanel;
         DownloadsContent.Content = _downloadManagerView;

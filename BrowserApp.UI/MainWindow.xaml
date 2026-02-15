@@ -356,6 +356,9 @@
                     BorderThickness="1,0,0,0"
                     Visibility="{Binding IsSidebarVisible, Converter={StaticResource BoolToVisibility}}">
                 <TabControl>
+                    <TabItem Header="Copilot">
+                        <ContentControl x:Name="CopilotContent"/>
+                    </TabItem>
                     <TabItem Header="Dashboard">
                         <ContentControl x:Name="DashboardContent"/>
                     </TabItem>
