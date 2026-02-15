@@ -6,7 +6,8 @@
         Title="Marketplace"
         Height="600" Width="900"
         WindowStartupLocation="CenterOwner"
-        Loaded="MarketplaceView_Loaded">
+        Loaded="MarketplaceView_Loaded"
+        ExtendsContentIntoTitleBar="True">
 
     <ui:FluentWindow.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
@@ -17,19 +18,21 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
+        <ui:TitleBar Grid.Row="0" Title="Marketplace" ShowMinimize="False" ShowMaximize="False" ShowClose="True"/>
+
         <!-- Header -->
-        <StackPanel Grid.Row="0" Margin="0,0,0,16">
+        <StackPanel Grid.Row="1" Margin="0,0,0,16">
             <TextBlock Text="Marketplace" FontSize="24" FontWeight="SemiBold" Margin="0,0,0,4"/>
             <TextBlock Text="Browse and install community rules" Foreground="{StaticResource TextSecondaryBrush}"/>
         </StackPanel>
 
         <!-- Stats and Actions -->
-        <Grid Grid.Row="1" Margin="0,0,0,12">
+        <Grid Grid.Row="2" Margin="0,0,0,12">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
@@ -46,7 +49,7 @@
         </Grid>
 
         <!-- Rules List -->
-        <Border Grid.Row="2" BorderBrush="{DynamicResource ControlElevationBorderBrush}" BorderThickness="1" CornerRadius="8">
+        <Border Grid.Row="3" BorderBrush="{DynamicResource ControlElevationBorderBrush}" BorderThickness="1" CornerRadius="8">
             <DataGrid ItemsSource="{Binding Rules}"
                       SelectedItem="{Binding SelectedRule}"
                       AutoGenerateColumns="False"
@@ -83,20 +86,16 @@
         </Border>
 
         <!-- Loading Indicator -->
-        <Border Grid.Row="2" Background="#CC000000" Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisibilityConverter}}">
+        <Border Grid.Row="3" Background="#CC000000" Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisibilityConverter}}">
             <ui:ProgressRing IsIndeterminate="True"/>
         </Border>
 
         <!-- Status Message -->
-        <TextBlock Grid.Row="3"
+        <TextBlock Grid.Row="4"
                    Text="{Binding StatusMessage}"
                    Foreground="{StaticResource TextSecondaryBrush}"
                    Margin="0,8,0,0"
                    TextWrapping="Wrap"/>
 
-        <!-- Footer -->
-        <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
-            <ui:Button Content="Close" IsCancel="True" Click="CloseButton_Click"/>
-        </StackPanel>
     </Grid>
 </ui:FluentWindow>

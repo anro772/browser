@@ -7,7 +7,8 @@
         Title="Channels Manager"
         Height="600" Width="1000"
         WindowStartupLocation="CenterOwner"
-        Loaded="ChannelsView_Loaded">
+        Loaded="ChannelsView_Loaded"
+        ExtendsContentIntoTitleBar="True">
 
     <ui:FluentWindow.Resources>
         <views:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
@@ -17,12 +18,15 @@
     <Grid Margin="16">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
+        <ui:TitleBar Grid.Row="0" Title="Channels Manager" ShowMinimize="False" ShowMaximize="False" ShowClose="True"/>
+
         <!-- Header -->
-        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="16,16,16,8">
+        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="16,16,16,8">
             <ui:SymbolIcon Symbol="People24" FontSize="24" Margin="0,0,8,0"/>
             <TextBlock Text="Channels" FontSize="20" FontWeight="SemiBold" VerticalAlignment="Center"/>
             <ui:Button Content="Refresh" Margin="16,0,0,0"
@@ -37,7 +41,7 @@
         </StackPanel>
 
         <!-- Content -->
-        <Grid Grid.Row="1" Margin="16,8,16,8">
+        <Grid Grid.Row="2" Margin="16,8,16,8">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="16"/>
@@ -168,7 +172,7 @@
         </Grid>
 
         <!-- Status bar -->
-        <Border Grid.Row="2" Background="{StaticResource BgElevatedBrush}"
+        <Border Grid.Row="3" Background="{StaticResource BgElevatedBrush}"
                 Padding="16,8">
             <Grid>
                 <TextBlock Text="{Binding StatusMessage}"

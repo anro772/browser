@@ -1,4 +1,4 @@
-<Window x:Class="BrowserApp.UI.Views.ProfileSelectorView"
+<ui:FluentWindow x:Class="BrowserApp.UI.Views.ProfileSelectorView"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
@@ -7,18 +7,21 @@
         Height="500"
         WindowStartupLocation="CenterOwner"
         ResizeMode="NoResize"
-        Background="{StaticResource BgPrimaryBrush}">
+        ExtendsContentIntoTitleBar="True">
 
     <Grid Margin="16">
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
+        <ui:TitleBar Grid.Row="0" Title="Manage Profiles" ShowMinimize="False" ShowMaximize="False" ShowClose="True"/>
+
         <!-- Header -->
-        <StackPanel Grid.Row="0" Margin="0,0,0,16">
+        <StackPanel Grid.Row="1" Margin="0,0,0,16">
             <TextBlock Text="Browser Profiles"
                        FontSize="22"
                        FontWeight="SemiBold"
@@ -30,7 +33,7 @@
         </StackPanel>
 
         <!-- Profiles List -->
-        <ListView Grid.Row="1"
+        <ListView Grid.Row="2"
                   ItemsSource="{Binding Profiles}"
                   Background="Transparent"
                   BorderThickness="0">
@@ -86,7 +89,7 @@
                                    Appearance="Primary"
                                    Margin="4,0"
                                    VerticalAlignment="Center"
-                                   Command="{Binding DataContext.SwitchProfileCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                   Command="{Binding DataContext.SwitchProfileCommand, RelativeSource={RelativeSource AncestorType=ui:FluentWindow}}"
                                    CommandParameter="{Binding}"/>
 
                         <!-- Delete button (not for default) -->
@@ -96,7 +99,7 @@
                                    VerticalAlignment="Center"
                                    ToolTip="Delete profile"
                                    Visibility="{Binding IsDefault, Converter={StaticResource BoolToVisibilityInverse}}"
-                                   Command="{Binding DataContext.DeleteProfileCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                   Command="{Binding DataContext.DeleteProfileCommand, RelativeSource={RelativeSource AncestorType=ui:FluentWindow}}"
                                    CommandParameter="{Binding}"/>
                     </Grid>
                 </DataTemplate>
@@ -104,10 +107,10 @@
         </ListView>
 
         <!-- Separator -->
-        <Separator Grid.Row="2" Margin="0,8"/>
+        <Separator Grid.Row="3" Margin="0,8"/>
 
         <!-- Create new profile -->
-        <Grid Grid.Row="3" Margin="0,8,0,0">
+        <Grid Grid.Row="4" Margin="0,8,0,0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
@@ -128,4 +131,4 @@
                        Command="{Binding CreateProfileCommand}"/>
         </Grid>
     </Grid>
-</Window>
+</ui:FluentWindow>

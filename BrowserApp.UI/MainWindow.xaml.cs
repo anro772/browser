@@ -538,6 +538,30 @@ public partial class MainWindow : FluentWindow
         }
     }
 
+    private void SidebarTab_Checked(object sender, RoutedEventArgs e)
+    {
+        // Null-check needed because this fires during InitializeComponent before all controls exist
+        if (CopilotContent == null) return;
+
+        // Collapse all content panels
+        CopilotContent.Visibility = Visibility.Collapsed;
+        DashboardContent.Visibility = Visibility.Collapsed;
+        BookmarksContent.Visibility = Visibility.Collapsed;
+        DownloadsContent.Visibility = Visibility.Collapsed;
+        NetworkMonitorContent.Visibility = Visibility.Collapsed;
+        HistoryContent.Visibility = Visibility.Collapsed;
+        LogViewerContent.Visibility = Visibility.Collapsed;
+
+        // Show the one matching the checked radio button
+        if (sender == SidebarTabCopilot) CopilotContent.Visibility = Visibility.Visible;
+        else if (sender == SidebarTabDashboard) DashboardContent.Visibility = Visibility.Visible;
+        else if (sender == SidebarTabBookmarks) BookmarksContent.Visibility = Visibility.Visible;
+        else if (sender == SidebarTabDownloads) DownloadsContent.Visibility = Visibility.Visible;
+        else if (sender == SidebarTabNetwork) NetworkMonitorContent.Visibility = Visibility.Visible;
+        else if (sender == SidebarTabHistory) HistoryContent.Visibility = Visibility.Visible;
+        else if (sender == SidebarTabLogs) LogViewerContent.Visibility = Visibility.Visible;
+    }
+
     private void SettingsButton_Click(object sender, RoutedEventArgs e)
     {
         try

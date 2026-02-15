@@ -13,8 +13,4 @@ public partial class ExtensionManagerView : FluentWindow
         Loaded += async (s, e) => await viewModel.LoadExtensionsCommand.ExecuteAsync(null);
     }
 
-    private void CloseButton_Click(object sender, RoutedEventArgs e)
-    {
-        Close();
-    }
 }

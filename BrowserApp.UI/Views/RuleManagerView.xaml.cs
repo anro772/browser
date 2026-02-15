@@ -19,10 +19,6 @@ public partial class RuleManagerView : Wpf.Ui.Controls.FluentWindow
         Loaded += async (s, e) => await viewModel.LoadRulesCommand.ExecuteAsync(null);
     }
 
-    private void CloseButton_Click(object sender, RoutedEventArgs e)
-    {
-        Close();
-    }
 }
 
 /// <summary>

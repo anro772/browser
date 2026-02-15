@@ -95,6 +95,26 @@
     <Color x:Key="SystemAccentColorSecondary">#C084FC</Color>
     <Color x:Key="SystemAccentColorTertiary">#7C3AED</Color>
 
+    <!-- Button icon foreground overrides for dark theme -->
+    <SolidColorBrush x:Key="ButtonForeground" Color="#F0F0FF"/>
+    <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="#F0F0FF"/>
+    <SolidColorBrush x:Key="ButtonForegroundPressed" Color="#C084FC"/>
+    <SolidColorBrush x:Key="ButtonForegroundDisabled" Color="#606078"/>
+
+    <!-- Subtle/secondary button overrides -->
+    <SolidColorBrush x:Key="SubtleButtonForeground" Color="#9898B0"/>
+    <SolidColorBrush x:Key="SubtleButtonForegroundPointerOver" Color="#F0F0FF"/>
+    <SolidColorBrush x:Key="SubtleButtonForegroundPressed" Color="#C084FC"/>
+    <SolidColorBrush x:Key="SubtleButtonForegroundDisabled" Color="#606078"/>
+    <SolidColorBrush x:Key="SubtleButtonBackground" Color="Transparent"/>
+    <SolidColorBrush x:Key="SubtleButtonBackgroundPointerOver" Color="#1C1C36"/>
+    <SolidColorBrush x:Key="SubtleButtonBackgroundPressed" Color="#252544"/>
+
+    <!-- ToggleButton icon overrides -->
+    <SolidColorBrush x:Key="ToggleButtonForeground" Color="#9898B0"/>
+    <SolidColorBrush x:Key="ToggleButtonForegroundPointerOver" Color="#F0F0FF"/>
+    <SolidColorBrush x:Key="ToggleButtonForegroundChecked" Color="#C084FC"/>
+
     <!-- ═══════════════════════════════════════════════════════════════
          Common Styles
          ═══════════════════════════════════════════════════════════════ -->

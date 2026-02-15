@@ -13,6 +13,7 @@
                 <ResourceDictionary Source="Styles/AnimationStyles.xaml"/>
                 <ResourceDictionary Source="Styles/TabStyles.xaml"/>
                 <ResourceDictionary Source="Styles/AddressBarStyles.xaml"/>
+                <ResourceDictionary Source="Styles/SidebarStyles.xaml"/>
             </ResourceDictionary.MergedDictionaries>
 
             <!-- Converters -->

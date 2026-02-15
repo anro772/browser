@@ -27,8 +27,4 @@ public partial class MarketplaceView : FluentWindow
         }
     }
 
-    private void CloseButton_Click(object sender, RoutedEventArgs e)
-    {
-        Close();
-    }
 }

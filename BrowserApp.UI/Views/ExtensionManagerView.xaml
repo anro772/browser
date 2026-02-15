@@ -6,17 +6,20 @@
         Title="Extensions"
         Height="500" Width="500"
         WindowStartupLocation="CenterOwner"
-        ResizeMode="NoResize">
+        ResizeMode="NoResize"
+        ExtendsContentIntoTitleBar="True">
 
     <Grid Margin="24">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
+        <ui:TitleBar Grid.Row="0" Title="Extensions" ShowMinimize="False" ShowMaximize="False" ShowClose="True"/>
+
         <!-- Header -->
-        <StackPanel Grid.Row="0" Margin="0,0,0,16">
+        <StackPanel Grid.Row="1" Margin="0,0,0,16">
             <TextBlock Text="Extensions"
                        FontSize="24"
                        FontWeight="SemiBold"/>
@@ -26,7 +29,7 @@
         </StackPanel>
 
         <!-- Extensions List -->
-        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+        <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
             <StackPanel>
                 <ui:Button Content="Add Extension..."
                            Icon="{ui:SymbolIcon Add24}"
@@ -108,16 +111,5 @@
             </StackPanel>
         </ScrollViewer>
 
-        <!-- Footer -->
-        <StackPanel Grid.Row="2"
-                    Orientation="Horizontal"
-                    HorizontalAlignment="Right"
-                    Margin="0,16,0,0">
-            <ui:Button Content="Close"
-                       IsCancel="True"
-                       Click="CloseButton_Click"
-                       Appearance="Primary"
-                       Padding="24,8"/>
-        </StackPanel>
     </Grid>
 </ui:FluentWindow>

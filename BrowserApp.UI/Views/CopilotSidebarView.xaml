@@ -328,8 +328,8 @@
 
         <!-- Input area -->
         <Border Grid.Row="2"
-                Background="{DynamicResource ControlFillColorDefaultBrush}"
-                BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
+                Background="{StaticResource BgElevatedBrush}"
+                BorderBrush="{StaticResource BorderSubtleBrush}"
                 BorderThickness="0,1,0,0"
                 Padding="8"
                 Visibility="{Binding IsOllamaConnected, Converter={StaticResource BoolToVisibility}}">
@@ -343,61 +343,73 @@
                            FontSize="12"
                            Margin="0,0,0,8"/>
 
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="Auto"/>
-                    </Grid.ColumnDefinitions>
+                <!-- Pill-shaped input container -->
+                <Border Background="{StaticResource BgSurfaceBrush}"
+                        BorderBrush="{StaticResource BorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="20"
+                        Padding="4,2">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
 
-                <!-- Input TextBox -->
-                <TextBox Grid.Column="0"
-                         x:Name="ChatInput"
-                         Text="{Binding UserInput, UpdateSourceTrigger=PropertyChanged}"
-                         FontSize="13"
-                         Padding="10,8"
-                         AcceptsReturn="False"
-                         TextWrapping="Wrap"
-                         MaxHeight="80"
-                         VerticalScrollBarVisibility="Auto"
-                         Background="Transparent"
-                         BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
-                         Foreground="{DynamicResource TextFillColorPrimaryBrush}"
-                         CaretBrush="{DynamicResource TextFillColorPrimaryBrush}"
-                         PreviewKeyDown="ChatInput_PreviewKeyDown">
-                    <TextBox.Style>
-                        <Style TargetType="TextBox">
-                            <Style.Triggers>
-                                <Trigger Property="Text" Value="">
-                                    <Setter Property="Tag" Value="Ask the copilot..."/>
-                                </Trigger>
-                            </Style.Triggers>
-                        </Style>
-                    </TextBox.Style>
-                </TextBox>
+                        <!-- Input TextBox (transparent, no border — pill provides chrome) -->
+                        <TextBox Grid.Column="0"
+                                 x:Name="ChatInput"
+                                 Text="{Binding UserInput, UpdateSourceTrigger=PropertyChanged}"
+                                 FontSize="13"
+                                 Padding="12,6"
+                                 AcceptsReturn="False"
+                                 TextWrapping="Wrap"
+                                 MaxHeight="80"
+                                 VerticalScrollBarVisibility="Auto"
+                                 Background="Transparent"
+                                 BorderThickness="0"
+                                 Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                                 CaretBrush="{DynamicResource TextFillColorPrimaryBrush}"
+                                 VerticalAlignment="Center"
+                                 PreviewKeyDown="ChatInput_PreviewKeyDown">
+                            <TextBox.Style>
+                                <Style TargetType="TextBox">
+                                    <Style.Triggers>
+                                        <Trigger Property="Text" Value="">
+                                            <Setter Property="Tag" Value="Ask the copilot..."/>
+                                        </Trigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBox.Style>
+                        </TextBox>
 
-                <!-- Send / Stop buttons -->
-                <StackPanel Grid.Column="1"
-                            Orientation="Horizontal"
-                            Margin="4,0,0,0"
-                            VerticalAlignment="Bottom">
+                        <!-- Embedded Send / Stop buttons inside the pill -->
+                        <StackPanel Grid.Column="1"
+                                    Orientation="Horizontal"
+                                    VerticalAlignment="Center"
+                                    Margin="0,0,4,0">
 
-                    <!-- Send button (visible when not generating) -->
-                    <ui:Button Icon="{ui:SymbolIcon Send24}"
-                               ToolTip="Send message (Enter)"
-                               Command="{Binding SendMessageCommand}"
-                               Appearance="Primary"
-                               Padding="8"
-                               Visibility="{Binding IsGenerating, Converter={StaticResource BoolToVisibilityInverse}}"/>
+                            <!-- Send button (circular, visible when not generating) -->
+                            <ui:Button Icon="{ui:SymbolIcon Send24}"
+                                       ToolTip="Send message (Enter)"
+                                       Command="{Binding SendMessageCommand}"
+                                       Appearance="Primary"
+                                       Width="32" Height="32"
+                                       Padding="0"
+                                       CornerRadius="16"
+                                       Visibility="{Binding IsGenerating, Converter={StaticResource BoolToVisibilityInverse}}"/>
 
-                    <!-- Stop button (visible when generating) -->
-                    <ui:Button Icon="{ui:SymbolIcon Stop24}"
-                               ToolTip="Stop generation"
-                               Command="{Binding StopGenerationCommand}"
-                               Appearance="Caution"
-                               Padding="8"
-                               Visibility="{Binding IsGenerating, Converter={StaticResource BoolToVisibility}}"/>
-                </StackPanel>
-            </Grid>
+                            <!-- Stop button (circular, visible when generating) -->
+                            <ui:Button Icon="{ui:SymbolIcon Stop24}"
+                                       ToolTip="Stop generation"
+                                       Command="{Binding StopGenerationCommand}"
+                                       Appearance="Caution"
+                                       Width="32" Height="32"
+                                       Padding="0"
+                                       CornerRadius="16"
+                                       Visibility="{Binding IsGenerating, Converter={StaticResource BoolToVisibility}}"/>
+                        </StackPanel>
+                    </Grid>
+                </Border>
             </StackPanel>
         </Border>
     </Grid>
