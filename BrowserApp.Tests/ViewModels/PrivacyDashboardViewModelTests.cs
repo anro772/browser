@@ -142,6 +142,51 @@ public class PrivacyDashboardViewModelTests
         Assert.Empty(_viewModel.TopBlockedDomains);
         Assert.Empty(_viewModel.ResourceTypeBreakdown);
     }
+
+    [Fact]
+    public async Task RefreshStatsAsync_WhenRepositoryThrows_HandlesGracefully()
+    {
+        _repositoryMock.Setup(x => x.GetBlockedTodayCountAsync())
+            .ThrowsAsync(new InvalidOperationException("DB error"));
+
+        var ex = await Record.ExceptionAsync(() => _viewModel.RefreshStatsCommand.ExecuteAsync(null));
+
+        // Should not throw — error is caught internally
+        Assert.Null(ex);
+        Assert.False(_viewModel.IsLoading, "IsLoading should be false after error");
+    }
+
+    [Theory]
+    [InlineData(0, "0.0 B")]
+    [InlineData(1024, "1.0 KB")]
+    [InlineData(1048576, "1.0 MB")]
+    [InlineData(1073741824, "1.0 GB")]
+    [InlineData(512, "512.0 B")]
+    [InlineData(1536, "1.5 KB")]
+    public void FormatBytes_Various_FormatsCorrectly(long bytes, string expected)
+    {
+        // FormatBytes is private static, but we can test it through RefreshStats
+        // Use reflection to test the private method directly
+        var method = typeof(PrivacyDashboardViewModel)
+            .GetMethod("FormatBytes", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+        Assert.NotNull(method);
+
+        var result = (string)method!.Invoke(null, new object[] { bytes })!;
+        Assert.Equal(expected, result);
+    }
+
+    [Fact]
+    public void PrivacyModeDescription_ReturnsCorrectDescription()
+    {
+        _viewModel.CurrentPrivacyMode = PrivacyMode.Relaxed;
+        Assert.Equal("Minimal blocking - sites work best", _viewModel.PrivacyModeDescription);
+
+        _viewModel.CurrentPrivacyMode = PrivacyMode.Standard;
+        Assert.Equal("Balanced - recommended", _viewModel.PrivacyModeDescription);
+
+        _viewModel.CurrentPrivacyMode = PrivacyMode.Strict;
+        Assert.Equal("Maximum blocking - may break sites", _viewModel.PrivacyModeDescription);
+    }
 }
 
 public class BlockedDomainItemTests

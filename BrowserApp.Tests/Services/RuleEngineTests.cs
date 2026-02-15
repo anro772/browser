@@ -349,4 +349,171 @@ public class RuleEngineTests : IDisposable
         result.BlockedByRuleId.Should().Be(highPriorityId, "the higher priority rule should be evaluated first and win");
         result.BlockedByRuleName.Should().Be("High Priority Block");
     }
+
+    [Fact]
+    public async Task Evaluate_WithNullPageUrl_StillEvaluates()
+    {
+        var entities = new List<RuleEntity>
+        {
+            CreateBlockRuleEntity("*tracker.com/*", "Block Trackers")
+        };
+        _mockRuleRepository.Setup(r => r.GetEnabledAsync()).ReturnsAsync(entities);
+        await _sut.InitializeAsync();
+
+        var request = new NetworkRequest { Url = "https://tracker.com/pixel.gif" };
+        var result = _sut.Evaluate(request, null);
+
+        result.ShouldBlock.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task Evaluate_WithWildcardSite_MatchesAll()
+    {
+        var entities = new List<RuleEntity>
+        {
+            CreateBlockRuleEntity("*tracker.com/*", "Block All Sites", site: "*")
+        };
+        _mockRuleRepository.Setup(r => r.GetEnabledAsync()).ReturnsAsync(entities);
+        await _sut.InitializeAsync();
+
+        var request = new NetworkRequest { Url = "https://tracker.com/pixel.gif" };
+        var result = _sut.Evaluate(request, "https://any-page.com");
+
+        result.ShouldBlock.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task Evaluate_WithSpecificSite_OnlyMatchesThatSite()
+    {
+        var entities = new List<RuleEntity>
+        {
+            CreateBlockRuleEntity("*tracker.com/*", "Site-Specific Rule", site: "*.example.com/*")
+        };
+        _mockRuleRepository.Setup(r => r.GetEnabledAsync()).ReturnsAsync(entities);
+        await _sut.InitializeAsync();
+
+        // Should match when page is on example.com
+        var request1 = new NetworkRequest { Url = "https://tracker.com/pixel.gif" };
+        var matchResult = _sut.Evaluate(request1, "https://www.example.com/page");
+        matchResult.ShouldBlock.Should().BeTrue();
+
+        // Should NOT match when page is on other-site.com (different URL to avoid cache)
+        var request2 = new NetworkRequest { Url = "https://tracker.com/pixel2.gif" };
+        var noMatchResult = _sut.Evaluate(request2, "https://other-site.com/page");
+        noMatchResult.ShouldBlock.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task Evaluate_CollectsInjectionsFromMultipleRules()
+    {
+        var entities = new List<RuleEntity>
+        {
+            CreateInjectionRuleEntity("inject_css", site: "*", css: "body { color: red; }"),
+            CreateInjectionRuleEntity("inject_js", site: "*", js: "console.log('hi');"),
+            CreateInjectionRuleEntity("inject_css", site: "*", css: ".ad { display: none; }")
+        };
+        _mockRuleRepository.Setup(r => r.GetEnabledAsync()).ReturnsAsync(entities);
+        await _sut.InitializeAsync();
+
+        var request = new NetworkRequest { Url = "https://example.com/page.html" };
+        var result = _sut.Evaluate(request, "https://example.com");
+
+        result.ShouldBlock.Should().BeFalse();
+        result.InjectionsToApply.Should().HaveCount(3);
+    }
+
+    [Fact]
+    public async Task Evaluate_BlockRuleWithResourceTypeFilter_Works()
+    {
+        // Create a rule that blocks only scripts
+        var entity = new RuleEntity
+        {
+            Id = Guid.NewGuid().ToString(),
+            Name = "Block Scripts Only",
+            Description = "Blocks scripts from tracker",
+            Site = "*",
+            Enabled = true,
+            Priority = 10,
+            RulesJson = "[{\"Type\":\"block\",\"Match\":{\"UrlPattern\":\"*tracker.com/*\",\"ResourceType\":\"Script\"}}]",
+            Source = "local",
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        };
+        _mockRuleRepository.Setup(r => r.GetEnabledAsync()).ReturnsAsync(new List<RuleEntity> { entity });
+        await _sut.InitializeAsync();
+
+        var scriptRequest = new NetworkRequest { Url = "https://tracker.com/script.js", ResourceType = "Script" };
+        _sut.Evaluate(scriptRequest, "https://example.com").ShouldBlock.Should().BeTrue();
+
+        // Use a different URL to avoid evaluation cache hit
+        var imageRequest = new NetworkRequest { Url = "https://tracker.com/image.png", ResourceType = "Image" };
+        _sut.Evaluate(imageRequest, "https://example.com").ShouldBlock.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task Evaluate_BlockRuleWithMethodFilter_Works()
+    {
+        var entity = new RuleEntity
+        {
+            Id = Guid.NewGuid().ToString(),
+            Name = "Block POST only",
+            Description = "Blocks POST requests to tracker",
+            Site = "*",
+            Enabled = true,
+            Priority = 10,
+            RulesJson = "[{\"Type\":\"block\",\"Match\":{\"UrlPattern\":\"*tracker.com/*\",\"Method\":\"POST\"}}]",
+            Source = "local",
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        };
+        _mockRuleRepository.Setup(r => r.GetEnabledAsync()).ReturnsAsync(new List<RuleEntity> { entity });
+        await _sut.InitializeAsync();
+
+        var postRequest = new NetworkRequest { Url = "https://tracker.com/collect", Method = "POST" };
+        _sut.Evaluate(postRequest, "https://example.com").ShouldBlock.Should().BeTrue();
+
+        // Use a different URL to avoid evaluation cache hit
+        var getRequest = new NetworkRequest { Url = "https://tracker.com/collect?nocache=1", Method = "GET" };
+        _sut.Evaluate(getRequest, "https://example.com").ShouldBlock.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task ReloadRulesAsync_WhenRepoThrows_HandlesGracefully()
+    {
+        _mockRuleRepository.Setup(r => r.GetEnabledAsync()).ThrowsAsync(new InvalidOperationException("DB error"));
+
+        // Should not throw
+        var ex = await Record.ExceptionAsync(() => _sut.ReloadRulesAsync());
+        ex.Should().BeNull();
+
+        // Should have 0 rules (failed to load)
+        _sut.GetRuleCount().Should().Be(0);
+    }
+
+    [Fact]
+    public async Task Evaluate_WithMalformedRulesJson_HandlesGracefully()
+    {
+        var entity = new RuleEntity
+        {
+            Id = Guid.NewGuid().ToString(),
+            Name = "Broken Rule",
+            Description = "Has malformed JSON",
+            Site = "*",
+            Enabled = true,
+            Priority = 10,
+            RulesJson = "this is not valid json at all {{{",
+            Source = "local",
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        };
+        _mockRuleRepository.Setup(r => r.GetEnabledAsync()).ReturnsAsync(new List<RuleEntity> { entity });
+
+        await _sut.InitializeAsync();
+
+        var request = new NetworkRequest { Url = "https://tracker.com/pixel.gif" };
+        var result = _sut.Evaluate(request, "https://example.com");
+
+        // Malformed rules should not block (rule loaded with empty actions list)
+        result.ShouldBlock.Should().BeFalse();
+    }
 }

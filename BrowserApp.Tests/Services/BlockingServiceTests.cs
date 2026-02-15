@@ -194,4 +194,91 @@ public class BlockingServiceTests
         _sut.GetBlockedCount().Should().Be(0);
         _sut.GetBytesSaved().Should().Be(0);
     }
+
+    [Fact]
+    public void ShouldBlockRequest_WithNullPageUrl_DoesNotCrash()
+    {
+        var request = new NetworkRequest { Url = "https://tracker.com/pixel.gif" };
+        var allowResult = RuleEvaluationResult.Allow();
+        _mockRuleEngine.Setup(r => r.Evaluate(request, null)).Returns(allowResult);
+
+        var ex = Record.Exception(() => _sut.ShouldBlockRequest(request, null));
+        ex.Should().BeNull();
+    }
+
+    [Fact]
+    public void ShouldBlockRequest_MultipleBlocks_AccumulatesStats()
+    {
+        var request1 = new NetworkRequest { Url = "https://tracker.com/a.js", Size = 1000 };
+        var request2 = new NetworkRequest { Url = "https://tracker.com/b.js", Size = 2000 };
+        var request3 = new NetworkRequest { Url = "https://tracker.com/c.js", Size = 3000 };
+
+        _mockRuleEngine.Setup(r => r.Evaluate(It.IsAny<NetworkRequest>(), It.IsAny<string?>()))
+            .Returns(RuleEvaluationResult.Block("rule-1", "Block"));
+
+        _sut.ShouldBlockRequest(request1, "https://example.com");
+        _sut.ShouldBlockRequest(request2, "https://example.com");
+        _sut.ShouldBlockRequest(request3, "https://example.com");
+
+        _sut.GetBlockedCount().Should().Be(3);
+        _sut.GetBytesSaved().Should().Be(6000);
+    }
+
+    [Fact]
+    public void GetBytesSaved_AfterMultipleBlocks_ReturnsTotalSize()
+    {
+        var request1 = new NetworkRequest { Url = "https://tracker.com/a.js", Size = 5000 };
+        var request2 = new NetworkRequest { Url = "https://tracker.com/b.js", Size = 15000 };
+
+        _mockRuleEngine.Setup(r => r.Evaluate(It.IsAny<NetworkRequest>(), It.IsAny<string?>()))
+            .Returns(RuleEvaluationResult.Block("rule-1", "Block"));
+
+        _sut.ShouldBlockRequest(request1, null);
+        _sut.ShouldBlockRequest(request2, null);
+
+        _sut.GetBytesSaved().Should().Be(20000);
+    }
+
+    [Fact]
+    public void ResetStats_ThenBlock_StartsFromZero()
+    {
+        var request = new NetworkRequest { Url = "https://tracker.com/a.js", Size = 9000 };
+        _mockRuleEngine.Setup(r => r.Evaluate(It.IsAny<NetworkRequest>(), It.IsAny<string?>()))
+            .Returns(RuleEvaluationResult.Block("rule-1", "Block"));
+
+        _sut.ShouldBlockRequest(request, null);
+        _sut.GetBlockedCount().Should().Be(1);
+        _sut.GetBytesSaved().Should().Be(9000);
+
+        _sut.ResetStats();
+        _sut.GetBlockedCount().Should().Be(0);
+        _sut.GetBytesSaved().Should().Be(0);
+
+        _sut.ShouldBlockRequest(request, null);
+        _sut.GetBlockedCount().Should().Be(1);
+        _sut.GetBytesSaved().Should().Be(9000);
+    }
+
+    [Fact]
+    public void ShouldBlockRequest_WhenResultHasInjections_ReturnsResult()
+    {
+        var request = new NetworkRequest { Url = "https://example.com/page.html" };
+        var resultWithInjections = new RuleEvaluationResult
+        {
+            ShouldBlock = false,
+            InjectionsToApply = new List<RuleAction>
+            {
+                new() { Type = "inject_css", Css = "body { color: red; }" },
+                new() { Type = "inject_js", Js = "console.log('hi');" }
+            }
+        };
+
+        _mockRuleEngine.Setup(r => r.Evaluate(request, It.IsAny<string?>())).Returns(resultWithInjections);
+
+        var result = _sut.ShouldBlockRequest(request, "https://example.com");
+
+        result.ShouldBlock.Should().BeFalse();
+        result.InjectionsToApply.Should().HaveCount(2);
+        _sut.GetBlockedCount().Should().Be(0, "injections should not increment blocked count");
+    }
 }

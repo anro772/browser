@@ -317,11 +317,7 @@ public class OllamaClientTests
     {
         SetupHandler(HttpStatusCode.OK, "not valid json at all {{{");
         var messages = new List<OllamaChatMessage> { new() { Role = "user", Content = "Hi" } };
-        // JsonSerializer.Deserialize returns null for malformed JSON or throws
-        // The method accesses .Choices which would throw NullReferenceException or return empty
-        var result = await _client.ChatAsync(messages);
-        // If deserialize returns null, we get empty string from the null-coalescing chain
-        Assert.Equal(string.Empty, result);
+        await Assert.ThrowsAsync<System.Text.Json.JsonException>(() => _client.ChatAsync(messages));
     }
 
     [Fact]
