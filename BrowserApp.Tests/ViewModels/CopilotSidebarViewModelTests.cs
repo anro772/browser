@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using BrowserApp.Core.DTOs.Ollama;
 using BrowserApp.Core.Interfaces;
 using BrowserApp.Core.Models;
@@ -119,6 +120,120 @@ public class CopilotSidebarViewModelTests
         await _viewModel.ApplyRuleCommand.ExecuteAsync(null);
 
         Assert.Empty(_viewModel.Messages);
+    }
+
+    private static async IAsyncEnumerable<string> CreateAsyncEnumerable(params string[] items)
+    {
+        foreach (var item in items)
+        {
+            yield return item;
+            await Task.Yield();
+        }
+    }
+
+    [Fact]
+    public async Task SendMessageAsync_WhenGenerating_DoesNotSendAgain()
+    {
+        _viewModel.IsGenerating = true;
+        _viewModel.UserInput = "Hello";
+        await _viewModel.SendMessageCommand.ExecuteAsync(null);
+        Assert.Empty(_viewModel.Messages);
+    }
+
+    [Fact]
+    public async Task CheckConnectionAsync_WhenConnected_LoadsModels()
+    {
+        _ollamaClientMock.Setup(x => x.IsAvailableAsync()).ReturnsAsync(true);
+        _ollamaClientMock.Setup(x => x.GetModelsAsync()).ReturnsAsync(new List<string> { "model1", "model2" });
+        await _viewModel.CheckConnectionCommand.ExecuteAsync(null);
+        Assert.True(_viewModel.IsOllamaConnected);
+        Assert.Equal(2, _viewModel.AvailableModels.Count);
+    }
+
+    [Fact]
+    public async Task LoadModelsAsync_SetsFirstModelAsDefault()
+    {
+        _ollamaClientMock.Setup(x => x.GetModelsAsync()).ReturnsAsync(new List<string> { "first-model", "second-model" });
+        await _viewModel.LoadModelsCommand.ExecuteAsync(null);
+        Assert.Equal("first-model", _viewModel.SelectedModel);
+    }
+
+    [Fact]
+    public async Task LoadModelsAsync_EmptyList_DoesNotSetModel()
+    {
+        _ollamaClientMock.Setup(x => x.GetModelsAsync()).ReturnsAsync(new List<string>());
+        await _viewModel.LoadModelsCommand.ExecuteAsync(null);
+        Assert.Equal(string.Empty, _viewModel.SelectedModel);
+        Assert.Empty(_viewModel.AvailableModels);
+    }
+
+    [Fact]
+    public async Task LoadModelsAsync_WhenException_DoesNotCrash()
+    {
+        _ollamaClientMock.Setup(x => x.GetModelsAsync()).ThrowsAsync(new Exception("fail"));
+        var ex = await Record.ExceptionAsync(() => _viewModel.LoadModelsCommand.ExecuteAsync(null));
+        Assert.Null(ex);
+    }
+
+    [Fact]
+    public async Task SendMessageAsync_AddsUserAndAssistantMessages()
+    {
+        _ollamaClientMock
+            .Setup(x => x.ChatStreamAsync(It.IsAny<List<OllamaChatMessage>>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
+            .Returns(CreateAsyncEnumerable("Hello", " world"));
+        _viewModel.UserInput = "Test";
+        await _viewModel.SendMessageCommand.ExecuteAsync(null);
+        Assert.Equal(2, _viewModel.Messages.Count);
+        Assert.Equal("user", _viewModel.Messages[0].Role);
+        Assert.Equal("Test", _viewModel.Messages[0].Content);
+        Assert.Equal("assistant", _viewModel.Messages[1].Role);
+        Assert.Contains("Hello", _viewModel.Messages[1].Content);
+        Assert.Contains(" world", _viewModel.Messages[1].Content);
+    }
+
+    [Fact]
+    public async Task SendMessageAsync_SetsIsGeneratingDuringStream()
+    {
+        var generatingStates = new List<bool>();
+        _viewModel.PropertyChanged += (s, e) =>
+        {
+            if (e.PropertyName == nameof(CopilotSidebarViewModel.IsGenerating))
+                generatingStates.Add(_viewModel.IsGenerating);
+        };
+        _ollamaClientMock
+            .Setup(x => x.ChatStreamAsync(It.IsAny<List<OllamaChatMessage>>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
+            .Returns(CreateAsyncEnumerable("Hi"));
+        _viewModel.UserInput = "Test";
+        await _viewModel.SendMessageCommand.ExecuteAsync(null);
+        Assert.Contains(true, generatingStates);
+        Assert.False(_viewModel.IsGenerating);
+    }
+
+    [Fact]
+    public void Messages_PreservesOrderOfConversation()
+    {
+        _viewModel.Messages.Add(new ChatMessageItem { Role = "user", Content = "First" });
+        _viewModel.Messages.Add(new ChatMessageItem { Role = "assistant", Content = "Second" });
+        _viewModel.Messages.Add(new ChatMessageItem { Role = "user", Content = "Third" });
+        Assert.Equal(3, _viewModel.Messages.Count);
+        Assert.Equal("First", _viewModel.Messages[0].Content);
+        Assert.Equal("Second", _viewModel.Messages[1].Content);
+        Assert.Equal("Third", _viewModel.Messages[2].Content);
+    }
+
+    [Fact]
+    public async Task ApplyRuleAsync_WithEmptyString_DoesNothing()
+    {
+        await _viewModel.ApplyRuleCommand.ExecuteAsync("");
+        Assert.Empty(_viewModel.Messages);
+    }
+
+    [Fact]
+    public async Task ApplyRuleAsync_WithInvalidJson_DoesNotCrash()
+    {
+        // ViewModel created with single-param constructor (no rule service), so it returns early
+        var ex = await Record.ExceptionAsync(() => _viewModel.ApplyRuleCommand.ExecuteAsync("not json"));
+        Assert.Null(ex);
     }
 }
 

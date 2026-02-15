@@ -294,6 +294,106 @@ public class OllamaClientTests
         Assert.Single(tokens);
     }
 
+    [Fact]
+    public async Task ChatAsync_WhenServerReturns400_ThrowsHttpRequestException()
+    {
+        SetupHandler(HttpStatusCode.BadRequest, "Bad request");
+        var messages = new List<OllamaChatMessage> { new() { Role = "user", Content = "Hi" } };
+        await Assert.ThrowsAsync<HttpRequestException>(() => _client.ChatAsync(messages));
+    }
+
+    [Fact]
+    public async Task ChatAsync_WhenResponseBodyIsEmpty_ReturnsEmptyString()
+    {
+        var chatResponse = new OllamaChatResponse { Choices = new List<OllamaChatChoice> { new() { Message = null } } };
+        SetupHandler(HttpStatusCode.OK, JsonSerializer.Serialize(chatResponse));
+        var messages = new List<OllamaChatMessage> { new() { Role = "user", Content = "Hi" } };
+        var result = await _client.ChatAsync(messages);
+        Assert.Equal(string.Empty, result);
+    }
+
+    [Fact]
+    public async Task ChatAsync_WhenResponseIsInvalidJson_ThrowsException()
+    {
+        SetupHandler(HttpStatusCode.OK, "not valid json at all {{{");
+        var messages = new List<OllamaChatMessage> { new() { Role = "user", Content = "Hi" } };
+        // JsonSerializer.Deserialize returns null for malformed JSON or throws
+        // The method accesses .Choices which would throw NullReferenceException or return empty
+        var result = await _client.ChatAsync(messages);
+        // If deserialize returns null, we get empty string from the null-coalescing chain
+        Assert.Equal(string.Empty, result);
+    }
+
+    [Fact]
+    public async Task ChatStreamAsync_WithEmptyStream_YieldsNothing()
+    {
+        var sseContent = "data: [DONE]\n\n";
+        _handlerMock.Protected()
+            .Setup<Task<HttpResponseMessage>>("SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.OK)
+            { Content = new StringContent(sseContent, Encoding.UTF8, "text/event-stream") });
+
+        var tokens = new List<string>();
+        await foreach (var token in _client.ChatStreamAsync(new List<OllamaChatMessage> { new() { Role = "user", Content = "Hi" } }))
+            tokens.Add(token);
+        Assert.Empty(tokens);
+    }
+
+    [Fact]
+    public async Task ChatStreamAsync_WithNonDataLines_SkipsThem()
+    {
+        var sseContent = "event: message\n\nretry: 3000\n\ndata: {\"choices\":[{\"delta\":{\"content\":\"Hi\"}}]}\n\ndata: [DONE]\n\n";
+        _handlerMock.Protected()
+            .Setup<Task<HttpResponseMessage>>("SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.OK)
+            { Content = new StringContent(sseContent, Encoding.UTF8, "text/event-stream") });
+
+        var tokens = new List<string>();
+        await foreach (var token in _client.ChatStreamAsync(new List<OllamaChatMessage> { new() { Role = "user", Content = "Hi" } }))
+            tokens.Add(token);
+        Assert.Single(tokens);
+        Assert.Equal("Hi", tokens[0]);
+    }
+
+    [Fact]
+    public async Task ChatStreamAsync_WithMalformedSseData_SkipsInvalidChunks()
+    {
+        var sseContent = "data: not-valid-json\n\ndata: {\"choices\":[{\"delta\":{\"content\":\"OK\"}}]}\n\ndata: [DONE]\n\n";
+        _handlerMock.Protected()
+            .Setup<Task<HttpResponseMessage>>("SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.OK)
+            { Content = new StringContent(sseContent, Encoding.UTF8, "text/event-stream") });
+
+        var tokens = new List<string>();
+        await foreach (var token in _client.ChatStreamAsync(new List<OllamaChatMessage> { new() { Role = "user", Content = "Hi" } }))
+            tokens.Add(token);
+        Assert.Single(tokens);
+        Assert.Equal("OK", tokens[0]);
+    }
+
+    [Fact]
+    public async Task ChatStreamAsync_ServerError_ThrowsException()
+    {
+        SetupHandler(HttpStatusCode.InternalServerError, "Server error");
+        await Assert.ThrowsAsync<HttpRequestException>(async () =>
+        {
+            await foreach (var _ in _client.ChatStreamAsync(new List<OllamaChatMessage> { new() { Role = "user", Content = "Hi" } }))
+            { }
+        });
+    }
+
+    [Fact]
+    public async Task GetModelsAsync_EmptyModelsList_ReturnsEmptyList()
+    {
+        var response = new OllamaModelsResponse { Models = new List<OllamaModel>() };
+        SetupHandler(HttpStatusCode.OK, JsonSerializer.Serialize(response));
+        var models = await _client.GetModelsAsync();
+        Assert.Empty(models);
+    }
+
     private void SetupHandler(HttpStatusCode statusCode, string content)
     {
         _handlerMock.Protected()

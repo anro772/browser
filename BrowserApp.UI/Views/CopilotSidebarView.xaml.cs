@@ -1,4 +1,5 @@
 using System.Collections.Specialized;
+using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -9,6 +10,7 @@ namespace BrowserApp.UI.Views;
 public partial class CopilotSidebarView : UserControl
 {
     private readonly CopilotSidebarViewModel _viewModel;
+    private ChatMessageItem? _subscribedStreamingItem;
 
     public CopilotSidebarView(CopilotSidebarViewModel viewModel)
     {
@@ -18,11 +20,19 @@ public partial class CopilotSidebarView : UserControl
 
         // Auto-scroll when new messages arrive
         _viewModel.Messages.CollectionChanged += OnMessagesChanged;
+
+        Unloaded += OnUnloaded;
     }
 
     private async void OnLoaded(object sender, RoutedEventArgs e)
     {
         await _viewModel.CheckConnectionCommand.ExecuteAsync(null);
+    }
+
+    private void OnUnloaded(object sender, RoutedEventArgs e)
+    {
+        UnsubscribeFromStreamingItem();
+        _viewModel.Messages.CollectionChanged -= OnMessagesChanged;
     }
 
     private void OnMessagesChanged(object? sender, NotifyCollectionChangedEventArgs e)
@@ -36,22 +46,46 @@ public partial class CopilotSidebarView : UserControl
             }), System.Windows.Threading.DispatcherPriority.Background);
         }
 
-        // Also listen for content changes on the last message (streaming)
+        // Only subscribe to the last streaming message
         if (e.NewItems != null)
         {
             foreach (ChatMessageItem item in e.NewItems)
             {
-                item.PropertyChanged += (s, args) =>
+                if (item.IsStreaming)
                 {
-                    if (args.PropertyName == nameof(ChatMessageItem.Content))
-                    {
-                        Dispatcher.BeginInvoke(new Action(() =>
-                        {
-                            ChatScrollViewer.ScrollToEnd();
-                        }), System.Windows.Threading.DispatcherPriority.Background);
-                    }
-                };
+                    UnsubscribeFromStreamingItem();
+                    _subscribedStreamingItem = item;
+                    item.PropertyChanged += OnStreamingItemPropertyChanged;
+                }
             }
+        }
+    }
+
+    private void OnStreamingItemPropertyChanged(object? sender, PropertyChangedEventArgs args)
+    {
+        if (args.PropertyName == nameof(ChatMessageItem.Content))
+        {
+            Dispatcher.BeginInvoke(new Action(() =>
+            {
+                ChatScrollViewer.ScrollToEnd();
+            }), System.Windows.Threading.DispatcherPriority.Background);
+        }
+        else if (args.PropertyName == nameof(ChatMessageItem.IsStreaming))
+        {
+            var item = sender as ChatMessageItem;
+            if (item != null && !item.IsStreaming)
+            {
+                UnsubscribeFromStreamingItem();
+            }
+        }
+    }
+
+    private void UnsubscribeFromStreamingItem()
+    {
+        if (_subscribedStreamingItem != null)
+        {
+            _subscribedStreamingItem.PropertyChanged -= OnStreamingItemPropertyChanged;
+            _subscribedStreamingItem = null;
         }
     }
 

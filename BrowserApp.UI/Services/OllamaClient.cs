@@ -8,15 +8,17 @@ using BrowserApp.Core.Interfaces;
 
 namespace BrowserApp.UI.Services;
 
-public class OllamaClient : IOllamaClient
+public class OllamaClient : IOllamaClient, IDisposable
 {
     private readonly HttpClient _httpClient;
     private readonly string _defaultModel;
+    private readonly bool _ownsHttpClient;
 
     public OllamaClient(IConfiguration configuration)
     {
         var baseUrl = configuration["Ollama:BaseUrl"] ?? "http://localhost:11434";
         _defaultModel = configuration["Ollama:Model"] ?? "llama3.2";
+        _ownsHttpClient = true;
 
         _httpClient = new HttpClient
         {
@@ -29,6 +31,15 @@ public class OllamaClient : IOllamaClient
     {
         _httpClient = httpClient;
         _defaultModel = defaultModel;
+        _ownsHttpClient = false;
+    }
+
+    public void Dispose()
+    {
+        if (_ownsHttpClient)
+        {
+            _httpClient.Dispose();
+        }
     }
 
     public async Task<bool> IsAvailableAsync()

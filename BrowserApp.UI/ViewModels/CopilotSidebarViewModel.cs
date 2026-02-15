@@ -9,7 +9,7 @@ using BrowserApp.Core.Models;
 
 namespace BrowserApp.UI.ViewModels;
 
-public partial class CopilotSidebarViewModel : ObservableObject
+public partial class CopilotSidebarViewModel : ObservableObject, IDisposable
 {
     private readonly IOllamaClient _ollamaClient;
     private readonly IRuleGenerationService? _ruleGenerationService;
@@ -52,6 +52,25 @@ public partial class CopilotSidebarViewModel : ObservableObject
         _tabStrip = tabStrip;
     }
 
+    public void Dispose()
+    {
+        _streamCts?.Cancel();
+        _streamCts?.Dispose();
+        _streamCts = null;
+    }
+
+    private static void RunOnUIThread(Action action)
+    {
+        if (Application.Current?.Dispatcher != null)
+        {
+            Application.Current.Dispatcher.Invoke(action);
+        }
+        else
+        {
+            action();
+        }
+    }
+
     [RelayCommand]
     public async Task CheckConnectionAsync()
     {
@@ -80,7 +99,7 @@ public partial class CopilotSidebarViewModel : ObservableObject
         {
             var models = await _ollamaClient.GetModelsAsync();
 
-            Application.Current?.Dispatcher.Invoke(() =>
+            RunOnUIThread(() =>
             {
                 AvailableModels.Clear();
                 foreach (var model in models)
@@ -115,7 +134,7 @@ public partial class CopilotSidebarViewModel : ObservableObject
             Timestamp = DateTime.UtcNow
         };
 
-        Application.Current?.Dispatcher.Invoke(() =>
+        RunOnUIThread(() =>
         {
             Messages.Add(userMessage);
             UserInput = string.Empty;
@@ -130,7 +149,7 @@ public partial class CopilotSidebarViewModel : ObservableObject
             IsStreaming = true
         };
 
-        Application.Current?.Dispatcher.Invoke(() => Messages.Add(assistantMessage));
+        RunOnUIThread(() => Messages.Add(assistantMessage));
 
         IsGenerating = true;
         _streamCts = new CancellationTokenSource();
@@ -142,7 +161,7 @@ public partial class CopilotSidebarViewModel : ObservableObject
 
             await foreach (var token in _ollamaClient.ChatStreamAsync(chatMessages, model, _streamCts.Token))
             {
-                Application.Current?.Dispatcher.Invoke(() =>
+                RunOnUIThread(() =>
                 {
                     assistantMessage.Content += token;
                 });
@@ -150,14 +169,14 @@ public partial class CopilotSidebarViewModel : ObservableObject
         }
         catch (OperationCanceledException)
         {
-            Application.Current?.Dispatcher.Invoke(() =>
+            RunOnUIThread(() =>
             {
                 assistantMessage.Content += "\n[Generation stopped]";
             });
         }
         catch (Exception ex)
         {
-            Application.Current?.Dispatcher.Invoke(() =>
+            RunOnUIThread(() =>
             {
                 assistantMessage.Content = $"Error: {ex.Message}";
             });
@@ -165,7 +184,7 @@ public partial class CopilotSidebarViewModel : ObservableObject
         }
         finally
         {
-            Application.Current?.Dispatcher.Invoke(() =>
+            RunOnUIThread(() =>
             {
                 assistantMessage.IsStreaming = false;
             });
@@ -184,10 +203,7 @@ public partial class CopilotSidebarViewModel : ObservableObject
     [RelayCommand]
     public void ClearChat()
     {
-        if (Application.Current != null)
-            Application.Current.Dispatcher.Invoke(() => Messages.Clear());
-        else
-            Messages.Clear();
+        RunOnUIThread(() => Messages.Clear());
     }
 
     [RelayCommand]
@@ -203,7 +219,7 @@ public partial class CopilotSidebarViewModel : ObservableObject
             return;
 
         // Add system message about rule generation
-        Application.Current?.Dispatcher.Invoke(() =>
+        RunOnUIThread(() =>
         {
             Messages.Add(new ChatMessageItem
             {
@@ -219,7 +235,7 @@ public partial class CopilotSidebarViewModel : ObservableObject
         {
             var rules = await _ruleGenerationService.GenerateRuleSuggestionsAsync(url, title);
 
-            Application.Current?.Dispatcher.Invoke(() =>
+            RunOnUIThread(() =>
             {
                 if (rules.Count == 0)
                 {
@@ -248,7 +264,7 @@ public partial class CopilotSidebarViewModel : ObservableObject
         }
         catch (Exception ex)
         {
-            Application.Current?.Dispatcher.Invoke(() =>
+            RunOnUIThread(() =>
             {
                 Messages.Add(new ChatMessageItem
                 {
@@ -279,7 +295,7 @@ public partial class CopilotSidebarViewModel : ObservableObject
 
             await _ruleGenerationService.ApplyRuleAsync(rule);
 
-            Application.Current?.Dispatcher.Invoke(() =>
+            RunOnUIThread(() =>
             {
                 Messages.Add(new ChatMessageItem
                 {
@@ -291,7 +307,7 @@ public partial class CopilotSidebarViewModel : ObservableObject
         }
         catch (Exception ex)
         {
-            Application.Current?.Dispatcher.Invoke(() =>
+            RunOnUIThread(() =>
             {
                 Messages.Add(new ChatMessageItem
                 {
