@@ -86,13 +86,13 @@ public class OllamaClient : IOllamaClient, IDisposable
         var json = JsonSerializer.Serialize(request);
         var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-        var response = await _httpClient.PostAsync("/v1/chat/completions", content);
+        var response = await _httpClient.PostAsync("/api/chat", content);
         response.EnsureSuccessStatusCode();
 
         var responseJson = await response.Content.ReadAsStringAsync();
         var chatResponse = JsonSerializer.Deserialize<OllamaChatResponse>(responseJson);
 
-        return chatResponse?.Choices.FirstOrDefault()?.Message?.Content ?? string.Empty;
+        return chatResponse?.Message?.Content ?? string.Empty;
     }
 
     public async IAsyncEnumerable<string> ChatStreamAsync(
@@ -110,7 +110,7 @@ public class OllamaClient : IOllamaClient, IDisposable
         var json = JsonSerializer.Serialize(request);
         var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-        var httpRequest = new HttpRequestMessage(HttpMethod.Post, "/v1/chat/completions")
+        var httpRequest = new HttpRequestMessage(HttpMethod.Post, "/api/chat")
         {
             Content = content
         };
@@ -121,6 +121,7 @@ public class OllamaClient : IOllamaClient, IDisposable
         using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
         using var reader = new System.IO.StreamReader(stream);
 
+        // Ollama native streaming uses NDJSON (one JSON object per line)
         while (!reader.EndOfStream && !cancellationToken.IsCancellationRequested)
         {
             var line = await reader.ReadLineAsync(cancellationToken);
@@ -128,28 +129,23 @@ public class OllamaClient : IOllamaClient, IDisposable
             if (string.IsNullOrWhiteSpace(line))
                 continue;
 
-            if (!line.StartsWith("data: "))
-                continue;
-
-            var data = line.Substring(6).Trim();
-
-            if (data == "[DONE]")
-                yield break;
-
             OllamaStreamChunk? chunk;
             try
             {
-                chunk = JsonSerializer.Deserialize<OllamaStreamChunk>(data);
+                chunk = JsonSerializer.Deserialize<OllamaStreamChunk>(line);
             }
             catch
             {
                 continue;
             }
 
-            var delta = chunk?.Choices.FirstOrDefault()?.Delta?.Content;
-            if (!string.IsNullOrEmpty(delta))
+            if (chunk?.Done == true)
+                yield break;
+
+            var tokenContent = chunk?.Message?.Content;
+            if (!string.IsNullOrEmpty(tokenContent))
             {
-                yield return delta;
+                yield return tokenContent;
             }
         }
     }

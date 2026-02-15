@@ -178,6 +178,8 @@ public class CopilotSidebarViewModelTests
     [Fact]
     public async Task SendMessageAsync_AddsUserAndAssistantMessages()
     {
+        _viewModel.AvailableModels.Add("llama3.2");
+        _viewModel.SelectedModel = "llama3.2";
         _ollamaClientMock
             .Setup(x => x.ChatStreamAsync(It.IsAny<List<OllamaChatMessage>>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
             .Returns(CreateAsyncEnumerable("Hello", " world"));
@@ -194,6 +196,8 @@ public class CopilotSidebarViewModelTests
     [Fact]
     public async Task SendMessageAsync_SetsIsGeneratingDuringStream()
     {
+        _viewModel.AvailableModels.Add("llama3.2");
+        _viewModel.SelectedModel = "llama3.2";
         var generatingStates = new List<bool>();
         _viewModel.PropertyChanged += (s, e) =>
         {

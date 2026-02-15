@@ -83,126 +83,114 @@ public class OllamaDtoTests
         message.Role.Should().Be("user");
     }
 
-    // --- OllamaChatResponse ---
+    // --- OllamaChatResponse (native /api/chat format) ---
 
     [Fact]
-    public void OllamaChatResponse_Deserialization_ParsesChoices()
+    public void OllamaChatResponse_Deserialization_ParsesNativeFormat()
     {
         var json = """
         {
-            "id": "chatcmpl-123",
-            "object": "chat.completion",
-            "created": 1700000000,
             "model": "llama3.2",
-            "choices": [
-                {
-                    "index": 0,
-                    "message": {
-                        "role": "assistant",
-                        "content": "Hello!"
-                    },
-                    "finish_reason": "stop"
-                }
-            ],
-            "usage": {
-                "prompt_tokens": 10,
-                "completion_tokens": 5,
-                "total_tokens": 15
-            }
+            "message": {
+                "role": "assistant",
+                "content": "Hello!"
+            },
+            "done": true,
+            "total_duration": 5191566416,
+            "eval_count": 298
         }
         """;
 
         var response = JsonSerializer.Deserialize<OllamaChatResponse>(json);
 
         response.Should().NotBeNull();
-        response!.Id.Should().Be("chatcmpl-123");
-        response.Model.Should().Be("llama3.2");
-        response.Choices.Should().HaveCount(1);
-        response.Choices[0].Index.Should().Be(0);
-        response.Choices[0].Message.Should().NotBeNull();
-        response.Choices[0].Message!.Role.Should().Be("assistant");
-        response.Choices[0].Message!.Content.Should().Be("Hello!");
-        response.Choices[0].FinishReason.Should().Be("stop");
-        response.Usage.Should().NotBeNull();
-        response.Usage!.PromptTokens.Should().Be(10);
-        response.Usage.CompletionTokens.Should().Be(5);
-        response.Usage.TotalTokens.Should().Be(15);
+        response!.Model.Should().Be("llama3.2");
+        response.Done.Should().BeTrue();
+        response.Message.Should().NotBeNull();
+        response.Message!.Role.Should().Be("assistant");
+        response.Message!.Content.Should().Be("Hello!");
+        response.TotalDuration.Should().Be(5191566416);
+        response.EvalCount.Should().Be(298);
     }
 
     [Fact]
-    public void OllamaChatResponse_Deserialization_HandlesNullFields()
+    public void OllamaChatResponse_Deserialization_HandlesNullMessage()
     {
         var json = """
         {
-            "choices": []
+            "done": true
         }
         """;
 
         var response = JsonSerializer.Deserialize<OllamaChatResponse>(json);
 
         response.Should().NotBeNull();
-        response!.Id.Should().BeNull();
-        response.Model.Should().BeNull();
-        response.Usage.Should().BeNull();
-        response.Choices.Should().BeEmpty();
+        response!.Model.Should().BeNull();
+        response.Message.Should().BeNull();
+        response.Done.Should().BeTrue();
     }
 
-    // --- OllamaStreamChunk ---
+    // --- OllamaStreamChunk (native NDJSON format) ---
 
     [Fact]
-    public void OllamaStreamChunk_Deserialization_ParsesDelta()
+    public void OllamaStreamChunk_Deserialization_ParsesNativeFormat()
     {
         var json = """
         {
-            "id": "chatcmpl-456",
-            "object": "chat.completion.chunk",
-            "created": 1700000001,
             "model": "llama3.2",
-            "choices": [
-                {
-                    "index": 0,
-                    "delta": {
-                        "role": "assistant",
-                        "content": "Hi"
-                    },
-                    "finish_reason": null
-                }
-            ]
+            "message": {
+                "role": "assistant",
+                "content": "Hi"
+            },
+            "done": false
         }
         """;
 
         var chunk = JsonSerializer.Deserialize<OllamaStreamChunk>(json);
 
         chunk.Should().NotBeNull();
-        chunk!.Id.Should().Be("chatcmpl-456");
-        chunk.Choices.Should().HaveCount(1);
-        chunk.Choices[0].Delta.Should().NotBeNull();
-        chunk.Choices[0].Delta!.Role.Should().Be("assistant");
-        chunk.Choices[0].Delta!.Content.Should().Be("Hi");
-        chunk.Choices[0].FinishReason.Should().BeNull();
+        chunk!.Model.Should().Be("llama3.2");
+        chunk.Done.Should().BeFalse();
+        chunk.Message.Should().NotBeNull();
+        chunk.Message!.Content.Should().Be("Hi");
     }
 
     [Fact]
-    public void OllamaStreamChunk_Deserialization_HandlesNullDelta()
+    public void OllamaStreamChunk_Deserialization_HandlesDoneChunk()
     {
         var json = """
         {
-            "choices": [
-                {
-                    "index": 0,
-                    "delta": null,
-                    "finish_reason": "stop"
-                }
-            ]
+            "model": "llama3.2",
+            "message": {
+                "role": "assistant",
+                "content": ""
+            },
+            "done": true
         }
         """;
 
         var chunk = JsonSerializer.Deserialize<OllamaStreamChunk>(json);
 
         chunk.Should().NotBeNull();
-        chunk!.Choices.Should().HaveCount(1);
-        chunk.Choices[0].Delta.Should().BeNull();
-        chunk.Choices[0].FinishReason.Should().Be("stop");
+        chunk!.Done.Should().BeTrue();
+        chunk.Message.Should().NotBeNull();
+        chunk.Message!.Content.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void OllamaStreamChunk_Deserialization_HandlesNullMessage()
+    {
+        var json = """
+        {
+            "done": true
+        }
+        """;
+
+        var chunk = JsonSerializer.Deserialize<OllamaStreamChunk>(json);
+
+        chunk.Should().NotBeNull();
+        chunk!.Done.Should().BeTrue();
+        chunk.Message.Should().BeNull();
     }
 
     // --- OllamaModelsResponse ---
@@ -252,26 +240,5 @@ public class OllamaDtoTests
 
         response.Should().NotBeNull();
         response!.Models.Should().BeEmpty();
-    }
-
-    // --- OllamaUsage ---
-
-    [Fact]
-    public void OllamaUsage_Deserialization_ParsesTokenCounts()
-    {
-        var json = """
-        {
-            "prompt_tokens": 25,
-            "completion_tokens": 50,
-            "total_tokens": 75
-        }
-        """;
-
-        var usage = JsonSerializer.Deserialize<OllamaUsage>(json);
-
-        usage.Should().NotBeNull();
-        usage!.PromptTokens.Should().Be(25);
-        usage.CompletionTokens.Should().Be(50);
-        usage.TotalTokens.Should().Be(75);
     }
 }

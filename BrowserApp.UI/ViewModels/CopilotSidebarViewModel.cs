@@ -83,6 +83,10 @@ public partial class CopilotSidebarViewModel : ObservableObject, IDisposable
             if (IsOllamaConnected)
             {
                 await LoadModelsAsync();
+                if (AvailableModels.Count == 0)
+                {
+                    ConnectionStatus = "No models installed";
+                }
             }
         }
         catch
@@ -125,6 +129,21 @@ public partial class CopilotSidebarViewModel : ObservableObject, IDisposable
         var input = UserInput?.Trim();
         if (string.IsNullOrEmpty(input) || IsGenerating)
             return;
+
+        if (AvailableModels.Count == 0)
+        {
+            RunOnUIThread(() =>
+            {
+                Messages.Add(new ChatMessageItem
+                {
+                    Role = "assistant",
+                    Content = "No models installed. Run 'ollama pull llama3.2' in your terminal to download a model.",
+                    Timestamp = DateTime.UtcNow
+                });
+                UserInput = string.Empty;
+            });
+            return;
+        }
 
         // Add user message
         var userMessage = new ChatMessageItem

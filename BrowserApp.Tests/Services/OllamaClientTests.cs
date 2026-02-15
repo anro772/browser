@@ -98,15 +98,8 @@ public class OllamaClientTests
     {
         var chatResponse = new OllamaChatResponse
         {
-            Choices = new List<OllamaChatChoice>
-            {
-                new()
-                {
-                    Index = 0,
-                    Message = new OllamaChatMessage { Role = "assistant", Content = "Hello! How can I help?" },
-                    FinishReason = "stop"
-                }
-            }
+            Message = new OllamaChatMessage { Role = "assistant", Content = "Hello! How can I help?" },
+            Done = true
         };
         SetupHandler(HttpStatusCode.OK, JsonSerializer.Serialize(chatResponse));
 
@@ -121,9 +114,9 @@ public class OllamaClientTests
     }
 
     [Fact]
-    public async Task ChatAsync_WithEmptyChoices_ReturnsEmptyString()
+    public async Task ChatAsync_WithNullMessage_ReturnsEmptyString()
     {
-        var chatResponse = new OllamaChatResponse { Choices = new List<OllamaChatChoice>() };
+        var chatResponse = new OllamaChatResponse { Message = null, Done = true };
         SetupHandler(HttpStatusCode.OK, JsonSerializer.Serialize(chatResponse));
 
         var messages = new List<OllamaChatMessage>
@@ -141,10 +134,8 @@ public class OllamaClientTests
     {
         var chatResponse = new OllamaChatResponse
         {
-            Choices = new List<OllamaChatChoice>
-            {
-                new() { Message = new OllamaChatMessage { Content = "ok" } }
-            }
+            Message = new OllamaChatMessage { Content = "ok" },
+            Done = true
         };
 
         HttpRequestMessage? capturedRequest = null;
@@ -168,7 +159,7 @@ public class OllamaClientTests
 
         Assert.NotNull(capturedRequest);
         Assert.Equal(HttpMethod.Post, capturedRequest!.Method);
-        Assert.Equal("/v1/chat/completions", capturedRequest.RequestUri?.AbsolutePath);
+        Assert.Equal("/api/chat", capturedRequest.RequestUri?.AbsolutePath);
 
         var body = await capturedRequest.Content!.ReadAsStringAsync();
         var request = JsonSerializer.Deserialize<OllamaChatRequest>(body);
@@ -182,10 +173,8 @@ public class OllamaClientTests
     {
         var chatResponse = new OllamaChatResponse
         {
-            Choices = new List<OllamaChatChoice>
-            {
-                new() { Message = new OllamaChatMessage { Content = "ok" } }
-            }
+            Message = new OllamaChatMessage { Content = "ok" },
+            Done = true
         };
 
         HttpRequestMessage? capturedRequest = null;
@@ -209,18 +198,12 @@ public class OllamaClientTests
     [Fact]
     public async Task ChatStreamAsync_YieldsContentDeltas()
     {
-        var sseContent = "data: {\"choices\":[{\"delta\":{\"content\":\"Hello\"}}]}\n\n" +
-                         "data: {\"choices\":[{\"delta\":{\"content\":\" world\"}}]}\n\n" +
-                         "data: [DONE]\n\n";
+        // Ollama native streaming: NDJSON (one JSON object per line)
+        var ndjson = "{\"model\":\"llama3.2\",\"message\":{\"role\":\"assistant\",\"content\":\"Hello\"},\"done\":false}\n" +
+                     "{\"model\":\"llama3.2\",\"message\":{\"role\":\"assistant\",\"content\":\" world\"},\"done\":false}\n" +
+                     "{\"model\":\"llama3.2\",\"message\":{\"role\":\"assistant\",\"content\":\"\"},\"done\":true}\n";
 
-        _handlerMock.Protected()
-            .Setup<Task<HttpResponseMessage>>("SendAsync",
-                ItExpr.IsAny<HttpRequestMessage>(),
-                ItExpr.IsAny<CancellationToken>())
-            .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.OK)
-            {
-                Content = new StringContent(sseContent, Encoding.UTF8, "text/event-stream")
-            });
+        SetupStreamHandler(ndjson);
 
         var messages = new List<OllamaChatMessage>
         {
@@ -239,20 +222,13 @@ public class OllamaClientTests
     }
 
     [Fact]
-    public async Task ChatStreamAsync_HandlesEmptyDelta()
+    public async Task ChatStreamAsync_HandlesEmptyContent()
     {
-        var sseContent = "data: {\"choices\":[{\"delta\":{\"role\":\"assistant\"}}]}\n\n" +
-                         "data: {\"choices\":[{\"delta\":{\"content\":\"Hi\"}}]}\n\n" +
-                         "data: [DONE]\n\n";
+        var ndjson = "{\"model\":\"llama3.2\",\"message\":{\"role\":\"assistant\",\"content\":\"\"},\"done\":false}\n" +
+                     "{\"model\":\"llama3.2\",\"message\":{\"role\":\"assistant\",\"content\":\"Hi\"},\"done\":false}\n" +
+                     "{\"model\":\"llama3.2\",\"message\":{\"role\":\"assistant\",\"content\":\"\"},\"done\":true}\n";
 
-        _handlerMock.Protected()
-            .Setup<Task<HttpResponseMessage>>("SendAsync",
-                ItExpr.IsAny<HttpRequestMessage>(),
-                ItExpr.IsAny<CancellationToken>())
-            .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.OK)
-            {
-                Content = new StringContent(sseContent, Encoding.UTF8, "text/event-stream")
-            });
+        SetupStreamHandler(ndjson);
 
         var tokens = new List<string>();
         await foreach (var token in _client.ChatStreamAsync(new List<OllamaChatMessage> { new() { Role = "user", Content = "Hi" } }))
@@ -267,18 +243,11 @@ public class OllamaClientTests
     [Fact]
     public async Task ChatStreamAsync_SupportsCancellation()
     {
-        var sseContent = "data: {\"choices\":[{\"delta\":{\"content\":\"Hello\"}}]}\n\n" +
-                         "data: {\"choices\":[{\"delta\":{\"content\":\" world\"}}]}\n\n" +
-                         "data: [DONE]\n\n";
+        var ndjson = "{\"model\":\"llama3.2\",\"message\":{\"role\":\"assistant\",\"content\":\"Hello\"},\"done\":false}\n" +
+                     "{\"model\":\"llama3.2\",\"message\":{\"role\":\"assistant\",\"content\":\" world\"},\"done\":false}\n" +
+                     "{\"model\":\"llama3.2\",\"message\":{\"role\":\"assistant\",\"content\":\"\"},\"done\":true}\n";
 
-        _handlerMock.Protected()
-            .Setup<Task<HttpResponseMessage>>("SendAsync",
-                ItExpr.IsAny<HttpRequestMessage>(),
-                ItExpr.IsAny<CancellationToken>())
-            .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.OK)
-            {
-                Content = new StringContent(sseContent, Encoding.UTF8, "text/event-stream")
-            });
+        SetupStreamHandler(ndjson);
 
         var cts = new CancellationTokenSource();
         var tokens = new List<string>();
@@ -305,7 +274,7 @@ public class OllamaClientTests
     [Fact]
     public async Task ChatAsync_WhenResponseBodyIsEmpty_ReturnsEmptyString()
     {
-        var chatResponse = new OllamaChatResponse { Choices = new List<OllamaChatChoice> { new() { Message = null } } };
+        var chatResponse = new OllamaChatResponse { Message = null, Done = true };
         SetupHandler(HttpStatusCode.OK, JsonSerializer.Serialize(chatResponse));
         var messages = new List<OllamaChatMessage> { new() { Role = "user", Content = "Hi" } };
         var result = await _client.ChatAsync(messages);
@@ -321,14 +290,10 @@ public class OllamaClientTests
     }
 
     [Fact]
-    public async Task ChatStreamAsync_WithEmptyStream_YieldsNothing()
+    public async Task ChatStreamAsync_WithDoneOnly_YieldsNothing()
     {
-        var sseContent = "data: [DONE]\n\n";
-        _handlerMock.Protected()
-            .Setup<Task<HttpResponseMessage>>("SendAsync",
-                ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
-            .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.OK)
-            { Content = new StringContent(sseContent, Encoding.UTF8, "text/event-stream") });
+        var ndjson = "{\"model\":\"llama3.2\",\"message\":{\"role\":\"assistant\",\"content\":\"\"},\"done\":true}\n";
+        SetupStreamHandler(ndjson);
 
         var tokens = new List<string>();
         await foreach (var token in _client.ChatStreamAsync(new List<OllamaChatMessage> { new() { Role = "user", Content = "Hi" } }))
@@ -337,31 +302,12 @@ public class OllamaClientTests
     }
 
     [Fact]
-    public async Task ChatStreamAsync_WithNonDataLines_SkipsThem()
+    public async Task ChatStreamAsync_WithMalformedJson_SkipsInvalidChunks()
     {
-        var sseContent = "event: message\n\nretry: 3000\n\ndata: {\"choices\":[{\"delta\":{\"content\":\"Hi\"}}]}\n\ndata: [DONE]\n\n";
-        _handlerMock.Protected()
-            .Setup<Task<HttpResponseMessage>>("SendAsync",
-                ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
-            .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.OK)
-            { Content = new StringContent(sseContent, Encoding.UTF8, "text/event-stream") });
-
-        var tokens = new List<string>();
-        await foreach (var token in _client.ChatStreamAsync(new List<OllamaChatMessage> { new() { Role = "user", Content = "Hi" } }))
-            tokens.Add(token);
-        Assert.Single(tokens);
-        Assert.Equal("Hi", tokens[0]);
-    }
-
-    [Fact]
-    public async Task ChatStreamAsync_WithMalformedSseData_SkipsInvalidChunks()
-    {
-        var sseContent = "data: not-valid-json\n\ndata: {\"choices\":[{\"delta\":{\"content\":\"OK\"}}]}\n\ndata: [DONE]\n\n";
-        _handlerMock.Protected()
-            .Setup<Task<HttpResponseMessage>>("SendAsync",
-                ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
-            .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.OK)
-            { Content = new StringContent(sseContent, Encoding.UTF8, "text/event-stream") });
+        var ndjson = "not-valid-json\n" +
+                     "{\"model\":\"llama3.2\",\"message\":{\"role\":\"assistant\",\"content\":\"OK\"},\"done\":false}\n" +
+                     "{\"model\":\"llama3.2\",\"message\":{\"role\":\"assistant\",\"content\":\"\"},\"done\":true}\n";
+        SetupStreamHandler(ndjson);
 
         var tokens = new List<string>();
         await foreach (var token in _client.ChatStreamAsync(new List<OllamaChatMessage> { new() { Role = "user", Content = "Hi" } }))
@@ -399,6 +345,18 @@ public class OllamaClientTests
             .ReturnsAsync(new HttpResponseMessage(statusCode)
             {
                 Content = new StringContent(content, Encoding.UTF8, "application/json")
+            });
+    }
+
+    private void SetupStreamHandler(string ndjsonContent)
+    {
+        _handlerMock.Protected()
+            .Setup<Task<HttpResponseMessage>>("SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(ndjsonContent, Encoding.UTF8, "application/x-ndjson")
             });
     }
 }
