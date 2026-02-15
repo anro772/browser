@@ -74,9 +74,10 @@ public class ChannelSyncService : IChannelSyncService
     {
         try
         {
-            // Leave on server
+            // Leave on server — don't touch local data if server call fails
             var channelGuid = Guid.Parse(channelId);
-            await _apiClient.LeaveChannelAsync(channelGuid, username);
+            var success = await _apiClient.LeaveChannelAsync(channelGuid, username);
+            if (!success) return false;
 
             // Delete local rules from this channel
             using var scope = _scopeFactory.CreateScope();

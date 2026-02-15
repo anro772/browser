@@ -155,7 +155,7 @@ public class NetworkLogRepository : INetworkLogRepository
     /// <inheritdoc/>
     public async Task<int> GetBlockedTodayCountAsync()
     {
-        var today = DateTime.Today;
+        var today = DateTime.UtcNow.Date;
         return await _context.NetworkLogs
             .CountAsync(l => l.WasBlocked && l.Timestamp >= today);
     }
