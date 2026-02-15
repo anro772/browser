@@ -11,18 +11,20 @@
         </Grid.RowDefinitions>
 
         <!-- Header -->
-        <StackPanel Grid.Row="0" Margin="12,12,12,8">
-            <TextBlock Text="Bookmarks"
-                       FontSize="18"
-                       FontWeight="SemiBold"
-                       Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
-            <TextBlock FontSize="12"
-                       Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                       Margin="0,4,0,0">
-                <Run Text="{Binding Bookmarks.Count, Mode=OneWay}"/>
-                <Run Text="saved pages"/>
-            </TextBlock>
-        </StackPanel>
+        <Border Grid.Row="0" Background="{StaticResource BgSurfaceBrush}" CornerRadius="8" BorderBrush="{StaticResource BorderSubtleBrush}" BorderThickness="1" Padding="16" Margin="8">
+            <StackPanel>
+                <TextBlock Text="Bookmarks"
+                           FontSize="18"
+                           FontWeight="SemiBold"
+                           Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                <TextBlock FontSize="12"
+                           Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                           Margin="0,4,0,0">
+                    <Run Text="{Binding Bookmarks.Count, Mode=OneWay}"/>
+                    <Run Text="saved pages"/>
+                </TextBlock>
+            </StackPanel>
+        </Border>
 
         <!-- Bookmarks List -->
         <ListView Grid.Row="1"
@@ -83,7 +85,7 @@
                     Visibility="{Binding Bookmarks.Count, Converter={StaticResource CountToVisibility}}">
             <ui:SymbolIcon Symbol="Star24"
                            FontSize="48"
-                           Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                           Foreground="{StaticResource AccentBrush}"
                            HorizontalAlignment="Center"/>
             <TextBlock Text="No bookmarks yet"
                        FontSize="14"

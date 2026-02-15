@@ -45,7 +45,7 @@
             </Grid.ColumnDefinitions>
 
             <!-- Joined Channels (Left) -->
-            <Border Grid.Column="0" BorderBrush="{DynamicResource ControlElevationBorderBrush}"
+            <Border Grid.Column="0" BorderBrush="{StaticResource BorderBrush}"
                     BorderThickness="1" CornerRadius="8" Padding="8">
                 <Grid>
                     <Grid.RowDefinitions>
@@ -110,7 +110,7 @@
             </Border>
 
             <!-- Available Channels (Right) -->
-            <Border Grid.Column="2" BorderBrush="{DynamicResource ControlElevationBorderBrush}"
+            <Border Grid.Column="2" BorderBrush="{StaticResource BorderBrush}"
                     BorderThickness="1" CornerRadius="8" Padding="8">
                 <Grid>
                     <Grid.RowDefinitions>
@@ -168,7 +168,7 @@
         </Grid>
 
         <!-- Status bar -->
-        <Border Grid.Row="2" Background="{DynamicResource ControlFillColorDefaultBrush}"
+        <Border Grid.Row="2" Background="{StaticResource BgElevatedBrush}"
                 Padding="16,8">
             <Grid>
                 <TextBlock Text="{Binding StatusMessage}"

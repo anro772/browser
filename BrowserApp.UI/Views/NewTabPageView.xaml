@@ -14,10 +14,10 @@
             <!-- Branding -->
             <StackPanel HorizontalAlignment="Center" Margin="0,0,0,32">
                 <TextBlock Text="Privacy Browser"
-                           FontSize="36"
+                           FontSize="42"
                            FontWeight="Light"
                            HorizontalAlignment="Center"
-                           Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                           Foreground="#E8E0FF"/>
                 <TextBlock Text="{Binding GreetingText}"
                            FontSize="14"
                            HorizontalAlignment="Center"
@@ -28,6 +28,8 @@
             <!-- Search Bar -->
             <Border Background="{DynamicResource ControlFillColorDefaultBrush}"
                     CornerRadius="24"
+                    BorderBrush="{StaticResource BorderBrush}"
+                    BorderThickness="1"
                     Padding="4"
                     Margin="0,0,0,40">
                 <Grid>
@@ -84,10 +86,16 @@
                                 <ControlTemplate TargetType="Button">
                                     <Border x:Name="SiteBorder"
                                             Background="{DynamicResource ControlFillColorDefaultBrush}"
-                                            CornerRadius="8"
+                                            CornerRadius="12"
+                                            BorderBrush="{StaticResource BorderSubtleBrush}"
+                                            BorderThickness="1"
                                             Padding="12"
                                             MinWidth="120"
-                                            MinHeight="80">
+                                            MinHeight="80"
+                                            RenderTransformOrigin="0.5,0.5">
+                                        <Border.RenderTransform>
+                                            <ScaleTransform ScaleX="1" ScaleY="1"/>
+                                        </Border.RenderTransform>
                                         <StackPanel HorizontalAlignment="Center"
                                                     VerticalAlignment="Center">
                                             <!-- Initial circle -->
@@ -96,14 +104,14 @@
                                                     Margin="0,0,0,8"
                                                     HorizontalAlignment="Center">
                                                 <Border.Background>
-                                                    <SolidColorBrush Color="{DynamicResource SystemAccentColorPrimary}" Opacity="0.2"/>
+                                                    <SolidColorBrush Color="#A855F7" Opacity="0.15"/>
                                                 </Border.Background>
                                                 <TextBlock Text="{Binding Initial}"
                                                            FontSize="18"
                                                            FontWeight="SemiBold"
                                                            HorizontalAlignment="Center"
                                                            VerticalAlignment="Center"
-                                                           Foreground="{DynamicResource SystemAccentColorPrimaryBrush}"/>
+                                                           Foreground="{StaticResource AccentBrush}"/>
                                             </Border>
                                             <!-- Domain -->
                                             <TextBlock Text="{Binding Domain}"
@@ -116,8 +124,12 @@
                                     </Border>
                                     <ControlTemplate.Triggers>
                                         <Trigger Property="IsMouseOver" Value="True">
-                                            <Setter TargetName="SiteBorder" Property="Background"
-                                                    Value="{DynamicResource ControlFillColorSecondaryBrush}"/>
+                                            <Setter TargetName="SiteBorder" Property="Background" Value="{StaticResource BgSurfaceHoverBrush}"/>
+                                            <Setter TargetName="SiteBorder" Property="RenderTransform">
+                                                <Setter.Value>
+                                                    <ScaleTransform ScaleX="1.03" ScaleY="1.03"/>
+                                                </Setter.Value>
+                                            </Setter>
                                         </Trigger>
                                     </ControlTemplate.Triggers>
                                 </ControlTemplate>

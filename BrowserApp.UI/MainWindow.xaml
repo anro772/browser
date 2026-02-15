@@ -61,7 +61,7 @@
 
         <!-- Row 0: Tab Strip -->
         <Grid Grid.Row="0"
-              Background="{DynamicResource ApplicationBackgroundBrush}"
+              Background="{StaticResource BgPrimaryBrush}"
               MinHeight="36">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
@@ -104,9 +104,11 @@
         </Grid>
 
         <!-- Row 1: Navigation Bar -->
-        <Grid Grid.Row="1"
-              Background="{DynamicResource ApplicationBackgroundBrush}"
-              Margin="0,0,0,0">
+        <Border Grid.Row="1"
+                Background="{StaticResource BgElevatedBrush}"
+                BorderBrush="{StaticResource BorderSubtleBrush}"
+                BorderThickness="0,0,0,1">
+        <Grid Margin="0,0,0,0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="*"/>
@@ -185,10 +187,10 @@
                        Width="{Binding ActualWidth, ElementName=AddressBar}"
                        AllowsTransparency="True"
                        PopupAnimation="Fade">
-                    <Border Background="{DynamicResource ApplicationBackgroundBrush}"
-                            BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
+                    <Border Background="{StaticResource BgSurfaceBrush}"
+                            BorderBrush="{StaticResource BorderBrush}"
                             BorderThickness="1"
-                            CornerRadius="0,0,4,4"
+                            CornerRadius="0,0,8,8"
                             MaxHeight="320">
                         <ListBox x:Name="SuggestionsListBox"
                                  ItemsSource="{Binding Suggestions}"
@@ -312,6 +314,7 @@
                            Margin="4,0"/>
             </StackPanel>
         </Grid>
+        </Border>
 
         <!-- Row 2: Main Content Area -->
         <Grid Grid.Row="2">
@@ -351,8 +354,8 @@
             <!-- Sidebar Panel with Tabs -->
             <Border Grid.Column="1"
                     Width="400"
-                    Background="{DynamicResource ApplicationBackgroundBrush}"
-                    BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
+                    Background="{StaticResource BgElevatedBrush}"
+                    BorderBrush="{StaticResource AccentGlowBrush}"
                     BorderThickness="1,0,0,0"
                     Visibility="{Binding IsSidebarVisible, Converter={StaticResource BoolToVisibility}}">
                 <TabControl>
@@ -383,7 +386,7 @@
 
         <!-- Row 3: Status Bar -->
         <Border Grid.Row="3"
-                Background="{DynamicResource ApplicationBackgroundBrush}"
+                Background="{StaticResource BgElevatedBrush}"
                 Padding="8,4">
             <TextBlock Text="{Binding StatusBarText}"
                        FontSize="12"

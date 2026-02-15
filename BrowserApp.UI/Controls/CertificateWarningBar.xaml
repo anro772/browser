@@ -5,8 +5,8 @@
              Visibility="Collapsed"
              x:Name="CertWarningRoot">
 
-    <Border Background="#FFF3CD"
-            BorderBrush="#FFC107"
+    <Border Background="{StaticResource BgSurfaceBrush}"
+            BorderBrush="{StaticResource WarningBrush}"
             BorderThickness="0,0,0,2"
             Padding="12,8">
         <Grid>
@@ -22,13 +22,13 @@
                            FontSize="20"
                            Margin="0,0,12,0"
                            VerticalAlignment="Center"
-                           Foreground="#D32F2F"/>
+                           Foreground="{StaticResource ErrorBrush}"/>
 
             <TextBlock Grid.Column="1"
                        x:Name="WarningText"
                        Text="This site has a certificate error. Your connection is not private."
                        FontSize="13"
-                       Foreground="#333333"
+                       Foreground="{StaticResource TextPrimaryBrush}"
                        TextWrapping="Wrap"
                        VerticalAlignment="Center"/>
 
@@ -41,7 +41,7 @@
             <Button Grid.Column="3"
                     Content="Proceed Anyway"
                     Padding="12,4"
-                    Foreground="#D32F2F"
+                    Foreground="{StaticResource ErrorBrush}"
                     Click="ProceedButton_Click"/>
         </Grid>
     </Border>

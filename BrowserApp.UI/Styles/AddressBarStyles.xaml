@@ -4,11 +4,11 @@
 
     <!-- Address bar container with security indicator -->
     <Style x:Key="AddressBarContainerStyle" TargetType="Border">
-        <Setter Property="Background" Value="{DynamicResource ControlFillColorDefaultBrush}"/>
-        <Setter Property="CornerRadius" Value="8"/>
+        <Setter Property="Background" Value="{StaticResource BgSurfaceBrush}"/>
+        <Setter Property="CornerRadius" Value="10"/>
         <Setter Property="Padding" Value="4"/>
         <Setter Property="Margin" Value="8,4"/>
-        <Setter Property="BorderBrush" Value="{DynamicResource ControlStrokeColorDefaultBrush}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}"/>
         <Setter Property="BorderThickness" Value="1"/>
     </Style>
 

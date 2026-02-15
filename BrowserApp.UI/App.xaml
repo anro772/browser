@@ -9,6 +9,8 @@
             <ResourceDictionary.MergedDictionaries>
                 <ui:ThemesDictionary Theme="Dark" />
                 <ui:ControlsDictionary />
+                <ResourceDictionary Source="Styles/BrowserTheme.xaml"/>
+                <ResourceDictionary Source="Styles/AnimationStyles.xaml"/>
                 <ResourceDictionary Source="Styles/TabStyles.xaml"/>
                 <ResourceDictionary Source="Styles/AddressBarStyles.xaml"/>
             </ResourceDictionary.MergedDictionaries>

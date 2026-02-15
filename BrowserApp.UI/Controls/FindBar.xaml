@@ -5,8 +5,8 @@
              Visibility="Collapsed"
              x:Name="FindBarRoot">
 
-    <Border Background="{DynamicResource ControlFillColorDefaultBrush}"
-            BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
+    <Border Background="{StaticResource BgSurfaceBrush}"
+            BorderBrush="{StaticResource BorderBrush}"
             BorderThickness="0,0,0,1"
             Padding="12,6"
             HorizontalAlignment="Right"
@@ -26,9 +26,9 @@
                      x:Name="FindTextBox"
                      FontSize="13"
                      Padding="6,4"
-                     Background="{DynamicResource ControlFillColorSecondaryBrush}"
+                     Background="{StaticResource BgSurfaceHoverBrush}"
                      BorderThickness="1"
-                     BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
+                     BorderBrush="{StaticResource BorderBrush}"
                      Foreground="{DynamicResource TextFillColorPrimaryBrush}"
                      CaretBrush="{DynamicResource TextFillColorPrimaryBrush}"
                      TextChanged="FindTextBox_TextChanged"

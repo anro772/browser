@@ -1,0 +1,164 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         Easing Functions
+         ═══════════════════════════════════════════════════════════════ -->
+
+    <CubicEase x:Key="EaseOut" EasingMode="EaseOut"/>
+    <CubicEase x:Key="EaseInOut" EasingMode="EaseInOut"/>
+    <QuadraticEase x:Key="EaseOutQuad" EasingMode="EaseOut"/>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         Fade-In Storyboard (0 → 1 opacity, 200ms)
+         ═══════════════════════════════════════════════════════════════ -->
+
+    <Storyboard x:Key="FadeInStoryboard">
+        <DoubleAnimation Storyboard.TargetProperty="Opacity"
+                         From="0" To="1"
+                         Duration="0:0:0.2"
+                         EasingFunction="{StaticResource EaseOut}"/>
+    </Storyboard>
+
+    <Storyboard x:Key="FadeOutStoryboard">
+        <DoubleAnimation Storyboard.TargetProperty="Opacity"
+                         From="1" To="0"
+                         Duration="0:0:0.15"
+                         EasingFunction="{StaticResource EaseOut}"/>
+    </Storyboard>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         Slide-In From Right (for sidebar, 250ms, CubicEaseOut)
+         Applied via RenderTransform.TranslateTransform
+         ═══════════════════════════════════════════════════════════════ -->
+
+    <Storyboard x:Key="SlideInFromRightStoryboard">
+        <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.X)"
+                         From="400" To="0"
+                         Duration="0:0:0.25"
+                         EasingFunction="{StaticResource EaseOut}"/>
+        <DoubleAnimation Storyboard.TargetProperty="Opacity"
+                         From="0" To="1"
+                         Duration="0:0:0.2"
+                         EasingFunction="{StaticResource EaseOut}"/>
+    </Storyboard>
+
+    <Storyboard x:Key="SlideOutToRightStoryboard">
+        <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.X)"
+                         From="0" To="400"
+                         Duration="0:0:0.2"
+                         EasingFunction="{StaticResource EaseOut}"/>
+        <DoubleAnimation Storyboard.TargetProperty="Opacity"
+                         From="1" To="0"
+                         Duration="0:0:0.15"
+                         EasingFunction="{StaticResource EaseOut}"/>
+    </Storyboard>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         Chat Message Entrance (slide up + fade, 150ms)
+         Applied via RenderTransform.TranslateTransform
+         ═══════════════════════════════════════════════════════════════ -->
+
+    <Storyboard x:Key="ChatMessageEntranceStoryboard">
+        <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)"
+                         From="12" To="0"
+                         Duration="0:0:0.15"
+                         EasingFunction="{StaticResource EaseOut}"/>
+        <DoubleAnimation Storyboard.TargetProperty="Opacity"
+                         From="0" To="1"
+                         Duration="0:0:0.15"
+                         EasingFunction="{StaticResource EaseOut}"/>
+    </Storyboard>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         Scale-on-Press (0.97 scale, 100ms)
+         ═══════════════════════════════════════════════════════════════ -->
+
+    <Storyboard x:Key="ScaleDownStoryboard">
+        <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
+                         To="0.97" Duration="0:0:0.1"
+                         EasingFunction="{StaticResource EaseOut}"/>
+        <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
+                         To="0.97" Duration="0:0:0.1"
+                         EasingFunction="{StaticResource EaseOut}"/>
+    </Storyboard>
+
+    <Storyboard x:Key="ScaleUpStoryboard">
+        <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
+                         To="1.0" Duration="0:0:0.1"
+                         EasingFunction="{StaticResource EaseOut}"/>
+        <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
+                         To="1.0" Duration="0:0:0.1"
+                         EasingFunction="{StaticResource EaseOut}"/>
+    </Storyboard>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         Hover Scale (1.03, for site cards on new tab page)
+         ═══════════════════════════════════════════════════════════════ -->
+
+    <Storyboard x:Key="HoverScaleUpStoryboard">
+        <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
+                         To="1.03" Duration="0:0:0.15"
+                         EasingFunction="{StaticResource EaseOut}"/>
+        <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
+                         To="1.03" Duration="0:0:0.15"
+                         EasingFunction="{StaticResource EaseOut}"/>
+    </Storyboard>
+
+    <Storyboard x:Key="HoverScaleDownStoryboard">
+        <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
+                         To="1.0" Duration="0:0:0.15"
+                         EasingFunction="{StaticResource EaseOut}"/>
+        <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
+                         To="1.0" Duration="0:0:0.15"
+                         EasingFunction="{StaticResource EaseOut}"/>
+    </Storyboard>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         Loaded Event Trigger Style (for chat messages)
+         Applies fade+slide entrance on Loaded
+         ═══════════════════════════════════════════════════════════════ -->
+
+    <Style x:Key="AnimatedChatMessage" TargetType="ContentPresenter">
+        <Setter Property="Opacity" Value="0"/>
+        <Setter Property="RenderTransform">
+            <Setter.Value>
+                <TranslateTransform Y="12"/>
+            </Setter.Value>
+        </Setter>
+        <Style.Triggers>
+            <EventTrigger RoutedEvent="Loaded">
+                <BeginStoryboard>
+                    <Storyboard>
+                        <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)"
+                                         From="12" To="0"
+                                         Duration="0:0:0.15"
+                                         EasingFunction="{StaticResource EaseOut}"/>
+                        <DoubleAnimation Storyboard.TargetProperty="Opacity"
+                                         From="0" To="1"
+                                         Duration="0:0:0.15"
+                                         EasingFunction="{StaticResource EaseOut}"/>
+                    </Storyboard>
+                </BeginStoryboard>
+            </EventTrigger>
+        </Style.Triggers>
+    </Style>
+
+    <!-- Fade-in on Loaded for panels/views -->
+    <Style x:Key="FadeInOnLoad" TargetType="FrameworkElement">
+        <Setter Property="Opacity" Value="0"/>
+        <Style.Triggers>
+            <EventTrigger RoutedEvent="Loaded">
+                <BeginStoryboard>
+                    <Storyboard>
+                        <DoubleAnimation Storyboard.TargetProperty="Opacity"
+                                         From="0" To="1"
+                                         Duration="0:0:0.2"
+                                         EasingFunction="{StaticResource EaseOut}"/>
+                    </Storyboard>
+                </BeginStoryboard>
+            </EventTrigger>
+        </Style.Triggers>
+    </Style>
+
+</ResourceDictionary>

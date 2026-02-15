@@ -32,14 +32,16 @@
 
                 <!-- Privacy Mode Section -->
                 <Border Background="{DynamicResource ControlFillColorDefaultBrush}"
-                        CornerRadius="4"
+                        CornerRadius="8"
+                        BorderBrush="{StaticResource BorderSubtleBrush}"
+                        BorderThickness="1"
                         Padding="16"
                         Margin="0,0,0,12">
                     <StackPanel>
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
                             <ui:SymbolIcon Symbol="Shield24"
                                            FontSize="20"
-                                           Foreground="#107C10"
+                                           Foreground="{StaticResource AccentBrush}"
                                            Margin="0,0,8,0"/>
                             <TextBlock Text="Privacy Mode"
                                        FontSize="14"
@@ -75,14 +77,16 @@
 
                 <!-- Search Engine Section -->
                 <Border Background="{DynamicResource ControlFillColorDefaultBrush}"
-                        CornerRadius="4"
+                        CornerRadius="8"
+                        BorderBrush="{StaticResource BorderSubtleBrush}"
+                        BorderThickness="1"
                         Padding="16"
                         Margin="0,0,0,12">
                     <StackPanel>
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
                             <ui:SymbolIcon Symbol="Search24"
                                            FontSize="20"
-                                           Foreground="#0078D4"
+                                           Foreground="{StaticResource AccentBrush}"
                                            Margin="0,0,8,0"/>
                             <TextBlock Text="Search Engine"
                                        FontSize="14"
@@ -110,14 +114,16 @@
 
                 <!-- Server Configuration Section -->
                 <Border Background="{DynamicResource ControlFillColorDefaultBrush}"
-                        CornerRadius="4"
+                        CornerRadius="8"
+                        BorderBrush="{StaticResource BorderSubtleBrush}"
+                        BorderThickness="1"
                         Padding="16"
                         Margin="0,0,0,12">
                     <StackPanel>
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
                             <ui:SymbolIcon Symbol="Globe24"
                                            FontSize="20"
-                                           Foreground="#0078D4"
+                                           Foreground="{StaticResource AccentBrush}"
                                            Margin="0,0,8,0"/>
                             <TextBlock Text="Server Configuration"
                                        FontSize="14"
@@ -138,13 +144,15 @@
 
                 <!-- Data Management Section -->
                 <Border Background="{DynamicResource ControlFillColorDefaultBrush}"
-                        CornerRadius="4"
+                        CornerRadius="8"
+                        BorderBrush="{StaticResource BorderSubtleBrush}"
+                        BorderThickness="1"
                         Padding="16">
                     <StackPanel>
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
                             <ui:SymbolIcon Symbol="Delete24"
                                            FontSize="20"
-                                           Foreground="#D13438"
+                                           Foreground="{StaticResource ErrorBrush}"
                                            Margin="0,0,8,0"/>
                             <TextBlock Text="Data Management"
                                        FontSize="14"

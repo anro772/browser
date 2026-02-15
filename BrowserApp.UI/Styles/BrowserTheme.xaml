@@ -1,0 +1,284 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml">
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         OLED Black/Purple Theme — Core Palette
+         ═══════════════════════════════════════════════════════════════ -->
+
+    <!-- BACKGROUNDS -->
+    <Color x:Key="BgPrimary">#000000</Color>
+    <Color x:Key="BgElevated">#0D0D1A</Color>
+    <Color x:Key="BgSurface">#141428</Color>
+    <Color x:Key="BgSurfaceHover">#1C1C36</Color>
+    <Color x:Key="BgSurfaceActive">#252544</Color>
+
+    <SolidColorBrush x:Key="BgPrimaryBrush" Color="#000000"/>
+    <SolidColorBrush x:Key="BgElevatedBrush" Color="#0D0D1A"/>
+    <SolidColorBrush x:Key="BgSurfaceBrush" Color="#141428"/>
+    <SolidColorBrush x:Key="BgSurfaceHoverBrush" Color="#1C1C36"/>
+    <SolidColorBrush x:Key="BgSurfaceActiveBrush" Color="#252544"/>
+
+    <!-- ACCENT (Purple) -->
+    <Color x:Key="Accent">#A855F7</Color>
+    <Color x:Key="AccentLight">#C084FC</Color>
+    <Color x:Key="AccentDark">#7C3AED</Color>
+
+    <SolidColorBrush x:Key="AccentBrush" Color="#A855F7"/>
+    <SolidColorBrush x:Key="AccentLightBrush" Color="#C084FC"/>
+    <SolidColorBrush x:Key="AccentDarkBrush" Color="#7C3AED"/>
+    <SolidColorBrush x:Key="AccentSubtleBrush" Color="#15A855F7"/>
+    <SolidColorBrush x:Key="AccentGlowBrush" Color="#30A855F7"/>
+    <SolidColorBrush x:Key="AccentBorderBrush" Color="#50A855F7"/>
+
+    <!-- TEXT -->
+    <Color x:Key="TextPrimary">#F0F0FF</Color>
+    <Color x:Key="TextSecondary">#9898B0</Color>
+    <Color x:Key="TextTertiary">#606078</Color>
+
+    <SolidColorBrush x:Key="TextPrimaryBrush" Color="#F0F0FF"/>
+    <SolidColorBrush x:Key="TextSecondaryBrush" Color="#9898B0"/>
+    <SolidColorBrush x:Key="TextTertiaryBrush" Color="#606078"/>
+
+    <!-- SEMANTIC -->
+    <Color x:Key="Success">#34D399</Color>
+    <Color x:Key="Error">#F87171</Color>
+    <Color x:Key="Warning">#FBBF24</Color>
+    <Color x:Key="Info">#60A5FA</Color>
+
+    <SolidColorBrush x:Key="SuccessBrush" Color="#34D399"/>
+    <SolidColorBrush x:Key="ErrorBrush" Color="#F87171"/>
+    <SolidColorBrush x:Key="WarningBrush" Color="#FBBF24"/>
+    <SolidColorBrush x:Key="InfoBrush" Color="#60A5FA"/>
+
+    <SolidColorBrush x:Key="SuccessSubtleBrush" Color="#1534D399"/>
+    <SolidColorBrush x:Key="ErrorSubtleBrush" Color="#15F87171"/>
+    <SolidColorBrush x:Key="WarningSubtleBrush" Color="#15FBBF24"/>
+    <SolidColorBrush x:Key="InfoSubtleBrush" Color="#1560A5FA"/>
+
+    <!-- BORDERS -->
+    <Color x:Key="Border">#2D2D45</Color>
+    <Color x:Key="BorderSubtle">#1E1E30</Color>
+
+    <SolidColorBrush x:Key="BorderBrush" Color="#2D2D45"/>
+    <SolidColorBrush x:Key="BorderSubtleBrush" Color="#1E1E30"/>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         WPF-UI Theme Overrides
+         ═══════════════════════════════════════════════════════════════ -->
+
+    <!-- Application background -->
+    <SolidColorBrush x:Key="ApplicationBackgroundBrush" Color="#000000"/>
+
+    <!-- Control fills -->
+    <SolidColorBrush x:Key="ControlFillColorDefaultBrush" Color="#141428"/>
+    <SolidColorBrush x:Key="ControlFillColorSecondaryBrush" Color="#1C1C36"/>
+    <SolidColorBrush x:Key="ControlFillColorTertiaryBrush" Color="#252544"/>
+    <SolidColorBrush x:Key="ControlFillColorDisabledBrush" Color="#0D0D1A"/>
+
+    <!-- Control strokes -->
+    <SolidColorBrush x:Key="ControlStrokeColorDefaultBrush" Color="#2D2D45"/>
+    <SolidColorBrush x:Key="ControlStrokeColorSecondaryBrush" Color="#1E1E30"/>
+    <SolidColorBrush x:Key="ControlElevationBorderBrush" Color="#2D2D45"/>
+
+    <!-- Text fills -->
+    <SolidColorBrush x:Key="TextFillColorPrimaryBrush" Color="#F0F0FF"/>
+    <SolidColorBrush x:Key="TextFillColorSecondaryBrush" Color="#9898B0"/>
+    <SolidColorBrush x:Key="TextFillColorTertiaryBrush" Color="#606078"/>
+    <SolidColorBrush x:Key="TextFillColorDisabledBrush" Color="#606078"/>
+
+    <!-- Accent overrides -->
+    <SolidColorBrush x:Key="SystemAccentColorPrimaryBrush" Color="#A855F7"/>
+    <SolidColorBrush x:Key="SystemAccentColorSecondaryBrush" Color="#C084FC"/>
+    <SolidColorBrush x:Key="SystemAccentColorTertiaryBrush" Color="#7C3AED"/>
+    <Color x:Key="SystemAccentColorPrimary">#A855F7</Color>
+    <Color x:Key="SystemAccentColorSecondary">#C084FC</Color>
+    <Color x:Key="SystemAccentColorTertiary">#7C3AED</Color>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         Common Styles
+         ═══════════════════════════════════════════════════════════════ -->
+
+    <!-- Themed Card: surface bg, 8px radius, subtle border, padding -->
+    <Style x:Key="ThemedCard" TargetType="Border">
+        <Setter Property="Background" Value="{StaticResource BgSurfaceBrush}"/>
+        <Setter Property="CornerRadius" Value="8"/>
+        <Setter Property="BorderBrush" Value="{StaticResource BorderSubtleBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="Padding" Value="16"/>
+        <Setter Property="Margin" Value="8"/>
+    </Style>
+
+    <!-- Stat Card: for dashboard/network stats -->
+    <Style x:Key="StatCard" TargetType="Border">
+        <Setter Property="Background" Value="{StaticResource BgSurfaceBrush}"/>
+        <Setter Property="CornerRadius" Value="8"/>
+        <Setter Property="BorderBrush" Value="{StaticResource BorderSubtleBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="Padding" Value="12"/>
+    </Style>
+
+    <!-- Section Header: 16px SemiBold with primary text -->
+    <Style x:Key="SectionHeader" TargetType="TextBlock">
+        <Setter Property="FontSize" Value="16"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
+    </Style>
+
+    <!-- Page Title: larger -->
+    <Style x:Key="PageTitle" TargetType="TextBlock">
+        <Setter Property="FontSize" Value="24"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
+    </Style>
+
+    <!-- Subtitle -->
+    <Style x:Key="SubtitleText" TargetType="TextBlock">
+        <Setter Property="FontSize" Value="12"/>
+        <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}"/>
+    </Style>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         DataGrid Styles
+         ═══════════════════════════════════════════════════════════════ -->
+
+    <Style x:Key="ThemedDataGrid" TargetType="DataGrid">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="GridLinesVisibility" Value="None"/>
+        <Setter Property="RowHeight" Value="36"/>
+        <Setter Property="FontSize" Value="12"/>
+        <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
+        <Setter Property="RowBackground" Value="Transparent"/>
+        <Setter Property="AlternatingRowBackground" Value="#08A855F7"/>
+        <Setter Property="HeadersVisibility" Value="Column"/>
+        <Setter Property="IsReadOnly" Value="True"/>
+        <Setter Property="CanUserAddRows" Value="False"/>
+        <Setter Property="CanUserDeleteRows" Value="False"/>
+        <Setter Property="SelectionMode" Value="Single"/>
+    </Style>
+
+    <Style x:Key="ThemedDataGridRow" TargetType="DataGridRow">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
+        <Style.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="Background" Value="{StaticResource BgSurfaceHoverBrush}"/>
+            </Trigger>
+            <Trigger Property="IsSelected" Value="True">
+                <Setter Property="Background" Value="{StaticResource AccentSubtleBrush}"/>
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <Style x:Key="ThemedDataGridColumnHeader" TargetType="DataGridColumnHeader">
+        <Setter Property="Background" Value="{StaticResource BgElevatedBrush}"/>
+        <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}"/>
+        <Setter Property="FontSize" Value="11"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="Padding" Value="8,6"/>
+        <Setter Property="BorderBrush" Value="{StaticResource BorderSubtleBrush}"/>
+        <Setter Property="BorderThickness" Value="0,0,0,1"/>
+    </Style>
+
+    <Style x:Key="ThemedDataGridCell" TargetType="DataGridCell">
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="Padding" Value="8,4"/>
+        <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="DataGridCell">
+                    <Border Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            Padding="{TemplateBinding Padding}">
+                        <ContentPresenter VerticalAlignment="Center"/>
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+        <Style.Triggers>
+            <Trigger Property="IsSelected" Value="True">
+                <Setter Property="Background" Value="Transparent"/>
+                <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         ListView / ListBox Item Styles
+         ═══════════════════════════════════════════════════════════════ -->
+
+    <Style x:Key="ThemedListViewItem" TargetType="ListViewItem">
+        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+        <Setter Property="Padding" Value="4"/>
+        <Setter Property="Margin" Value="2,1"/>
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ListViewItem">
+                    <Border x:Name="ItemBorder"
+                            Background="{TemplateBinding Background}"
+                            CornerRadius="6"
+                            Padding="{TemplateBinding Padding}"
+                            Margin="{TemplateBinding Margin}">
+                        <ContentPresenter/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="ItemBorder" Property="Background" Value="{StaticResource AccentSubtleBrush}"/>
+                        </Trigger>
+                        <Trigger Property="IsSelected" Value="True">
+                            <Setter TargetName="ItemBorder" Property="Background" Value="{StaticResource AccentGlowBrush}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="ThemedListBoxItem" TargetType="ListBoxItem">
+        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+        <Setter Property="Padding" Value="4"/>
+        <Setter Property="Margin" Value="2,1"/>
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ListBoxItem">
+                    <Border x:Name="ItemBorder"
+                            Background="{TemplateBinding Background}"
+                            CornerRadius="6"
+                            Padding="{TemplateBinding Padding}"
+                            Margin="{TemplateBinding Margin}">
+                        <ContentPresenter/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="ItemBorder" Property="Background" Value="{StaticResource AccentSubtleBrush}"/>
+                        </Trigger>
+                        <Trigger Property="IsSelected" Value="True">
+                            <Setter TargetName="ItemBorder" Property="Background" Value="{StaticResource AccentGlowBrush}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         ScrollBar Styling (thin, accent-colored)
+         ═══════════════════════════════════════════════════════════════ -->
+
+    <Style x:Key="ThemedScrollBarThumb" TargetType="Thumb">
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Thumb">
+                    <Border Background="{StaticResource AccentGlowBrush}"
+                            CornerRadius="3"
+                            Margin="1"/>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+</ResourceDictionary>

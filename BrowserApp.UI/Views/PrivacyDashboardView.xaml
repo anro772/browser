@@ -16,7 +16,9 @@
 
             <!-- Header -->
             <Border Background="{DynamicResource ControlFillColorDefaultBrush}"
-                    CornerRadius="4"
+                    CornerRadius="8"
+                    BorderBrush="{StaticResource BorderSubtleBrush}"
+                    BorderThickness="1"
                     Padding="12"
                     Margin="0,0,0,8">
                 <Grid>
@@ -63,7 +65,9 @@
                 <!-- Privacy Mode Card -->
                 <Border Grid.Column="0"
                         Background="{DynamicResource ControlFillColorDefaultBrush}"
-                        CornerRadius="4"
+                        CornerRadius="8"
+                        BorderBrush="{StaticResource BorderSubtleBrush}"
+                        BorderThickness="1"
                         Padding="12"
                         Margin="0,0,4,0"
                         ToolTip="{Binding PrivacyModeDescription}">
@@ -88,7 +92,9 @@
                 <!-- Blocked Today Card -->
                 <Border Grid.Column="1"
                         Background="{DynamicResource ControlFillColorDefaultBrush}"
-                        CornerRadius="4"
+                        CornerRadius="8"
+                        BorderBrush="{StaticResource BorderSubtleBrush}"
+                        BorderThickness="1"
                         Padding="12"
                         Margin="2,0">
                     <StackPanel HorizontalAlignment="Center">
@@ -96,7 +102,7 @@
                                    FontSize="22"
                                    FontWeight="Bold"
                                    HorizontalAlignment="Center"
-                                   Foreground="#D13438"/>
+                                   Foreground="{StaticResource ErrorBrush}"/>
                         <TextBlock Text="Blocked"
                                    FontSize="10"
                                    HorizontalAlignment="Center"
@@ -111,7 +117,9 @@
                 <!-- Data Saved Card -->
                 <Border Grid.Column="2"
                         Background="{DynamicResource ControlFillColorDefaultBrush}"
-                        CornerRadius="4"
+                        CornerRadius="8"
+                        BorderBrush="{StaticResource BorderSubtleBrush}"
+                        BorderThickness="1"
                         Padding="12"
                         Margin="4,0,0,0">
                     <StackPanel HorizontalAlignment="Center">
@@ -119,7 +127,7 @@
                                    FontSize="14"
                                    FontWeight="Bold"
                                    HorizontalAlignment="Center"
-                                   Foreground="#107C10"/>
+                                   Foreground="{StaticResource SuccessBrush}"/>
                         <TextBlock Text="Data"
                                    FontSize="10"
                                    HorizontalAlignment="Center"
@@ -134,7 +142,9 @@
 
             <!-- Top Blocked Domains -->
             <Border Background="{DynamicResource ControlFillColorDefaultBrush}"
-                    CornerRadius="4"
+                    CornerRadius="8"
+                    BorderBrush="{StaticResource BorderSubtleBrush}"
+                    BorderThickness="1"
                     Padding="12"
                     Margin="0,0,0,8">
                 <StackPanel>
@@ -166,7 +176,7 @@
                                                Text="{Binding Count}"
                                                FontSize="12"
                                                FontWeight="SemiBold"
-                                               Foreground="#D13438"
+                                               Foreground="{StaticResource ErrorBrush}"
                                                Margin="8,0,0,0"/>
 
                                     <!-- Progress Bar -->
@@ -175,7 +185,7 @@
                                             CornerRadius="2"
                                             Height="4"
                                             Margin="0,4,0,0">
-                                        <Border Background="#D13438"
+                                        <Border Background="{StaticResource ErrorBrush}"
                                                 CornerRadius="2"
                                                 HorizontalAlignment="Left"
                                                 Width="{Binding Percentage, Converter={StaticResource PercentToWidth}}"/>
@@ -196,7 +206,9 @@
 
             <!-- Resource Type Breakdown -->
             <Border Background="{DynamicResource ControlFillColorDefaultBrush}"
-                    CornerRadius="4"
+                    CornerRadius="8"
+                    BorderBrush="{StaticResource BorderSubtleBrush}"
+                    BorderThickness="1"
                     Padding="12"
                     Margin="0,0,0,8">
                 <StackPanel>
@@ -227,7 +239,7 @@
                                             CornerRadius="2"
                                             Height="8"
                                             Margin="8,0">
-                                        <Border Background="#0078D4"
+                                        <Border Background="{StaticResource AccentBrush}"
                                                 CornerRadius="2"
                                                 HorizontalAlignment="Left"
                                                 Width="{Binding Percentage, Converter={StaticResource PercentToWidth}}"/>
@@ -254,7 +266,9 @@
 
             <!-- Quick Actions -->
             <Border Background="{DynamicResource ControlFillColorDefaultBrush}"
-                    CornerRadius="4"
+                    CornerRadius="8"
+                    BorderBrush="{StaticResource BorderSubtleBrush}"
+                    BorderThickness="1"
                     Padding="12">
                 <StackPanel>
                     <TextBlock Text="Quick Actions"

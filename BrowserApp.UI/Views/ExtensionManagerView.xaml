@@ -39,7 +39,9 @@
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
                             <Border Background="{DynamicResource ControlFillColorDefaultBrush}"
-                                    CornerRadius="4"
+                                    CornerRadius="8"
+                                    BorderBrush="{StaticResource BorderSubtleBrush}"
+                                    BorderThickness="1"
                                     Padding="12"
                                     Margin="0,0,0,8">
                                 <Grid>
@@ -55,7 +57,7 @@
                                                    FontSize="24"
                                                    Margin="0,0,12,0"
                                                    VerticalAlignment="Center"
-                                                   Foreground="{DynamicResource SystemAccentColorPrimaryBrush}"/>
+                                                   Foreground="{StaticResource AccentBrush}"/>
 
                                     <StackPanel Grid.Column="1" VerticalAlignment="Center">
                                         <TextBlock Text="{Binding Name}"

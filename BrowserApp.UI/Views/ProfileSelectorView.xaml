@@ -7,7 +7,7 @@
         Height="500"
         WindowStartupLocation="CenterOwner"
         ResizeMode="NoResize"
-        Background="{DynamicResource ApplicationBackgroundBrush}">
+        Background="{StaticResource BgPrimaryBrush}">
 
     <Grid Margin="16">
         <Grid.RowDefinitions>

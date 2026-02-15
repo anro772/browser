@@ -24,7 +24,7 @@
         <!-- Header -->
         <StackPanel Grid.Row="0" Margin="0,0,0,16">
             <TextBlock Text="Rules" FontSize="24" FontWeight="SemiBold" Margin="0,0,0,4"/>
-            <TextBlock Text="Manage blocking and content injection rules" Foreground="Gray"/>
+            <TextBlock Text="Manage blocking and content injection rules" Foreground="{StaticResource TextSecondaryBrush}"/>
         </StackPanel>
 
         <!-- Stats and Actions -->
@@ -36,9 +36,9 @@
 
             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                 <TextBlock Text="{Binding TotalRules}" FontWeight="SemiBold"/>
-                <TextBlock Text=" rules total, " Foreground="Gray"/>
-                <TextBlock Text="{Binding EnabledRules}" FontWeight="SemiBold" Foreground="Green"/>
-                <TextBlock Text=" enabled" Foreground="Gray"/>
+                <TextBlock Text=" rules total, " Foreground="{StaticResource TextSecondaryBrush}"/>
+                <TextBlock Text="{Binding EnabledRules}" FontWeight="SemiBold" Foreground="{StaticResource SuccessBrush}"/>
+                <TextBlock Text=" enabled" Foreground="{StaticResource TextSecondaryBrush}"/>
             </StackPanel>
 
             <StackPanel Grid.Column="1" Orientation="Horizontal">
@@ -55,7 +55,7 @@
         </Grid>
 
         <!-- Rules List -->
-        <Border Grid.Row="2" BorderBrush="{DynamicResource ControlElevationBorderBrush}" BorderThickness="1" CornerRadius="4">
+        <Border Grid.Row="2" BorderBrush="{DynamicResource ControlElevationBorderBrush}" BorderThickness="1" CornerRadius="8">
             <DataGrid ItemsSource="{Binding Rules}"
                       SelectedItem="{Binding SelectedRule}"
                       AutoGenerateColumns="False"
@@ -103,7 +103,7 @@
         </Border>
 
         <!-- Loading Indicator -->
-        <Border Grid.Row="2" Background="#80000000" Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisibilityConverter}}">
+        <Border Grid.Row="2" Background="#CC000000" Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisibilityConverter}}">
             <ui:ProgressRing IsIndeterminate="True"/>
         </Border>
 

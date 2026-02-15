@@ -25,7 +25,7 @@
         <!-- Header -->
         <StackPanel Grid.Row="0" Margin="0,0,0,16">
             <TextBlock Text="Marketplace" FontSize="24" FontWeight="SemiBold" Margin="0,0,0,4"/>
-            <TextBlock Text="Browse and install community rules" Foreground="Gray"/>
+            <TextBlock Text="Browse and install community rules" Foreground="{StaticResource TextSecondaryBrush}"/>
         </StackPanel>
 
         <!-- Stats and Actions -->
@@ -37,7 +37,7 @@
 
             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                 <TextBlock Text="{Binding TotalRules}" FontWeight="SemiBold"/>
-                <TextBlock Text=" rules available" Foreground="Gray"/>
+                <TextBlock Text=" rules available" Foreground="{StaticResource TextSecondaryBrush}"/>
             </StackPanel>
 
             <StackPanel Grid.Column="1" Orientation="Horizontal">
@@ -46,7 +46,7 @@
         </Grid>
 
         <!-- Rules List -->
-        <Border Grid.Row="2" BorderBrush="{DynamicResource ControlElevationBorderBrush}" BorderThickness="1" CornerRadius="4">
+        <Border Grid.Row="2" BorderBrush="{DynamicResource ControlElevationBorderBrush}" BorderThickness="1" CornerRadius="8">
             <DataGrid ItemsSource="{Binding Rules}"
                       SelectedItem="{Binding SelectedRule}"
                       AutoGenerateColumns="False"
@@ -83,14 +83,14 @@
         </Border>
 
         <!-- Loading Indicator -->
-        <Border Grid.Row="2" Background="#80000000" Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisibilityConverter}}">
+        <Border Grid.Row="2" Background="#CC000000" Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisibilityConverter}}">
             <ui:ProgressRing IsIndeterminate="True"/>
         </Border>
 
         <!-- Status Message -->
         <TextBlock Grid.Row="3"
                    Text="{Binding StatusMessage}"
-                   Foreground="Gray"
+                   Foreground="{StaticResource TextSecondaryBrush}"
                    Margin="0,8,0,0"
                    TextWrapping="Wrap"/>
 

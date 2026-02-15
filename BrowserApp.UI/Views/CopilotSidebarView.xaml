@@ -15,8 +15,8 @@
         <!-- User message bubble style: right-aligned, accent tint -->
         <DataTemplate x:Key="UserMessageTemplate">
             <Grid Margin="40,4,8,4" HorizontalAlignment="Right">
-                <Border Background="#1A60CDFF"
-                        BorderBrush="#3360CDFF"
+                <Border Background="#15A855F7"
+                        BorderBrush="#50A855F7"
                         BorderThickness="1"
                         CornerRadius="12,12,2,12"
                         Padding="12,8"
@@ -49,12 +49,12 @@
                 <Border Grid.Column="0"
                         Width="24" Height="24"
                         CornerRadius="12"
-                        Background="#2260CDFF"
+                        Background="#22A855F7"
                         VerticalAlignment="Top"
                         Margin="0,2,8,0">
                     <ui:SymbolIcon Symbol="Bot24"
                                    FontSize="12"
-                                   Foreground="#60CDFF"
+                                   Foreground="#A855F7"
                                    HorizontalAlignment="Center"
                                    VerticalAlignment="Center"/>
                 </Border>
@@ -108,19 +108,19 @@
                 <Border Grid.Column="0"
                         Width="24" Height="24"
                         CornerRadius="12"
-                        Background="#22107C10"
+                        Background="#1534D399"
                         VerticalAlignment="Top"
                         Margin="0,2,8,0">
                     <ui:SymbolIcon Symbol="Shield24"
                                    FontSize="12"
-                                   Foreground="#107C10"
+                                   Foreground="#34D399"
                                    HorizontalAlignment="Center"
                                    VerticalAlignment="Center"/>
                 </Border>
 
                 <Border Grid.Column="1"
-                        Background="#0C107C10"
-                        BorderBrush="#33107C10"
+                        Background="#0C34D399"
+                        BorderBrush="#3334D399"
                         BorderThickness="1"
                         CornerRadius="12,12,12,2"
                         Padding="12,8"
@@ -147,7 +147,23 @@
         <!-- Template selector via style triggers on ItemsControl -->
         <Style x:Key="ChatMessageContainerStyle" TargetType="ContentPresenter">
             <Setter Property="ContentTemplate" Value="{StaticResource AssistantMessageTemplate}"/>
+            <Setter Property="Opacity" Value="0"/>
+            <Setter Property="RenderTransform">
+                <Setter.Value>
+                    <TranslateTransform Y="12"/>
+                </Setter.Value>
+            </Setter>
             <Style.Triggers>
+                <EventTrigger RoutedEvent="Loaded">
+                    <BeginStoryboard>
+                        <Storyboard>
+                            <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)"
+                                             From="12" To="0" Duration="0:0:0.15"/>
+                            <DoubleAnimation Storyboard.TargetProperty="Opacity"
+                                             From="0" To="1" Duration="0:0:0.15"/>
+                        </Storyboard>
+                    </BeginStoryboard>
+                </EventTrigger>
                 <DataTrigger Binding="{Binding Role}" Value="user">
                     <Setter Property="ContentTemplate" Value="{StaticResource UserMessageTemplate}"/>
                 </DataTrigger>
@@ -168,7 +184,7 @@
         <!-- Header -->
         <Border Grid.Row="0"
                 Background="{DynamicResource ControlFillColorDefaultBrush}"
-                BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
+                BorderBrush="#30A855F7"
                 BorderThickness="0,0,0,1"
                 Padding="12,10">
             <Grid>
@@ -200,10 +216,10 @@
                              VerticalAlignment="Center">
                         <Ellipse.Style>
                             <Style TargetType="Ellipse">
-                                <Setter Property="Fill" Value="#E81123"/>
+                                <Setter Property="Fill" Value="#F87171"/>
                                 <Style.Triggers>
                                     <DataTrigger Binding="{Binding IsOllamaConnected}" Value="True">
-                                        <Setter Property="Fill" Value="#107C10"/>
+                                        <Setter Property="Fill" Value="#34D399"/>
                                     </DataTrigger>
                                 </Style.Triggers>
                             </Style>
@@ -271,7 +287,7 @@
                     <!-- Disconnected icon -->
                     <Border Width="64" Height="64"
                             CornerRadius="32"
-                            Background="#18FFFFFF"
+                            Background="#15A855F7"
                             HorizontalAlignment="Center"
                             Margin="0,0,0,16">
                         <ui:SymbolIcon Symbol="PlugDisconnected24"

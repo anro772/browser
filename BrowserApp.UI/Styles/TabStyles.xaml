@@ -3,7 +3,7 @@
                     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml">
 
     <!-- Tab strip background -->
-    <SolidColorBrush x:Key="TabStripBackgroundBrush" Color="#1A1A2E"/>
+    <SolidColorBrush x:Key="TabStripBackgroundBrush" Color="#000000"/>
 
     <!-- Tab item template -->
     <Style x:Key="BrowserTabItemStyle" TargetType="Border">
@@ -19,7 +19,7 @@
     <!-- Active tab indicator style -->
     <Style x:Key="ActiveTabIndicatorStyle" TargetType="Border">
         <Setter Property="Height" Value="2"/>
-        <Setter Property="Background" Value="{DynamicResource SystemAccentColorPrimaryBrush}"/>
+        <Setter Property="Background" Value="{StaticResource AccentBrush}"/>
         <Setter Property="CornerRadius" Value="1"/>
         <Setter Property="Margin" Value="8,0"/>
         <Setter Property="VerticalAlignment" Value="Bottom"/>
@@ -52,7 +52,7 @@
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
-                            <Setter Property="Background" Value="{DynamicResource ControlFillColorSecondaryBrush}"/>
+                            <Setter Property="Background" Value="{StaticResource BgSurfaceHoverBrush}"/>
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
@@ -86,7 +86,7 @@
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
-                            <Setter Property="Background" Value="{DynamicResource ControlFillColorSecondaryBrush}"/>
+                            <Setter Property="Background" Value="{StaticResource BgSurfaceHoverBrush}"/>
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
