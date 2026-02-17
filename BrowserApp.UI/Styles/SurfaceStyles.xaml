@@ -65,6 +65,14 @@
         <Setter Property="ResizeMode" Value="CanResize"/>
     </Style>
 
+    <Style x:Key="WorkspaceOverlaySurfaceStyle" TargetType="Border">
+        <Setter Property="CornerRadius" Value="14"/>
+        <Setter Property="Background" Value="{StaticResource BgPrimaryBrush}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="Padding" Value="8"/>
+    </Style>
+
     <Style x:Key="CardListItemStyle" TargetType="ListViewItem" BasedOn="{StaticResource ThemedListViewItem}">
         <Setter Property="Padding" Value="8"/>
         <Setter Property="Margin" Value="4,3"/>

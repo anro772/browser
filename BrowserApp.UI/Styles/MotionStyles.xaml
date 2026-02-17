@@ -89,4 +89,54 @@
             </EventTrigger>
         </Style.Triggers>
     </Style>
+
+    <Style x:Key="WorkspaceOverlayAnimatedStyle" TargetType="Border">
+        <Setter Property="Opacity" Value="0"/>
+        <Setter Property="RenderTransformOrigin" Value="0.5,0.0"/>
+        <Setter Property="RenderTransform">
+            <Setter.Value>
+                <TransformGroup>
+                    <ScaleTransform ScaleX="0.986" ScaleY="0.986"/>
+                    <TranslateTransform Y="-8"/>
+                </TransformGroup>
+            </Setter.Value>
+        </Setter>
+        <Style.Triggers>
+            <Trigger Property="Visibility" Value="Visible">
+                <Trigger.EnterActions>
+                    <BeginStoryboard>
+                        <Storyboard>
+                            <DoubleAnimation Storyboard.TargetProperty="Opacity"
+                                             To="1"
+                                             Duration="0:0:0.2"
+                                             EasingFunction="{StaticResource PremiumEaseOut}"/>
+                            <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[0].(ScaleTransform.ScaleX)"
+                                             To="1"
+                                             Duration="0:0:0.2"
+                                             EasingFunction="{StaticResource PremiumEaseOut}"/>
+                            <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[0].(ScaleTransform.ScaleY)"
+                                             To="1"
+                                             Duration="0:0:0.2"
+                                             EasingFunction="{StaticResource PremiumEaseOut}"/>
+                            <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[1].(TranslateTransform.Y)"
+                                             To="0"
+                                             Duration="0:0:0.22"
+                                             EasingFunction="{StaticResource PremiumEaseOut}"/>
+                        </Storyboard>
+                    </BeginStoryboard>
+                </Trigger.EnterActions>
+            </Trigger>
+            <Trigger Property="Visibility" Value="Collapsed">
+                <Setter Property="Opacity" Value="0"/>
+                <Setter Property="RenderTransform">
+                    <Setter.Value>
+                        <TransformGroup>
+                            <ScaleTransform ScaleX="0.986" ScaleY="0.986"/>
+                            <TranslateTransform Y="-8"/>
+                        </TransformGroup>
+                    </Setter.Value>
+                </Setter>
+            </Trigger>
+        </Style.Triggers>
+    </Style>
 </ResourceDictionary>

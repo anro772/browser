@@ -13,7 +13,7 @@ public class BrowserThemeDataGridTests
 
         // Ensure themed data grids don't fall back to default light headers/rows/cells.
         var regex = new Regex(
-            "<Style\\s+x:Key=\"ThemedDataGrid\"[\\s\\S]*?<Setter\\s+Property=\"RowStyle\"\\s+Value=\"\\{StaticResource\\s+ThemedDataGridRow\\}\"\\s*/>[\\s\\S]*?<Setter\\s+Property=\"ColumnHeaderStyle\"\\s+Value=\"\\{StaticResource\\s+ThemedDataGridColumnHeader\\}\"\\s*/>[\\s\\S]*?<Setter\\s+Property=\"CellStyle\"\\s+Value=\"\\{StaticResource\\s+ThemedDataGridCell\\}\"\\s*/>",
+            "<Style\\s+x:Key=\"ThemedDataGrid\"[\\s\\S]*?<Setter\\s+Property=\"RowStyle\"\\s+Value=\"\\{DynamicResource\\s+ThemedDataGridRow\\}\"\\s*/>[\\s\\S]*?<Setter\\s+Property=\"ColumnHeaderStyle\"\\s+Value=\"\\{DynamicResource\\s+ThemedDataGridColumnHeader\\}\"\\s*/>[\\s\\S]*?<Setter\\s+Property=\"CellStyle\"\\s+Value=\"\\{DynamicResource\\s+ThemedDataGridCell\\}\"\\s*/>",
             RegexOptions.Compiled);
 
         Assert.Matches(regex, xaml);

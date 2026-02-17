@@ -425,13 +425,11 @@
                     Grid.ColumnSpan="2"
                     Margin="16"
                     Panel.ZIndex="30"
-                    CornerRadius="14"
-                    Background="{StaticResource BgPrimaryBrush}"
-                    BorderBrush="{StaticResource BorderBrush}"
-                    BorderThickness="1"
+                    Style="{StaticResource WorkspaceOverlayAnimatedStyle}"
                     Visibility="{Binding IsWorkspaceOpen, Converter={StaticResource BoolToVisibility}}">
-                <ContentControl x:Name="WorkspaceHostContainer"
-                                Margin="8"/>
+                <Border Style="{StaticResource WorkspaceOverlaySurfaceStyle}">
+                    <ContentControl x:Name="WorkspaceHostContainer"/>
+                </Border>
             </Border>
         </Grid>
 
