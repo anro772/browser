@@ -1,10 +1,10 @@
 # Privacy Browser
 
-A privacy-focused web browser built with C# WPF, WebView2, and Entity Framework Core. Features tabbed browsing, content blocking, network monitoring, rule-based page modification, session persistence, and extension support.
+A privacy-focused browser built with C# WPF, WebView2, and Entity Framework Core. It includes tabbed browsing, content blocking, network monitoring, rule-based page modification, session persistence, extension support, and a single-window tools workspace.
 
 ## Status
 
-**Phase 9 Complete** | 130 tests passing
+**Phase 10 Complete** | 364 tests passing
 
 ## Features
 
@@ -36,12 +36,17 @@ A privacy-focused web browser built with C# WPF, WebView2, and Entity Framework 
 - Extension support (Manifest V3 unpacked extensions)
 - Log viewer
 
+### UI / UX
+- Dark graphite/blue theme (dark mode only)
+- Single-window tools workspace for Rules, Extensions, Marketplace, Channels, Profiles, and Settings
+- Custom draggable titlebar with modern overlay transitions
+
 ## Project Structure
 
 ```
 BrowserApp/
 ├── BrowserApp.UI/           # WPF application (presentation)
-│   ├── Views/               # XAML windows and dialogs
+│   ├── Views/               # XAML views, dialogs, and workspace pages
 │   ├── ViewModels/          # MVVM view models
 │   ├── Models/              # UI models (BrowserTabItem, DownloadItemModel)
 │   ├── Controls/            # Custom controls (DownloadNotification, CertificateWarningBar)
@@ -57,7 +62,7 @@ BrowserApp/
 │   ├── Repositories/        # Data repositories
 │   └── Migrations/          # EF Core migrations
 ├── BrowserApp.Server/       # Marketplace API server
-└── BrowserApp.Tests/        # Unit tests (130 tests)
+└── BrowserApp.Tests/        # Unit tests (364 tests)
 ```
 
 ## Tech Stack
@@ -117,8 +122,7 @@ dotnet ef database update --project BrowserApp.Data --startup-project BrowserApp
 
 ## Documentation
 
-- [Project Context](docs/PROJECT_CONTEXT.md) - Architecture, decisions, and full development history
-- [Quick Reference](docs/QUICK_REFERENCE.md) - Code snippets and API docs
+- [Project Context](docs/project_context.md) - Architecture, decisions, and development history
 
 ## Known Limitations
 
@@ -135,4 +139,4 @@ dotnet ef database update --project BrowserApp.Data --startup-project BrowserApp
 
 ---
 
-**Last Updated**: February 2026 | **Build**: 130/130 tests passing
+**Last Updated**: February 17, 2026 | **Build**: 364/364 tests passing
