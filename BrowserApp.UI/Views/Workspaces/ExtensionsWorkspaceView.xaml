@@ -1,33 +1,23 @@
-<ui:FluentWindow x:Class="BrowserApp.UI.Views.ExtensionManagerView"
-        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
-        xmlns:vm="clr-namespace:BrowserApp.UI.ViewModels"
-        Title="Extensions"
-        WindowStartupLocation="CenterOwner"
-        ExtendsContentIntoTitleBar="True"
-        Style="{StaticResource ModernManagerWindowStyle}">
+<UserControl x:Class="BrowserApp.UI.Views.Workspaces.ExtensionsWorkspaceView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+             Loaded="ExtensionsWorkspaceView_Loaded">
 
-    <Grid Margin="24" Style="{StaticResource FadeInOnLoadModern}">
+    <Grid Style="{StaticResource FadeInOnLoadModern}">
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <ui:TitleBar Grid.Row="0" Title="Extensions" ShowMinimize="True" ShowMaximize="True" ShowClose="True"/>
-
-        <!-- Header -->
-        <StackPanel Grid.Row="1" Margin="0,0,0,16">
-            <TextBlock Text="Extensions"
-                       Style="{StaticResource TitleTextStyle}"/>
+        <StackPanel Grid.Row="0" Margin="0,0,0,16">
+            <TextBlock Text="Extensions" Style="{StaticResource TitleTextStyle}"/>
             <TextBlock Text="Manage browser extensions (unpacked Chromium extensions)"
                        Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                        Margin="0,4,0,0"/>
         </StackPanel>
 
-        <!-- Extensions List -->
-        <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
             <StackPanel>
                 <ui:Button Content="Add Extension..."
                            Icon="{ui:SymbolIcon Add24}"
@@ -92,7 +82,6 @@
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
 
-                <!-- Empty State -->
                 <StackPanel Visibility="{Binding Extensions.Count, Converter={StaticResource CountToVisibility}}"
                             HorizontalAlignment="Center"
                             Margin="0,32,0,0">
@@ -108,8 +97,5 @@
                 </StackPanel>
             </StackPanel>
         </ScrollViewer>
-
     </Grid>
-</ui:FluentWindow>
-
-
+</UserControl>

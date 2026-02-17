@@ -11,6 +11,7 @@ using BrowserApp.Data.Repositories;
 using BrowserApp.UI.Services;
 using BrowserApp.UI.ViewModels;
 using BrowserApp.UI.Views;
+using BrowserApp.UI.Views.Workspaces;
 
 namespace BrowserApp.UI;
 
@@ -229,6 +230,13 @@ public partial class App : Application
         services.AddTransient<ProfileSelectorView>();
         services.AddTransient<NewTabPageView>();
         services.AddSingleton<BookmarksPanel>();
+        services.AddSingleton<WorkspaceHostView>();
+        services.AddTransient<RulesWorkspaceView>();
+        services.AddTransient<ExtensionsWorkspaceView>();
+        services.AddTransient<MarketplaceWorkspaceView>();
+        services.AddTransient<ChannelsWorkspaceView>();
+        services.AddTransient<ProfilesWorkspaceView>();
+        services.AddTransient<SettingsWorkspaceView>();
 
         // Phase 6: AI Views
         services.AddSingleton<CopilotSidebarView>();

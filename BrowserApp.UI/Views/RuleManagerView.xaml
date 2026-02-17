@@ -5,6 +5,7 @@
         xmlns:vm="clr-namespace:BrowserApp.UI.ViewModels"
         xmlns:views="clr-namespace:BrowserApp.UI.Views"
         Title="Rule Manager"
+        WindowStartupLocation="CenterOwner"
         ExtendsContentIntoTitleBar="True"
         Style="{StaticResource ModernManagerWindowStyle}">
 

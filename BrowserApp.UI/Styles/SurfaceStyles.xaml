@@ -53,7 +53,6 @@
         <Setter Property="Background" Value="{StaticResource BgPrimaryBrush}"/>
         <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
         <Setter Property="ShowInTaskbar" Value="False"/>
-        <Setter Property="WindowStartupLocation" Value="CenterOwner"/>
     </Style>
 
     <Style x:Key="ModernManagerWindowStyle"

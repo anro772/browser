@@ -46,6 +46,12 @@ public partial class MainViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private SidebarSection _selectedSidebarSection = SidebarSection.Copilot;
 
+    [ObservableProperty]
+    private WorkspaceSection _activeWorkspaceSection = WorkspaceSection.None;
+
+    [ObservableProperty]
+    private bool _isWorkspaceOpen;
+
     // Autocomplete
     [ObservableProperty]
     private ObservableCollection<AutocompleteSuggestion> _suggestions = new();
@@ -382,6 +388,20 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private void ToggleSidebar()
     {
         IsSidebarVisible = !IsSidebarVisible;
+    }
+
+    [RelayCommand]
+    private void OpenWorkspace(WorkspaceSection section)
+    {
+        ActiveWorkspaceSection = section;
+        IsWorkspaceOpen = section != WorkspaceSection.None;
+    }
+
+    [RelayCommand]
+    private void CloseWorkspace()
+    {
+        ActiveWorkspaceSection = WorkspaceSection.None;
+        IsWorkspaceOpen = false;
     }
 
     /// <summary>

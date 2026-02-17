@@ -1,37 +1,23 @@
-<ui:FluentWindow x:Class="BrowserApp.UI.Views.SettingsView"
-        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
-        xmlns:vm="clr-namespace:BrowserApp.UI.ViewModels"
-        Title="Settings"
-        WindowStartupLocation="CenterOwner"
-        ExtendsContentIntoTitleBar="True"
-        Style="{StaticResource ModernManagerWindowStyle}">
+<UserControl x:Class="BrowserApp.UI.Views.Workspaces.SettingsWorkspaceView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml">
 
-    <Grid Margin="24" Style="{StaticResource FadeInOnLoadModern}">
+    <Grid Style="{StaticResource FadeInOnLoadModern}">
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <ui:TitleBar Grid.Row="0" Title="Settings" ShowMinimize="True" ShowMaximize="True" ShowClose="True"/>
-
-        <!-- Header -->
-        <StackPanel Grid.Row="1" Margin="0,0,0,24">
-            <TextBlock Text="Settings"
-                       Style="{StaticResource TitleTextStyle}"/>
+        <StackPanel Grid.Row="0" Margin="0,0,0,24">
+            <TextBlock Text="Settings" Style="{StaticResource TitleTextStyle}"/>
             <TextBlock Text="Configure your browsing experience"
                        Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                        Margin="0,4,0,0"/>
         </StackPanel>
 
-        <!-- Settings Content -->
-        <ScrollViewer Grid.Row="2"
-                      VerticalScrollBarVisibility="Auto">
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
             <StackPanel>
-
-                <!-- Privacy Mode Section -->
                 <Border Background="{StaticResource BgSurfaceBrush}"
                         CornerRadius="8"
                         BorderBrush="{StaticResource BorderSubtleBrush}"
@@ -63,8 +49,7 @@
                             <ComboBox.ItemTemplate>
                                 <DataTemplate>
                                     <StackPanel Margin="4">
-                                        <TextBlock Text="{Binding Name}"
-                                                   FontWeight="SemiBold"/>
+                                        <TextBlock Text="{Binding Name}" FontWeight="SemiBold"/>
                                         <TextBlock Text="{Binding Description}"
                                                    FontSize="11"
                                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
@@ -76,7 +61,6 @@
                     </StackPanel>
                 </Border>
 
-                <!-- Search Engine Section -->
                 <Border Background="{StaticResource BgSurfaceBrush}"
                         CornerRadius="8"
                         BorderBrush="{StaticResource BorderSubtleBrush}"
@@ -113,7 +97,6 @@
                     </StackPanel>
                 </Border>
 
-                <!-- Server Configuration Section -->
                 <Border Background="{StaticResource BgSurfaceBrush}"
                         CornerRadius="8"
                         BorderBrush="{StaticResource BorderSubtleBrush}"
@@ -143,7 +126,6 @@
                     </StackPanel>
                 </Border>
 
-                <!-- Data Management Section -->
                 <Border Background="{StaticResource BgSurfaceBrush}"
                         CornerRadius="8"
                         BorderBrush="{StaticResource BorderSubtleBrush}"
@@ -179,11 +161,7 @@
                         </StackPanel>
                     </StackPanel>
                 </Border>
-
             </StackPanel>
         </ScrollViewer>
-
     </Grid>
-</ui:FluentWindow>
-
-
+</UserControl>

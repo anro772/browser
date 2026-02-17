@@ -12,6 +12,7 @@ using BrowserApp.UI.Models;
 using BrowserApp.UI.Services;
 using BrowserApp.UI.ViewModels;
 using BrowserApp.UI.Views;
+using BrowserApp.UI.Views.Workspaces;
 
 namespace BrowserApp.UI;
 
@@ -29,6 +30,7 @@ public partial class MainWindow : FluentWindow
     private readonly HistoryView _historyView;
     private readonly DownloadManagerView _downloadManagerView;
     private readonly CopilotSidebarView _copilotSidebarView;
+    private readonly WorkspaceHostView _workspaceHostView;
     private readonly IServiceProvider _serviceProvider;
     private readonly INetworkLogger _networkLogger;
     private readonly DownloadManagerViewModel _downloadManagerViewModel;
@@ -51,6 +53,7 @@ public partial class MainWindow : FluentWindow
         DownloadManagerView downloadManagerView,
         DownloadManagerViewModel downloadManagerViewModel,
         CopilotSidebarView copilotSidebarView,
+        WorkspaceHostView workspaceHostView,
         INetworkLogger networkLogger,
         IServiceProvider serviceProvider)
     {
@@ -63,6 +66,7 @@ public partial class MainWindow : FluentWindow
         _downloadManagerView = downloadManagerView;
         _downloadManagerViewModel = downloadManagerViewModel;
         _copilotSidebarView = copilotSidebarView;
+        _workspaceHostView = workspaceHostView;
         _networkLogger = networkLogger;
         _serviceProvider = serviceProvider;
 
@@ -78,6 +82,14 @@ public partial class MainWindow : FluentWindow
         NetworkMonitorContent.Content = _networkMonitorView;
         HistoryContent.Content = _historyView;
         LogViewerContent.Content = _logViewerView;
+        WorkspaceHostContainer.Content = _workspaceHostView;
+        _workspaceHostView.SetWorkspaceContent(
+            _serviceProvider.GetRequiredService<RulesWorkspaceView>(),
+            _serviceProvider.GetRequiredService<ExtensionsWorkspaceView>(),
+            _serviceProvider.GetRequiredService<MarketplaceWorkspaceView>(),
+            _serviceProvider.GetRequiredService<ChannelsWorkspaceView>(),
+            _serviceProvider.GetRequiredService<ProfilesWorkspaceView>(),
+            _serviceProvider.GetRequiredService<SettingsWorkspaceView>());
 
         // Wire up dashboard quick action events
         _dashboardView.ViewRulesRequested += (s, e) => RulesButton_Click(this, new RoutedEventArgs());
@@ -466,99 +478,68 @@ public partial class MainWindow : FluentWindow
         FindBarControl.Open(_tabStrip.ActiveTab?.WebView);
     }
 
+    private void OpenWorkspace(WorkspaceSection section)
+    {
+        _viewModel.OpenWorkspaceCommand.Execute(section);
+    }
+
+    private void ToolsButton_Click(object sender, RoutedEventArgs e)
+    {
+        OpenWorkspace(WorkspaceSection.Rules);
+    }
+
     private void RulesButton_Click(object sender, RoutedEventArgs e)
     {
-        try
-        {
-            ErrorLogger.LogInfo("Opening Rule Manager");
-            var ruleManagerView = _serviceProvider.GetRequiredService<RuleManagerView>();
-            ruleManagerView.Owner = this;
-            ruleManagerView.ShowDialog();
-            ErrorLogger.LogInfo("Rule Manager closed");
-        }
-        catch (Exception ex)
-        {
-            ErrorLogger.LogError("Failed to open Rule Manager", ex);
-        }
+        OpenWorkspace(WorkspaceSection.Rules);
     }
 
     private void ChannelsButton_Click(object sender, RoutedEventArgs e)
     {
-        try
-        {
-            ErrorLogger.LogInfo("Opening Channels Manager");
-            var channelsView = _serviceProvider.GetRequiredService<ChannelsView>();
-            channelsView.Owner = this;
-            channelsView.ShowDialog();
-            ErrorLogger.LogInfo("Channels Manager closed");
-        }
-        catch (Exception ex)
-        {
-            ErrorLogger.LogError("Failed to open Channels Manager", ex);
-        }
+        OpenWorkspace(WorkspaceSection.Channels);
     }
 
     private void MarketplaceButton_Click(object sender, RoutedEventArgs e)
     {
-        try
-        {
-            ErrorLogger.LogInfo("Opening Marketplace");
-            var marketplaceView = _serviceProvider.GetRequiredService<MarketplaceView>();
-            marketplaceView.Owner = this;
-            marketplaceView.ShowDialog();
-            ErrorLogger.LogInfo("Marketplace closed");
-        }
-        catch (Exception ex)
-        {
-            ErrorLogger.LogError("Failed to open Marketplace", ex);
-        }
+        OpenWorkspace(WorkspaceSection.Marketplace);
     }
 
     private void ExtensionsButton_Click(object sender, RoutedEventArgs e)
     {
-        try
-        {
-            ErrorLogger.LogInfo("Opening Extensions Manager");
-            var extensionView = _serviceProvider.GetRequiredService<ExtensionManagerView>();
-            extensionView.Owner = this;
-            extensionView.ShowDialog();
-            ErrorLogger.LogInfo("Extensions Manager closed");
-        }
-        catch (Exception ex)
-        {
-            ErrorLogger.LogError("Failed to open Extensions Manager", ex);
-        }
+        OpenWorkspace(WorkspaceSection.Extensions);
     }
 
     private void ProfileButton_Click(object sender, RoutedEventArgs e)
     {
-        try
-        {
-            ErrorLogger.LogInfo("Opening Profile Selector");
-            var profileView = _serviceProvider.GetRequiredService<ProfileSelectorView>();
-            profileView.Owner = this;
-            profileView.ShowDialog();
-            ErrorLogger.LogInfo("Profile Selector closed");
-        }
-        catch (Exception ex)
-        {
-            ErrorLogger.LogError("Failed to open Profile Selector", ex);
-        }
+        OpenWorkspace(WorkspaceSection.Profiles);
     }
 
     private void SettingsButton_Click(object sender, RoutedEventArgs e)
     {
+        OpenWorkspace(WorkspaceSection.Settings);
+    }
+
+    private void TitlebarDragRegion_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (e.LeftButton != MouseButtonState.Pressed)
+        {
+            return;
+        }
+
+        if (e.ClickCount == 2)
+        {
+            WindowState = WindowState == WindowState.Maximized
+                ? WindowState.Normal
+                : WindowState.Maximized;
+            return;
+        }
+
         try
         {
-            ErrorLogger.LogInfo("Opening Settings");
-            var settingsView = _serviceProvider.GetRequiredService<SettingsView>();
-            settingsView.Owner = this;
-            settingsView.ShowDialog();
-            ErrorLogger.LogInfo("Settings closed");
+            DragMove();
         }
         catch (Exception ex)
         {
-            ErrorLogger.LogError("Failed to open Settings", ex);
+            ErrorLogger.LogError("Failed to drag main window", ex);
         }
     }
 

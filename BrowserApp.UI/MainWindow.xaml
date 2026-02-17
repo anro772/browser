@@ -69,6 +69,12 @@
                 <ColumnDefinition Width="140"/>
             </Grid.ColumnDefinitions>
 
+            <!-- Drag region for custom title bar -->
+            <Border x:Name="TitlebarDragRegion"
+                    Grid.ColumnSpan="3"
+                    Background="Transparent"
+                    MouseLeftButtonDown="TitlebarDragRegion_MouseLeftButtonDown"/>
+
             <!-- Tab items (scrollable) -->
             <ScrollViewer Grid.Column="0"
                           HorizontalScrollBarVisibility="Auto"
@@ -266,37 +272,10 @@
                     </ui:Button.Icon>
                 </ui:Button>
 
-                <!-- Extensions Manager -->
-                <ui:Button ToolTip="Manage Extensions"
-                           x:Name="ExtensionsButton"
-                           Click="ExtensionsButton_Click">
-                    <ui:Button.Icon>
-                        <ui:SymbolIcon Symbol="PuzzlePiece24"/>
-                    </ui:Button.Icon>
-                </ui:Button>
-
-                <!-- Rules Manager -->
-                <ui:Button ToolTip="Manage Rules"
-                           x:Name="RulesButton"
-                           Click="RulesButton_Click">
-                    <ui:Button.Icon>
-                        <ui:SymbolIcon Symbol="Shield24"/>
-                    </ui:Button.Icon>
-                </ui:Button>
-
-                <!-- Channels Manager -->
-                <ui:Button ToolTip="Manage Channels"
-                           x:Name="ChannelsButton"
-                           Click="ChannelsButton_Click">
-                    <ui:Button.Icon>
-                        <ui:SymbolIcon Symbol="PeopleTeam24"/>
-                    </ui:Button.Icon>
-                </ui:Button>
-
-                <!-- Marketplace -->
-                <ui:Button ToolTip="Browse Marketplace"
-                           x:Name="MarketplaceButton"
-                           Click="MarketplaceButton_Click">
+                <!-- Tools Workspace -->
+                <ui:Button ToolTip="Open Tools Workspace"
+                           x:Name="ToolsButton"
+                           Click="ToolsButton_Click">
                     <ui:Button.Icon>
                         <ui:SymbolIcon Symbol="BuildingShop24"/>
                     </ui:Button.Icon>
@@ -307,24 +286,6 @@
                            Command="{Binding ToggleSidebarCommand}">
                     <ui:Button.Icon>
                         <ui:SymbolIcon Symbol="PanelRight24"/>
-                    </ui:Button.Icon>
-                </ui:Button>
-
-                <!-- Profile -->
-                <ui:Button ToolTip="Manage Profiles"
-                           x:Name="ProfileButton"
-                           Click="ProfileButton_Click">
-                    <ui:Button.Icon>
-                        <ui:SymbolIcon Symbol="Person24"/>
-                    </ui:Button.Icon>
-                </ui:Button>
-
-                <!-- Settings -->
-                <ui:Button ToolTip="Settings"
-                           x:Name="SettingsButton"
-                           Click="SettingsButton_Click">
-                    <ui:Button.Icon>
-                        <ui:SymbolIcon Symbol="Settings24"/>
                     </ui:Button.Icon>
                 </ui:Button>
             </StackPanel>
@@ -457,6 +418,20 @@
                                         Visibility="{Binding SelectedSidebarSection, Converter={StaticResource EnumToVisibilityConverter}, ConverterParameter=Logs}"/>
                     </Grid>
                 </Grid>
+            </Border>
+
+            <!-- In-window tools workspace overlay -->
+            <Border x:Name="WorkspaceOverlay"
+                    Grid.ColumnSpan="2"
+                    Margin="16"
+                    Panel.ZIndex="30"
+                    CornerRadius="14"
+                    Background="{StaticResource BgPrimaryBrush}"
+                    BorderBrush="{StaticResource BorderBrush}"
+                    BorderThickness="1"
+                    Visibility="{Binding IsWorkspaceOpen, Converter={StaticResource BoolToVisibility}}">
+                <ContentControl x:Name="WorkspaceHostContainer"
+                                Margin="8"/>
             </Border>
         </Grid>
 

@@ -19,6 +19,22 @@ public class DialogWindowBehaviorTests
     }
 
     [Fact]
+    public void ModernDialogWindowStyle_DoesNotSetWindowStartupLocation()
+    {
+        string repoRoot = FindRepoRoot();
+        string stylesPath = Path.Combine(repoRoot, "BrowserApp.UI", "Styles", "SurfaceStyles.xaml");
+        string xaml = File.ReadAllText(stylesPath);
+
+        var styleRegex = new Regex(
+            "<Style\\s+x:Key=\"ModernDialogWindowStyle\"[\\s\\S]*?</Style>",
+            RegexOptions.Compiled);
+
+        Match styleMatch = styleRegex.Match(xaml);
+        Assert.True(styleMatch.Success, "ModernDialogWindowStyle was not found.");
+        Assert.DoesNotContain("Property=\"WindowStartupLocation\"", styleMatch.Value, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void ManagerWindows_UseResizableSharedWindowStyle()
     {
         string repoRoot = FindRepoRoot();
@@ -35,10 +51,13 @@ public class DialogWindowBehaviorTests
         foreach (string windowPath in managerWindows)
         {
             string xaml = File.ReadAllText(windowPath);
+            Match rootWindowTag = Regex.Match(xaml, "<ui:FluentWindow\\b[\\s\\S]*?>", RegexOptions.Compiled);
 
             Assert.Contains("Style=\"{StaticResource ModernManagerWindowStyle}\"", xaml);
             Assert.DoesNotContain("ResizeMode=\"NoResize\"", xaml);
             Assert.Contains("ShowMaximize=\"True\"", xaml);
+            Assert.True(rootWindowTag.Success, $"Could not find root FluentWindow tag in {windowPath}.");
+            Assert.Contains("WindowStartupLocation=\"CenterOwner\"", rootWindowTag.Value, StringComparison.Ordinal);
         }
     }
 

@@ -1,25 +1,17 @@
-<ui:FluentWindow x:Class="BrowserApp.UI.Views.ProfileSelectorView"
-        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
-        Title="Manage Profiles"
-        WindowStartupLocation="CenterOwner"
-        ExtendsContentIntoTitleBar="True"
-        Style="{StaticResource ModernManagerWindowStyle}">
+<UserControl x:Class="BrowserApp.UI.Views.Workspaces.ProfilesWorkspaceView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml">
 
-    <Grid Margin="16" Style="{StaticResource FadeInOnLoadModern}">
+    <Grid Style="{StaticResource FadeInOnLoadModern}">
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <ui:TitleBar Grid.Row="0" Title="Manage Profiles" ShowMinimize="True" ShowMaximize="True" ShowClose="True"/>
-
-        <!-- Header -->
-        <StackPanel Grid.Row="1" Margin="0,0,0,16">
+        <StackPanel Grid.Row="0" Margin="0,0,0,16">
             <TextBlock Text="Browser Profiles"
                        Style="{StaticResource TitleTextStyle}"
                        Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
@@ -29,8 +21,7 @@
                        Margin="0,4,0,0"/>
         </StackPanel>
 
-        <!-- Profiles List -->
-        <ListView Grid.Row="2"
+        <ListView Grid.Row="1"
                   ItemsSource="{Binding Profiles}"
                   Background="Transparent"
                   ItemContainerStyle="{StaticResource CardListItemStyle}"
@@ -45,7 +36,6 @@
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
 
-                        <!-- Profile color avatar -->
                         <Border Grid.Column="0"
                                 Width="36" Height="36"
                                 CornerRadius="18"
@@ -60,7 +50,6 @@
                                        VerticalAlignment="Center"/>
                         </Border>
 
-                        <!-- Profile name -->
                         <StackPanel Grid.Column="1" VerticalAlignment="Center">
                             <TextBlock Text="{Binding Name}"
                                        FontSize="14"
@@ -81,34 +70,30 @@
                             </TextBlock>
                         </StackPanel>
 
-                        <!-- Switch button -->
                         <ui:Button Grid.Column="2"
                                    Content="Switch"
                                    Appearance="Primary"
                                    Margin="4,0"
                                    VerticalAlignment="Center"
-                                   Command="{Binding DataContext.SwitchProfileCommand, RelativeSource={RelativeSource AncestorType=ui:FluentWindow}}"
+                                   Command="{Binding DataContext.SwitchProfileCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                    CommandParameter="{Binding}"/>
 
-                        <!-- Delete button (not for default) -->
                         <ui:Button Grid.Column="3"
                                    Icon="{ui:SymbolIcon Delete24}"
                                    Appearance="Secondary"
                                    VerticalAlignment="Center"
                                    ToolTip="Delete profile"
                                    Visibility="{Binding IsDefault, Converter={StaticResource BoolToVisibilityInverse}}"
-                                   Command="{Binding DataContext.DeleteProfileCommand, RelativeSource={RelativeSource AncestorType=ui:FluentWindow}}"
+                                   Command="{Binding DataContext.DeleteProfileCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                    CommandParameter="{Binding}"/>
                     </Grid>
                 </DataTemplate>
             </ListView.ItemTemplate>
         </ListView>
 
-        <!-- Separator -->
-        <Separator Grid.Row="3" Margin="0,8"/>
+        <Separator Grid.Row="2" Margin="0,8"/>
 
-        <!-- Create new profile -->
-        <Grid Grid.Row="4" Margin="0,8,0,0">
+        <Grid Grid.Row="3" Margin="0,8,0,0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
@@ -129,6 +114,4 @@
                        Command="{Binding CreateProfileCommand}"/>
         </Grid>
     </Grid>
-</ui:FluentWindow>
-
-
+</UserControl>
