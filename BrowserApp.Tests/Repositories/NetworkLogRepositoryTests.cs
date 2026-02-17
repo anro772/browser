@@ -271,7 +271,7 @@ public class NetworkLogRepositoryTests : IDisposable
 
         // Add a request from yesterday
         var yesterday = CreateTestEntity("https://yesterday.com", wasBlocked: true);
-        yesterday.Timestamp = DateTime.Today.AddDays(-1);
+        yesterday.Timestamp = DateTime.UtcNow.Date.AddDays(-1);
         await _repository.AddAsync(yesterday);
 
         var blockedToday = await _repository.GetBlockedTodayCountAsync();
