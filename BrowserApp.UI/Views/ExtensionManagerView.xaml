@@ -4,11 +4,8 @@
         xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
         xmlns:vm="clr-namespace:BrowserApp.UI.ViewModels"
         Title="Extensions"
-        Height="500" Width="500"
-        WindowStartupLocation="CenterOwner"
-        ResizeMode="NoResize"
         ExtendsContentIntoTitleBar="True"
-        Style="{StaticResource ModernDialogWindowStyle}">
+        Style="{StaticResource ModernManagerWindowStyle}">
 
     <Grid Margin="24" Style="{StaticResource FadeInOnLoadModern}">
         <Grid.RowDefinitions>
@@ -17,7 +14,7 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <ui:TitleBar Grid.Row="0" Title="Extensions" ShowMinimize="False" ShowMaximize="False" ShowClose="True"/>
+        <ui:TitleBar Grid.Row="0" Title="Extensions" ShowMinimize="True" ShowMaximize="True" ShowClose="True"/>
 
         <!-- Header -->
         <StackPanel Grid.Row="1" Margin="0,0,0,16">

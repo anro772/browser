@@ -52,6 +52,18 @@
            BasedOn="{StaticResource {x:Type ui:FluentWindow}}">
         <Setter Property="Background" Value="{StaticResource BgPrimaryBrush}"/>
         <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
+        <Setter Property="ShowInTaskbar" Value="False"/>
+        <Setter Property="WindowStartupLocation" Value="CenterOwner"/>
+    </Style>
+
+    <Style x:Key="ModernManagerWindowStyle"
+           TargetType="ui:FluentWindow"
+           BasedOn="{StaticResource ModernDialogWindowStyle}">
+        <Setter Property="Width" Value="1100"/>
+        <Setter Property="Height" Value="760"/>
+        <Setter Property="MinWidth" Value="860"/>
+        <Setter Property="MinHeight" Value="560"/>
+        <Setter Property="ResizeMode" Value="CanResize"/>
     </Style>
 
     <Style x:Key="CardListItemStyle" TargetType="ListViewItem" BasedOn="{StaticResource ThemedListViewItem}">

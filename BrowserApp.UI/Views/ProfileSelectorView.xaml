@@ -3,12 +3,8 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
         Title="Manage Profiles"
-        Width="450"
-        Height="500"
-        WindowStartupLocation="CenterOwner"
-        ResizeMode="NoResize"
         ExtendsContentIntoTitleBar="True"
-        Style="{StaticResource ModernDialogWindowStyle}">
+        Style="{StaticResource ModernManagerWindowStyle}">
 
     <Grid Margin="16" Style="{StaticResource FadeInOnLoadModern}">
         <Grid.RowDefinitions>
@@ -19,7 +15,7 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <ui:TitleBar Grid.Row="0" Title="Manage Profiles" ShowMinimize="False" ShowMaximize="False" ShowClose="True"/>
+        <ui:TitleBar Grid.Row="0" Title="Manage Profiles" ShowMinimize="True" ShowMaximize="True" ShowClose="True"/>
 
         <!-- Header -->
         <StackPanel Grid.Row="1" Margin="0,0,0,16">

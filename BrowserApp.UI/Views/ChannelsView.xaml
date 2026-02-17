@@ -5,11 +5,9 @@
         xmlns:viewmodels="clr-namespace:BrowserApp.UI.ViewModels"
         xmlns:views="clr-namespace:BrowserApp.UI.Views"
         Title="Channels Manager"
-        Height="600" Width="1000"
-        WindowStartupLocation="CenterOwner"
         Loaded="ChannelsView_Loaded"
         ExtendsContentIntoTitleBar="True"
-        Style="{StaticResource ModernDialogWindowStyle}">
+        Style="{StaticResource ModernManagerWindowStyle}">
 
     <ui:FluentWindow.Resources>
         <views:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
@@ -24,7 +22,7 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <ui:TitleBar Grid.Row="0" Title="Channels Manager" ShowMinimize="False" ShowMaximize="False" ShowClose="True"/>
+        <ui:TitleBar Grid.Row="0" Title="Channels Manager" ShowMinimize="True" ShowMaximize="True" ShowClose="True"/>
 
         <!-- Header -->
         <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="16,16,16,8">

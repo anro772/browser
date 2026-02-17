@@ -177,6 +177,9 @@
         <Setter Property="CanUserAddRows" Value="False"/>
         <Setter Property="CanUserDeleteRows" Value="False"/>
         <Setter Property="SelectionMode" Value="Single"/>
+        <Setter Property="RowStyle" Value="{StaticResource ThemedDataGridRow}"/>
+        <Setter Property="ColumnHeaderStyle" Value="{StaticResource ThemedDataGridColumnHeader}"/>
+        <Setter Property="CellStyle" Value="{StaticResource ThemedDataGridCell}"/>
     </Style>
 
     <Style x:Key="ThemedDataGridRow" TargetType="DataGridRow">

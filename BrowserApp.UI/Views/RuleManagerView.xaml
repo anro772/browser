@@ -5,10 +5,8 @@
         xmlns:vm="clr-namespace:BrowserApp.UI.ViewModels"
         xmlns:views="clr-namespace:BrowserApp.UI.Views"
         Title="Rule Manager"
-        Height="500" Width="800"
-        WindowStartupLocation="CenterOwner"
         ExtendsContentIntoTitleBar="True"
-        Style="{StaticResource ModernDialogWindowStyle}">
+        Style="{StaticResource ModernManagerWindowStyle}">
 
     <ui:FluentWindow.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
@@ -23,7 +21,7 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <ui:TitleBar Grid.Row="0" Title="Rule Manager" ShowMinimize="False" ShowMaximize="False" ShowClose="True"/>
+        <ui:TitleBar Grid.Row="0" Title="Rule Manager" ShowMinimize="True" ShowMaximize="True" ShowClose="True"/>
 
         <!-- Header -->
         <StackPanel Grid.Row="1" Margin="0,0,0,16">
