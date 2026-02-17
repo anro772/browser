@@ -1,4 +1,5 @@
 using System.IO;
+using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -111,6 +112,7 @@ public partial class MainWindow : FluentWindow
 
         _viewModel.ToggleFullScreenRequested += (s, e) => ToggleFullScreen();
         _viewModel.FindInPageRequested += (s, e) => OpenFindInPage();
+        _viewModel.PropertyChanged += OnMainViewModelPropertyChanged;
 
         // Wire certificate warning bar events
         CertificateWarningBarControl.ProceedClicked += OnCertificateProceedClicked;
@@ -139,6 +141,15 @@ public partial class MainWindow : FluentWindow
         };
 
         Loaded += MainWindow_Loaded;
+    }
+
+    private void OnMainViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(MainViewModel.IsWorkspaceOpen))
+        {
+            // Re-apply active tab visibility when workspace mode toggles.
+            OnActiveTabChanged(this, _tabStrip.ActiveTab);
+        }
     }
 
     private async void MainWindow_Loaded(object sender, RoutedEventArgs e)
@@ -296,7 +307,7 @@ public partial class MainWindow : FluentWindow
             }
         }
 
-        if (activeTab?.WebView != null)
+        if (!_viewModel.IsWorkspaceOpen && activeTab?.WebView != null)
         {
             activeTab.WebView.Visibility = Visibility.Visible;
         }
@@ -321,6 +332,13 @@ public partial class MainWindow : FluentWindow
         else
         {
             CertificateWarningBarControl.Hide();
+        }
+
+        // When workspace is open, keep browser surfaces hidden to avoid WebView2 airspace overlap.
+        if (_viewModel.IsWorkspaceOpen)
+        {
+            HideNewTabPage();
+            return;
         }
 
         // Show new tab page if the tab has no URL

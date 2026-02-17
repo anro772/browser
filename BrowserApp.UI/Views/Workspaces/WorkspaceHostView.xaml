@@ -3,14 +3,59 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
              xmlns:models="clr-namespace:BrowserApp.UI.Models">
+    <UserControl.Resources>
+        <Style x:Key="WorkspaceRailButtonStyle" TargetType="RadioButton">
+            <Setter Property="Height" Value="38"/>
+            <Setter Property="Margin" Value="0,0,0,8"/>
+            <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="RadioButton">
+                        <Border x:Name="Root"
+                                Background="Transparent"
+                                BorderBrush="{StaticResource BorderSubtleBrush}"
+                                BorderThickness="1"
+                                CornerRadius="8"
+                                Padding="10,0">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <ContentPresenter Grid.Column="0"
+                                                  VerticalAlignment="Center"/>
+                                <TextBlock Grid.Column="1"
+                                           Text="{TemplateBinding Tag}"
+                                           Margin="10,0,0,0"
+                                           VerticalAlignment="Center"
+                                           Foreground="{TemplateBinding Foreground}"/>
+                            </Grid>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Root" Property="Background" Value="{StaticResource BgSurfaceHoverBrush}"/>
+                                <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="Root" Property="Background" Value="{StaticResource AccentSubtleBrush}"/>
+                                <Setter TargetName="Root" Property="BorderBrush" Value="{StaticResource AccentBorderBrush}"/>
+                                <Setter Property="Foreground" Value="{StaticResource AccentLightBrush}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </UserControl.Resources>
+
     <Border Background="{StaticResource BgElevatedBrush}"
             BorderBrush="{StaticResource BorderBrush}"
             BorderThickness="1"
-            CornerRadius="14"
-            Padding="0">
+            CornerRadius="14">
         <Grid>
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="220"/>
+                <ColumnDefinition Width="236"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
 
@@ -18,62 +63,110 @@
                     Background="{StaticResource BgPrimaryBrush}"
                     BorderBrush="{StaticResource BorderSubtleBrush}"
                     BorderThickness="0,0,1,0"
-                    Padding="14">
+                    Padding="14,16">
                 <StackPanel>
                     <TextBlock Text="Tools"
-                               Style="{StaticResource TitleTextStyle}"
-                               Margin="0,0,0,16"/>
+                               Style="{StaticResource SectionTextStyle}"/>
+                    <TextBlock Text="Browser controls"
+                               Style="{StaticResource BodyTextStyle}"
+                               Margin="0,2,0,14"/>
+                    <Separator Margin="0,0,0,12"/>
 
-                    <ui:Button Content="Rules"
-                               Appearance="Secondary"
-                               Command="{Binding OpenWorkspaceCommand}"
-                               CommandParameter="{x:Static models:WorkspaceSection.Rules}"
-                               Margin="0,0,0,8"/>
-                    <ui:Button Content="Extensions"
-                               Appearance="Secondary"
-                               Command="{Binding OpenWorkspaceCommand}"
-                               CommandParameter="{x:Static models:WorkspaceSection.Extensions}"
-                               Margin="0,0,0,8"/>
-                    <ui:Button Content="Marketplace"
-                               Appearance="Secondary"
-                               Command="{Binding OpenWorkspaceCommand}"
-                               CommandParameter="{x:Static models:WorkspaceSection.Marketplace}"
-                               Margin="0,0,0,8"/>
-                    <ui:Button Content="Channels"
-                               Appearance="Secondary"
-                               Command="{Binding OpenWorkspaceCommand}"
-                               CommandParameter="{x:Static models:WorkspaceSection.Channels}"
-                               Margin="0,0,0,8"/>
-                    <ui:Button Content="Profiles"
-                               Appearance="Secondary"
-                               Command="{Binding OpenWorkspaceCommand}"
-                               CommandParameter="{x:Static models:WorkspaceSection.Profiles}"
-                               Margin="0,0,0,8"/>
-                    <ui:Button Content="Settings"
-                               Appearance="Secondary"
-                               Command="{Binding OpenWorkspaceCommand}"
-                               CommandParameter="{x:Static models:WorkspaceSection.Settings}"/>
+                    <RadioButton Style="{StaticResource WorkspaceRailButtonStyle}"
+                                 Tag="Rules"
+                                 IsChecked="{Binding ActiveWorkspaceSection, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Rules, Mode=TwoWay}">
+                        <ui:SymbolIcon Symbol="Shield24" FontSize="16" Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=RadioButton}}"/>
+                    </RadioButton>
+
+                    <RadioButton Style="{StaticResource WorkspaceRailButtonStyle}"
+                                 Tag="Extensions"
+                                 IsChecked="{Binding ActiveWorkspaceSection, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Extensions, Mode=TwoWay}">
+                        <ui:SymbolIcon Symbol="PuzzlePiece24" FontSize="16" Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=RadioButton}}"/>
+                    </RadioButton>
+
+                    <RadioButton Style="{StaticResource WorkspaceRailButtonStyle}"
+                                 Tag="Marketplace"
+                                 IsChecked="{Binding ActiveWorkspaceSection, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Marketplace, Mode=TwoWay}">
+                        <ui:SymbolIcon Symbol="BuildingShop24" FontSize="16" Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=RadioButton}}"/>
+                    </RadioButton>
+
+                    <RadioButton Style="{StaticResource WorkspaceRailButtonStyle}"
+                                 Tag="Channels"
+                                 IsChecked="{Binding ActiveWorkspaceSection, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Channels, Mode=TwoWay}">
+                        <ui:SymbolIcon Symbol="PeopleTeam24" FontSize="16" Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=RadioButton}}"/>
+                    </RadioButton>
+
+                    <RadioButton Style="{StaticResource WorkspaceRailButtonStyle}"
+                                 Tag="Profiles"
+                                 IsChecked="{Binding ActiveWorkspaceSection, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Profiles, Mode=TwoWay}">
+                        <ui:SymbolIcon Symbol="Person24" FontSize="16" Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=RadioButton}}"/>
+                    </RadioButton>
+
+                    <RadioButton Style="{StaticResource WorkspaceRailButtonStyle}"
+                                 Tag="Settings"
+                                 IsChecked="{Binding ActiveWorkspaceSection, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Settings, Mode=TwoWay}">
+                        <ui:SymbolIcon Symbol="Settings24" FontSize="16" Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=RadioButton}}"/>
+                    </RadioButton>
                 </StackPanel>
             </Border>
 
-            <Grid Grid.Column="1" Margin="16">
+            <Grid Grid.Column="1" Margin="18,14,18,16">
                 <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
 
-                <DockPanel Grid.Row="0" Margin="0,0,0,12">
-                    <TextBlock Text="Workspace"
-                               Style="{StaticResource SectionTextStyle}"
-                               VerticalAlignment="Center"
-                               DockPanel.Dock="Left"/>
-                    <ui:Button Content="Close"
+                <Grid Grid.Row="0" Margin="0,0,0,10">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0">
+                        <TextBlock Text="Rules"
+                                   Style="{StaticResource TitleTextStyle}"
+                                   Visibility="{Binding ActiveWorkspaceSection, Converter={StaticResource EnumToVisibilityConverter}, ConverterParameter=Rules}"/>
+                        <TextBlock Text="Extensions"
+                                   Style="{StaticResource TitleTextStyle}"
+                                   Visibility="{Binding ActiveWorkspaceSection, Converter={StaticResource EnumToVisibilityConverter}, ConverterParameter=Extensions}"/>
+                        <TextBlock Text="Marketplace"
+                                   Style="{StaticResource TitleTextStyle}"
+                                   Visibility="{Binding ActiveWorkspaceSection, Converter={StaticResource EnumToVisibilityConverter}, ConverterParameter=Marketplace}"/>
+                        <TextBlock Text="Channels"
+                                   Style="{StaticResource TitleTextStyle}"
+                                   Visibility="{Binding ActiveWorkspaceSection, Converter={StaticResource EnumToVisibilityConverter}, ConverterParameter=Channels}"/>
+                        <TextBlock Text="Profiles"
+                                   Style="{StaticResource TitleTextStyle}"
+                                   Visibility="{Binding ActiveWorkspaceSection, Converter={StaticResource EnumToVisibilityConverter}, ConverterParameter=Profiles}"/>
+                        <TextBlock Text="Settings"
+                                   Style="{StaticResource TitleTextStyle}"
+                                   Visibility="{Binding ActiveWorkspaceSection, Converter={StaticResource EnumToVisibilityConverter}, ConverterParameter=Settings}"/>
+                    </StackPanel>
+                    <ui:Button x:Name="WorkspaceCloseButton"
+                               Grid.Column="1"
+                               ToolTip="Close tools"
+                               Width="34"
+                               Height="34"
                                Command="{Binding CloseWorkspaceCommand}"
-                               DockPanel.Dock="Right"
-                               Appearance="Secondary"/>
-                </DockPanel>
+                               Style="{StaticResource GlassToolbarButtonStyle}">
+                        <ui:Button.Icon>
+                            <ui:SymbolIcon Symbol="Dismiss24"/>
+                        </ui:Button.Icon>
+                    </ui:Button>
+                </Grid>
 
-                <Grid Grid.Row="1">
+                <Border Grid.Row="1"
+                        Height="1"
+                        Background="{StaticResource BorderSubtleBrush}"
+                        Margin="0,0,0,12"/>
+
+                <Border Grid.Row="2"
+                        Background="{StaticResource BgPrimaryBrush}"
+                        BorderBrush="{StaticResource BorderSubtleBrush}"
+                        BorderThickness="1"
+                        CornerRadius="10"
+                        Padding="10">
+                    <Grid>
                     <ContentControl x:Name="RulesContent"
                                     Visibility="{Binding ActiveWorkspaceSection, Converter={StaticResource EnumToVisibilityConverter}, ConverterParameter=Rules}"/>
                     <ContentControl x:Name="ExtensionsContent"
@@ -86,7 +179,8 @@
                                     Visibility="{Binding ActiveWorkspaceSection, Converter={StaticResource EnumToVisibilityConverter}, ConverterParameter=Profiles}"/>
                     <ContentControl x:Name="SettingsContent"
                                     Visibility="{Binding ActiveWorkspaceSection, Converter={StaticResource EnumToVisibilityConverter}, ConverterParameter=Settings}"/>
-                </Grid>
+                    </Grid>
+                </Border>
             </Grid>
         </Grid>
     </Border>
