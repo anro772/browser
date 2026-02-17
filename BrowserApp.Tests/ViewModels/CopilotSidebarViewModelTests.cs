@@ -245,7 +245,6 @@ public class CopilotSidebarViewModelWithRuleServiceTests
 {
     private readonly Mock<IOllamaClient> _ollamaClientMock;
     private readonly Mock<IRuleGenerationService> _ruleServiceMock;
-    private readonly Mock<TabStripViewModel> _tabStripMock;
 
     public CopilotSidebarViewModelWithRuleServiceTests()
     {

@@ -107,7 +107,13 @@ public partial class MainWindow : FluentWindow
         // Wire download events to download manager (one-time registration)
         DownloadNotificationControl.DownloadStarted += (s, args) =>
         {
-            _downloadManagerViewModel.AddDownload(args.FileName, args.SourceUrl, args.DestinationPath, args.TotalBytes);
+            RunBackgroundTask(
+                _downloadManagerViewModel.AddDownload(
+                    args.FileName,
+                    args.SourceUrl,
+                    args.DestinationPath,
+                    args.TotalBytes),
+                "Add download");
         };
         DownloadNotificationControl.DownloadProgressChanged += (s, args) =>
         {
@@ -115,7 +121,9 @@ public partial class MainWindow : FluentWindow
         };
         DownloadNotificationControl.DownloadCompleted += (s, args) =>
         {
-            _downloadManagerViewModel.CompleteDownload(args.DestinationPath, args.Success);
+            RunBackgroundTask(
+                _downloadManagerViewModel.CompleteDownload(args.DestinationPath, args.Success),
+                "Complete download");
         };
 
         Loaded += MainWindow_Loaded;
@@ -551,6 +559,18 @@ public partial class MainWindow : FluentWindow
         catch (Exception ex)
         {
             ErrorLogger.LogError("Failed to open Settings", ex);
+        }
+    }
+
+    private static async void RunBackgroundTask(Task task, string operation)
+    {
+        try
+        {
+            await task;
+        }
+        catch (Exception ex)
+        {
+            ErrorLogger.LogError($"[MainWindow] {operation} failed", ex);
         }
     }
 }

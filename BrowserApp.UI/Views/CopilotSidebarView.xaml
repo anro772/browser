@@ -254,7 +254,10 @@
                               ItemsSource="{Binding AvailableModels}"
                               SelectedItem="{Binding SelectedModel}"
                               FontSize="12"
-                              Height="28"
+                              Height="34"
+                              Padding="8,2"
+                              VerticalContentAlignment="Center"
+                              HorizontalContentAlignment="Stretch"
                               IsEnabled="{Binding IsOllamaConnected}"/>
                 </Grid>
             </Grid>
