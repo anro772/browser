@@ -7,9 +7,10 @@
         Height="500"
         WindowStartupLocation="CenterOwner"
         ResizeMode="NoResize"
-        ExtendsContentIntoTitleBar="True">
+        ExtendsContentIntoTitleBar="True"
+        Style="{StaticResource ModernDialogWindowStyle}">
 
-    <Grid Margin="16">
+    <Grid Margin="16" Style="{StaticResource FadeInOnLoadModern}">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
@@ -23,8 +24,7 @@
         <!-- Header -->
         <StackPanel Grid.Row="1" Margin="0,0,0,16">
             <TextBlock Text="Browser Profiles"
-                       FontSize="22"
-                       FontWeight="SemiBold"
+                       Style="{StaticResource TitleTextStyle}"
                        Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
             <TextBlock Text="Each profile has its own bookmarks, history, and settings."
                        FontSize="13"
@@ -36,6 +36,7 @@
         <ListView Grid.Row="2"
                   ItemsSource="{Binding Profiles}"
                   Background="Transparent"
+                  ItemContainerStyle="{StaticResource CardListItemStyle}"
                   BorderThickness="0">
             <ListView.ItemTemplate>
                 <DataTemplate>
@@ -132,3 +133,5 @@
         </Grid>
     </Grid>
 </ui:FluentWindow>
+
+

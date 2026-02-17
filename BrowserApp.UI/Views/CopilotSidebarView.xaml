@@ -15,8 +15,8 @@
         <!-- User message bubble style: right-aligned, accent tint -->
         <DataTemplate x:Key="UserMessageTemplate">
             <Grid Margin="40,4,8,4" HorizontalAlignment="Right">
-                <Border Background="#15A855F7"
-                        BorderBrush="#50A855F7"
+                <Border Background="{StaticResource AccentSubtleBrush}"
+                        BorderBrush="{StaticResource AccentBorderBrush}"
                         BorderThickness="1"
                         CornerRadius="12,12,2,12"
                         Padding="12,8"
@@ -49,12 +49,12 @@
                 <Border Grid.Column="0"
                         Width="24" Height="24"
                         CornerRadius="12"
-                        Background="#22A855F7"
+                        Background="{StaticResource AccentSubtleBrush}"
                         VerticalAlignment="Top"
                         Margin="0,2,8,0">
                     <ui:SymbolIcon Symbol="Bot24"
                                    FontSize="12"
-                                   Foreground="#A855F7"
+                                   Foreground="{StaticResource AccentBrush}"
                                    HorizontalAlignment="Center"
                                    VerticalAlignment="Center"/>
                 </Border>
@@ -108,19 +108,19 @@
                 <Border Grid.Column="0"
                         Width="24" Height="24"
                         CornerRadius="12"
-                        Background="#1534D399"
+                        Background="{StaticResource SuccessSubtleBrush}"
                         VerticalAlignment="Top"
                         Margin="0,2,8,0">
                     <ui:SymbolIcon Symbol="Shield24"
                                    FontSize="12"
-                                   Foreground="#34D399"
+                                   Foreground="{StaticResource SuccessBrush}"
                                    HorizontalAlignment="Center"
                                    VerticalAlignment="Center"/>
                 </Border>
 
                 <Border Grid.Column="1"
-                        Background="#0C34D399"
-                        BorderBrush="#3334D399"
+                        Background="{StaticResource SuccessSubtleBrush}"
+                        BorderBrush="{StaticResource SuccessBrush}"
                         BorderThickness="1"
                         CornerRadius="12,12,12,2"
                         Padding="12,8"
@@ -174,7 +174,7 @@
         </Style>
     </UserControl.Resources>
 
-    <Grid>
+    <Grid Style="{StaticResource FadeInOnLoadModern}">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
@@ -184,7 +184,7 @@
         <!-- Header -->
         <Border Grid.Row="0"
                 Background="{DynamicResource ControlFillColorDefaultBrush}"
-                BorderBrush="#30A855F7"
+                BorderBrush="{StaticResource AccentBorderBrush}"
                 BorderThickness="0,0,0,1"
                 Padding="12,10">
             <Grid>
@@ -216,10 +216,10 @@
                              VerticalAlignment="Center">
                         <Ellipse.Style>
                             <Style TargetType="Ellipse">
-                                <Setter Property="Fill" Value="#F87171"/>
+                                <Setter Property="Fill" Value="{StaticResource ErrorBrush}"/>
                                 <Style.Triggers>
                                     <DataTrigger Binding="{Binding IsOllamaConnected}" Value="True">
-                                        <Setter Property="Fill" Value="#34D399"/>
+                                        <Setter Property="Fill" Value="{StaticResource SuccessBrush}"/>
                                     </DataTrigger>
                                 </Style.Triggers>
                             </Style>
@@ -287,7 +287,7 @@
                     <!-- Disconnected icon -->
                     <Border Width="64" Height="64"
                             CornerRadius="32"
-                            Background="#15A855F7"
+                            Background="{StaticResource AccentSubtleBrush}"
                             HorizontalAlignment="Center"
                             Margin="0,0,0,16">
                         <ui:SymbolIcon Symbol="PlugDisconnected24"
@@ -344,11 +344,7 @@
                            Margin="0,0,0,8"/>
 
                 <!-- Pill-shaped input container -->
-                <Border Background="{StaticResource BgSurfaceBrush}"
-                        BorderBrush="{StaticResource BorderBrush}"
-                        BorderThickness="1"
-                        CornerRadius="20"
-                        Padding="4,2">
+                <Border Style="{StaticResource PillInputContainerStyle}">
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>

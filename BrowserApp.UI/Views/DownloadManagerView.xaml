@@ -8,7 +8,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d"
              Loaded="OnLoaded">
-    <Grid>
+    <Grid Style="{StaticResource FadeInOnLoadModern}">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
@@ -16,12 +16,7 @@
 
         <!-- Header -->
         <Border Grid.Row="0"
-                Background="{DynamicResource ControlFillColorDefaultBrush}"
-                CornerRadius="8"
-                BorderBrush="{StaticResource BorderSubtleBrush}"
-                BorderThickness="1"
-                Margin="8"
-                Padding="12">
+                Style="{StaticResource PanelHeaderCardStyle}">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
@@ -50,11 +45,7 @@
 
         <!-- Downloads List -->
         <Border Grid.Row="1"
-                Background="{DynamicResource ControlFillColorDefaultBrush}"
-                CornerRadius="8"
-                BorderBrush="{StaticResource BorderSubtleBrush}"
-                BorderThickness="1"
-                Margin="8,0,8,8">
+                Style="{StaticResource PanelBodyCardStyle}">
             <Grid>
                 <ListView ItemsSource="{Binding Downloads}"
                           VirtualizingPanel.IsVirtualizing="True"

@@ -7,14 +7,15 @@
         Height="600" Width="900"
         WindowStartupLocation="CenterOwner"
         Loaded="MarketplaceView_Loaded"
-        ExtendsContentIntoTitleBar="True">
+        ExtendsContentIntoTitleBar="True"
+        Style="{StaticResource ModernDialogWindowStyle}">
 
     <ui:FluentWindow.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
         <views:InverseBoolConverter x:Key="InverseBoolConverter"/>
     </ui:FluentWindow.Resources>
 
-    <Grid Margin="16">
+    <Grid Margin="16" Style="{StaticResource FadeInOnLoadModern}">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
@@ -27,7 +28,7 @@
 
         <!-- Header -->
         <StackPanel Grid.Row="1" Margin="0,0,0,16">
-            <TextBlock Text="Marketplace" FontSize="24" FontWeight="SemiBold" Margin="0,0,0,4"/>
+            <TextBlock Text="Marketplace" Style="{StaticResource TitleTextStyle}" Margin="0,0,0,4"/>
             <TextBlock Text="Browse and install community rules" Foreground="{StaticResource TextSecondaryBrush}"/>
         </StackPanel>
 
@@ -51,6 +52,7 @@
         <!-- Rules List -->
         <Border Grid.Row="3" BorderBrush="{DynamicResource ControlElevationBorderBrush}" BorderThickness="1" CornerRadius="8">
             <DataGrid ItemsSource="{Binding Rules}"
+                      Style="{StaticResource ThemedDataGrid}"
                       SelectedItem="{Binding SelectedRule}"
                       AutoGenerateColumns="False"
                       IsReadOnly="True"
@@ -86,7 +88,10 @@
         </Border>
 
         <!-- Loading Indicator -->
-        <Border Grid.Row="3" Background="#CC000000" Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisibilityConverter}}">
+        <Border Grid.Row="3"
+                Background="{StaticResource BgPrimaryBrush}"
+                Opacity="0.82"
+                Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisibilityConverter}}">
             <ui:ProgressRing IsIndeterminate="True"/>
         </Border>
 
@@ -99,3 +104,5 @@
 
     </Grid>
 </ui:FluentWindow>
+
+

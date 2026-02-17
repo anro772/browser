@@ -10,7 +10,7 @@
              d:DesignWidth="900"
              d:DataContext="{d:DesignInstance vm:LogViewerViewModel}">
 
-    <Grid>
+    <Grid Style="{StaticResource FadeInOnLoadModern}">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
@@ -18,12 +18,7 @@
 
         <!-- Header with controls -->
         <Border Grid.Row="0"
-                Background="{DynamicResource ControlFillColorDefaultBrush}"
-                CornerRadius="8"
-                BorderBrush="{StaticResource BorderSubtleBrush}"
-                BorderThickness="1"
-                Margin="8"
-                Padding="12">
+                Style="{StaticResource PanelHeaderCardStyle}">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
@@ -58,11 +53,8 @@
 
         <!-- Log display area -->
         <Border Grid.Row="1"
+                Style="{StaticResource PanelBodyCardStyle}"
                 Background="{StaticResource BgPrimaryBrush}"
-                CornerRadius="8"
-                BorderBrush="{StaticResource BorderSubtleBrush}"
-                BorderThickness="1"
-                Margin="8,0,8,8"
                 Padding="8">
             <Grid>
                 <Grid.RowDefinitions>
@@ -115,7 +107,7 @@
                                         <!-- Timestamp -->
                                         <TextBlock Grid.Column="0"
                                                    Text="{Binding FormattedTime}"
-                                                   FontFamily="Consolas"
+                                                   FontFamily="{StaticResource AppMonoFontFamily}"
                                                    FontSize="11"
                                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                                                    VerticalAlignment="Top"/>
@@ -130,7 +122,7 @@
                                         <!-- Message -->
                                         <TextBlock Grid.Column="2"
                                                    Text="{Binding Message}"
-                                                   FontFamily="Consolas"
+                                                   FontFamily="{StaticResource AppMonoFontFamily}"
                                                    FontSize="12"
                                                    TextWrapping="Wrap"
                                                    Foreground="{DynamicResource TextFillColorPrimaryBrush}"

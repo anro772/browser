@@ -11,15 +11,12 @@
              d:DataContext="{d:DesignInstance vm:PrivacyDashboardViewModel}"
              Loaded="OnLoaded">
 
-    <ScrollViewer VerticalScrollBarVisibility="Auto">
+    <ScrollViewer VerticalScrollBarVisibility="Auto"
+                  Style="{StaticResource FadeInOnLoadModern}">
         <StackPanel Margin="8">
 
             <!-- Header -->
-            <Border Background="{DynamicResource ControlFillColorDefaultBrush}"
-                    CornerRadius="8"
-                    BorderBrush="{StaticResource BorderSubtleBrush}"
-                    BorderThickness="1"
-                    Padding="12"
+            <Border Style="{StaticResource PanelHeaderCardStyle}"
                     Margin="0,0,0,8">
                 <Grid>
                     <Grid.ColumnDefinitions>
@@ -64,7 +61,7 @@
 
                 <!-- Privacy Mode Card -->
                 <Border Grid.Column="0"
-                        Background="{DynamicResource ControlFillColorDefaultBrush}"
+                        Background="{StaticResource BgGlassHeaderBrush}"
                         CornerRadius="8"
                         BorderBrush="{StaticResource BorderSubtleBrush}"
                         BorderThickness="1"
@@ -91,7 +88,7 @@
 
                 <!-- Blocked Today Card -->
                 <Border Grid.Column="1"
-                        Background="{DynamicResource ControlFillColorDefaultBrush}"
+                        Background="{StaticResource BgGlassHeaderBrush}"
                         CornerRadius="8"
                         BorderBrush="{StaticResource BorderSubtleBrush}"
                         BorderThickness="1"
@@ -116,7 +113,7 @@
 
                 <!-- Data Saved Card -->
                 <Border Grid.Column="2"
-                        Background="{DynamicResource ControlFillColorDefaultBrush}"
+                        Background="{StaticResource BgGlassHeaderBrush}"
                         CornerRadius="8"
                         BorderBrush="{StaticResource BorderSubtleBrush}"
                         BorderThickness="1"
@@ -141,7 +138,7 @@
             </Grid>
 
             <!-- Top Blocked Domains -->
-            <Border Background="{DynamicResource ControlFillColorDefaultBrush}"
+            <Border Background="{StaticResource BgSurfaceBrush}"
                     CornerRadius="8"
                     BorderBrush="{StaticResource BorderSubtleBrush}"
                     BorderThickness="1"
@@ -205,7 +202,7 @@
             </Border>
 
             <!-- Resource Type Breakdown -->
-            <Border Background="{DynamicResource ControlFillColorDefaultBrush}"
+            <Border Background="{StaticResource BgSurfaceBrush}"
                     CornerRadius="8"
                     BorderBrush="{StaticResource BorderSubtleBrush}"
                     BorderThickness="1"
@@ -265,7 +262,7 @@
             </Border>
 
             <!-- Quick Actions -->
-            <Border Background="{DynamicResource ControlFillColorDefaultBrush}"
+            <Border Background="{StaticResource BgSurfaceBrush}"
                     CornerRadius="8"
                     BorderBrush="{StaticResource BorderSubtleBrush}"
                     BorderThickness="1"

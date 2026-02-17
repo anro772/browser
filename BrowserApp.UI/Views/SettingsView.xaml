@@ -7,9 +7,10 @@
         Height="450" Width="500"
         WindowStartupLocation="CenterOwner"
         ResizeMode="NoResize"
-        ExtendsContentIntoTitleBar="True">
+        ExtendsContentIntoTitleBar="True"
+        Style="{StaticResource ModernDialogWindowStyle}">
 
-    <Grid Margin="24">
+    <Grid Margin="24" Style="{StaticResource FadeInOnLoadModern}">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
@@ -21,8 +22,7 @@
         <!-- Header -->
         <StackPanel Grid.Row="1" Margin="0,0,0,24">
             <TextBlock Text="Settings"
-                       FontSize="24"
-                       FontWeight="SemiBold"/>
+                       Style="{StaticResource TitleTextStyle}"/>
             <TextBlock Text="Configure your browsing experience"
                        Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                        Margin="0,4,0,0"/>
@@ -34,7 +34,7 @@
             <StackPanel>
 
                 <!-- Privacy Mode Section -->
-                <Border Background="{DynamicResource ControlFillColorDefaultBrush}"
+                <Border Background="{StaticResource BgSurfaceBrush}"
                         CornerRadius="8"
                         BorderBrush="{StaticResource BorderSubtleBrush}"
                         BorderThickness="1"
@@ -79,7 +79,7 @@
                 </Border>
 
                 <!-- Search Engine Section -->
-                <Border Background="{DynamicResource ControlFillColorDefaultBrush}"
+                <Border Background="{StaticResource BgSurfaceBrush}"
                         CornerRadius="8"
                         BorderBrush="{StaticResource BorderSubtleBrush}"
                         BorderThickness="1"
@@ -116,7 +116,7 @@
                 </Border>
 
                 <!-- Server Configuration Section -->
-                <Border Background="{DynamicResource ControlFillColorDefaultBrush}"
+                <Border Background="{StaticResource BgSurfaceBrush}"
                         CornerRadius="8"
                         BorderBrush="{StaticResource BorderSubtleBrush}"
                         BorderThickness="1"
@@ -146,7 +146,7 @@
                 </Border>
 
                 <!-- Data Management Section -->
-                <Border Background="{DynamicResource ControlFillColorDefaultBrush}"
+                <Border Background="{StaticResource BgSurfaceBrush}"
                         CornerRadius="8"
                         BorderBrush="{StaticResource BorderSubtleBrush}"
                         BorderThickness="1"
@@ -187,3 +187,5 @@
 
     </Grid>
 </ui:FluentWindow>
+
+

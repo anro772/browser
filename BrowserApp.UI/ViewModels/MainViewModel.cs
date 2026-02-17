@@ -43,6 +43,9 @@ public partial class MainViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private bool _isCurrentPageBookmarked;
 
+    [ObservableProperty]
+    private SidebarSection _selectedSidebarSection = SidebarSection.Copilot;
+
     // Autocomplete
     [ObservableProperty]
     private ObservableCollection<AutocompleteSuggestion> _suggestions = new();

@@ -5,8 +5,8 @@
              Visibility="Collapsed"
              x:Name="FindBarRoot">
 
-    <Border Background="{StaticResource BgSurfaceBrush}"
-            BorderBrush="{StaticResource BorderBrush}"
+    <Border Background="{StaticResource BgGlassHeaderBrush}"
+            BorderBrush="{StaticResource AccentBorderBrush}"
             BorderThickness="0,0,0,1"
             Padding="12,6"
             HorizontalAlignment="Right"
@@ -25,10 +25,10 @@
             <TextBox Grid.Column="0"
                      x:Name="FindTextBox"
                      FontSize="13"
-                     Padding="6,4"
+                     Padding="8,5"
                      Background="{StaticResource BgSurfaceHoverBrush}"
                      BorderThickness="1"
-                     BorderBrush="{StaticResource BorderBrush}"
+                     BorderBrush="{StaticResource AccentBorderBrush}"
                      Foreground="{DynamicResource TextFillColorPrimaryBrush}"
                      CaretBrush="{DynamicResource TextFillColorPrimaryBrush}"
                      TextChanged="FindTextBox_TextChanged"
@@ -44,40 +44,25 @@
                        Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
 
             <!-- Previous -->
-            <Button Grid.Column="2"
-                    Content="&#xE70E;"
-                    FontFamily="Segoe MDL2 Assets"
-                    FontSize="12"
-                    Width="28" Height="28"
-                    Padding="0"
-                    Background="Transparent"
-                    BorderThickness="0"
-                    ToolTip="Previous match"
-                    Click="PreviousButton_Click"/>
+            <ui:Button Grid.Column="2"
+                       Icon="{ui:SymbolIcon ArrowLeft24}"
+                       Style="{StaticResource GlassToolbarButtonStyle}"
+                       ToolTip="Previous match"
+                       Click="PreviousButton_Click"/>
 
             <!-- Next -->
-            <Button Grid.Column="3"
-                    Content="&#xE70D;"
-                    FontFamily="Segoe MDL2 Assets"
-                    FontSize="12"
-                    Width="28" Height="28"
-                    Padding="0"
-                    Background="Transparent"
-                    BorderThickness="0"
-                    ToolTip="Next match"
-                    Click="NextButton_Click"/>
+            <ui:Button Grid.Column="3"
+                       Icon="{ui:SymbolIcon ArrowRight24}"
+                       Style="{StaticResource GlassToolbarButtonStyle}"
+                       ToolTip="Next match"
+                       Click="NextButton_Click"/>
 
             <!-- Close -->
-            <Button Grid.Column="4"
-                    Content="&#xE711;"
-                    FontFamily="Segoe MDL2 Assets"
-                    FontSize="10"
-                    Width="28" Height="28"
-                    Padding="0"
-                    Background="Transparent"
-                    BorderThickness="0"
-                    ToolTip="Close (Escape)"
-                    Click="CloseButton_Click"/>
+            <ui:Button Grid.Column="4"
+                       Icon="{ui:SymbolIcon Dismiss24}"
+                       Style="{StaticResource GlassToolbarButtonStyle}"
+                       ToolTip="Close (Escape)"
+                       Click="CloseButton_Click"/>
         </Grid>
     </Border>
 </UserControl>

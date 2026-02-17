@@ -4,14 +4,15 @@
              xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
              Loaded="UserControl_Loaded">
 
-    <Grid>
+    <Grid Style="{StaticResource FadeInOnLoadModern}">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
         <!-- Header -->
-        <Border Grid.Row="0" Background="{StaticResource BgSurfaceBrush}" CornerRadius="8" BorderBrush="{StaticResource BorderSubtleBrush}" BorderThickness="1" Padding="16" Margin="8">
+        <Border Grid.Row="0"
+                Style="{StaticResource PanelHeaderCardStyle}">
             <StackPanel>
                 <TextBlock Text="Bookmarks"
                            FontSize="18"
@@ -33,6 +34,7 @@
                   VirtualizingPanel.VirtualizationMode="Recycling"
                   Background="Transparent"
                   BorderThickness="0"
+                  ItemContainerStyle="{StaticResource CardListItemStyle}"
                   Margin="4,0">
             <ListView.ItemTemplate>
                 <DataTemplate>

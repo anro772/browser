@@ -8,14 +8,15 @@
         Height="600" Width="1000"
         WindowStartupLocation="CenterOwner"
         Loaded="ChannelsView_Loaded"
-        ExtendsContentIntoTitleBar="True">
+        ExtendsContentIntoTitleBar="True"
+        Style="{StaticResource ModernDialogWindowStyle}">
 
     <ui:FluentWindow.Resources>
         <views:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
         <views:CountToVisibilityConverter x:Key="CountToVisibilityConverter"/>
     </ui:FluentWindow.Resources>
 
-    <Grid Margin="16">
+    <Grid Margin="16" Style="{StaticResource FadeInOnLoadModern}">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
@@ -28,7 +29,7 @@
         <!-- Header -->
         <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="16,16,16,8">
             <ui:SymbolIcon Symbol="People24" FontSize="24" Margin="0,0,8,0"/>
-            <TextBlock Text="Channels" FontSize="20" FontWeight="SemiBold" VerticalAlignment="Center"/>
+            <TextBlock Text="Channels" Style="{StaticResource SectionTextStyle}" VerticalAlignment="Center"/>
             <ui:Button Content="Refresh" Margin="16,0,0,0"
                        Command="{Binding LoadChannelsCommand}"
                        Appearance="Secondary"/>
@@ -65,7 +66,7 @@
                         <ListBox.ItemTemplate>
                             <DataTemplate>
                                 <Border Padding="12,8" Margin="4" CornerRadius="6"
-                                        Background="{DynamicResource ControlFillColorDefaultBrush}">
+                                        Background="{StaticResource BgGlassHeaderBrush}">
                                     <Grid>
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="*"/>
@@ -129,7 +130,7 @@
                         <ListBox.ItemTemplate>
                             <DataTemplate>
                                 <Border Padding="12,8" Margin="4" CornerRadius="6"
-                                        Background="{DynamicResource ControlFillColorDefaultBrush}">
+                                        Background="{StaticResource BgGlassHeaderBrush}">
                                     <Grid>
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="*"/>
@@ -184,3 +185,5 @@
         </Border>
     </Grid>
 </ui:FluentWindow>
+
+

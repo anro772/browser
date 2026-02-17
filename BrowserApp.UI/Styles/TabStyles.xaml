@@ -3,14 +3,14 @@
                     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml">
 
     <!-- Tab strip background -->
-    <SolidColorBrush x:Key="TabStripBackgroundBrush" Color="#000000"/>
+    <SolidColorBrush x:Key="TabStripBackgroundBrush" Color="#111522"/>
 
     <!-- Tab item template -->
     <Style x:Key="BrowserTabItemStyle" TargetType="Border">
         <Setter Property="Background" Value="Transparent"/>
-        <Setter Property="CornerRadius" Value="8,8,0,0"/>
-        <Setter Property="Padding" Value="10,6"/>
-        <Setter Property="Margin" Value="1,4,1,0"/>
+        <Setter Property="CornerRadius" Value="10,10,0,0"/>
+        <Setter Property="Padding" Value="10,7"/>
+        <Setter Property="Margin" Value="2,4,2,0"/>
         <Setter Property="MinWidth" Value="120"/>
         <Setter Property="MaxWidth" Value="240"/>
         <Setter Property="Cursor" Value="Hand"/>
@@ -27,8 +27,8 @@
 
     <!-- Tab close button style -->
     <Style x:Key="TabCloseButtonStyle" TargetType="Button">
-        <Setter Property="Width" Value="20"/>
-        <Setter Property="Height" Value="20"/>
+        <Setter Property="Width" Value="22"/>
+        <Setter Property="Height" Value="22"/>
         <Setter Property="Padding" Value="0"/>
         <Setter Property="Margin" Value="4,0,0,0"/>
         <Setter Property="Background" Value="Transparent"/>
@@ -36,7 +36,7 @@
         <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}"/>
         <Setter Property="Cursor" Value="Hand"/>
         <Setter Property="VerticalAlignment" Value="Center"/>
-        <Setter Property="Opacity" Value="0"/>
+        <Setter Property="Opacity" Value="0.55"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Button">
@@ -53,6 +53,7 @@
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
                             <Setter Property="Background" Value="{StaticResource BgSurfaceHoverBrush}"/>
+                            <Setter Property="Opacity" Value="1"/>
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
@@ -62,14 +63,14 @@
 
     <!-- New tab button style -->
     <Style x:Key="NewTabButtonStyle" TargetType="Button">
-        <Setter Property="Width" Value="28"/>
-        <Setter Property="Height" Value="28"/>
+        <Setter Property="Width" Value="30"/>
+        <Setter Property="Height" Value="30"/>
         <Setter Property="Background" Value="Transparent"/>
         <Setter Property="BorderThickness" Value="0"/>
         <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}"/>
         <Setter Property="Cursor" Value="Hand"/>
         <Setter Property="VerticalAlignment" Value="Center"/>
-        <Setter Property="Margin" Value="2,4,8,0"/>
+        <Setter Property="Margin" Value="4,4,8,0"/>
         <Setter Property="ToolTip" Value="New Tab (Ctrl+T)"/>
         <Setter Property="Template">
             <Setter.Value>

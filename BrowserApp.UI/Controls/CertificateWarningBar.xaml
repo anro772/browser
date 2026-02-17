@@ -5,7 +5,7 @@
              Visibility="Collapsed"
              x:Name="CertWarningRoot">
 
-    <Border Background="{StaticResource BgSurfaceBrush}"
+    <Border Background="{StaticResource BgGlassHeaderBrush}"
             BorderBrush="{StaticResource WarningBrush}"
             BorderThickness="0,0,0,2"
             Padding="12,8">
@@ -32,17 +32,18 @@
                        TextWrapping="Wrap"
                        VerticalAlignment="Center"/>
 
-            <Button Grid.Column="2"
-                    Content="Go Back"
-                    Padding="12,4"
-                    Margin="8,0"
-                    Click="GoBackButton_Click"/>
+            <ui:Button Grid.Column="2"
+                       Content="Go Back"
+                       Style="{StaticResource GlassToolbarButtonStyle}"
+                       Padding="12,4"
+                       Margin="8,0"
+                       Click="GoBackButton_Click"/>
 
-            <Button Grid.Column="3"
-                    Content="Proceed Anyway"
-                    Padding="12,4"
-                    Foreground="{StaticResource ErrorBrush}"
-                    Click="ProceedButton_Click"/>
+            <ui:Button Grid.Column="3"
+                       Content="Proceed Anyway"
+                       Appearance="Danger"
+                       Padding="12,4"
+                       Click="ProceedButton_Click"/>
         </Grid>
     </Border>
 </UserControl>

@@ -4,7 +4,9 @@
              xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
              Background="{DynamicResource ApplicationBackgroundBrush}">
 
-    <Grid>
+    <Grid Style="{StaticResource FadeInOnLoadModern}">
+        <Border Background="{StaticResource BgPrimaryBrush}"/>
+
         <!-- Center content -->
         <StackPanel VerticalAlignment="Center"
                     HorizontalAlignment="Center"
@@ -15,9 +17,9 @@
             <StackPanel HorizontalAlignment="Center" Margin="0,0,0,32">
                 <TextBlock Text="Privacy Browser"
                            FontSize="42"
-                           FontWeight="Light"
+                           FontWeight="SemiBold"
                            HorizontalAlignment="Center"
-                           Foreground="#E8E0FF"/>
+                           Foreground="{StaticResource TextPrimaryBrush}"/>
                 <TextBlock Text="{Binding GreetingText}"
                            FontSize="14"
                            HorizontalAlignment="Center"
@@ -26,11 +28,7 @@
             </StackPanel>
 
             <!-- Search Bar -->
-            <Border Background="{DynamicResource ControlFillColorDefaultBrush}"
-                    CornerRadius="24"
-                    BorderBrush="{StaticResource BorderBrush}"
-                    BorderThickness="1"
-                    Padding="4"
+            <Border Style="{StaticResource PillInputContainerStyle}"
                     Margin="0,0,0,40">
                 <Grid>
                     <Grid.ColumnDefinitions>
@@ -104,7 +102,7 @@
                                                     Margin="0,0,0,8"
                                                     HorizontalAlignment="Center">
                                                 <Border.Background>
-                                                    <SolidColorBrush Color="#A855F7" Opacity="0.15"/>
+                                                    <SolidColorBrush Color="{StaticResource Accent}" Opacity="0.15"/>
                                                 </Border.Background>
                                                 <TextBlock Text="{Binding Initial}"
                                                            FontSize="18"

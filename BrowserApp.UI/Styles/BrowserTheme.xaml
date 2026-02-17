@@ -7,34 +7,35 @@
          ═══════════════════════════════════════════════════════════════ -->
 
     <!-- BACKGROUNDS -->
-    <Color x:Key="BgPrimary">#000000</Color>
-    <Color x:Key="BgElevated">#0D0D1A</Color>
-    <Color x:Key="BgSurface">#141428</Color>
-    <Color x:Key="BgSurfaceHover">#1C1C36</Color>
-    <Color x:Key="BgSurfaceActive">#252544</Color>
+    <Color x:Key="BgPrimary">#08090F</Color>
+    <Color x:Key="BgElevated">#111522</Color>
+    <Color x:Key="BgSurface">#171C2C</Color>
+    <Color x:Key="BgSurfaceHover">#20283D</Color>
+    <Color x:Key="BgSurfaceActive">#2A3350</Color>
 
-    <SolidColorBrush x:Key="BgPrimaryBrush" Color="#000000"/>
-    <SolidColorBrush x:Key="BgElevatedBrush" Color="#0D0D1A"/>
-    <SolidColorBrush x:Key="BgSurfaceBrush" Color="#141428"/>
-    <SolidColorBrush x:Key="BgSurfaceHoverBrush" Color="#1C1C36"/>
-    <SolidColorBrush x:Key="BgSurfaceActiveBrush" Color="#252544"/>
+    <SolidColorBrush x:Key="BgPrimaryBrush" Color="#08090F"/>
+    <SolidColorBrush x:Key="BgElevatedBrush" Color="#111522"/>
+    <SolidColorBrush x:Key="BgSurfaceBrush" Color="#171C2C"/>
+    <SolidColorBrush x:Key="BgSurfaceHoverBrush" Color="#20283D"/>
+    <SolidColorBrush x:Key="BgSurfaceActiveBrush" Color="#2A3350"/>
+    <SolidColorBrush x:Key="BgGlassHeaderBrush" Color="#1A1F31"/>
 
     <!-- ACCENT (Purple) -->
-    <Color x:Key="Accent">#A855F7</Color>
-    <Color x:Key="AccentLight">#C084FC</Color>
-    <Color x:Key="AccentDark">#7C3AED</Color>
+    <Color x:Key="Accent">#9E6BFF</Color>
+    <Color x:Key="AccentLight">#BB95FF</Color>
+    <Color x:Key="AccentDark">#7951E8</Color>
 
-    <SolidColorBrush x:Key="AccentBrush" Color="#A855F7"/>
-    <SolidColorBrush x:Key="AccentLightBrush" Color="#C084FC"/>
-    <SolidColorBrush x:Key="AccentDarkBrush" Color="#7C3AED"/>
-    <SolidColorBrush x:Key="AccentSubtleBrush" Color="#15A855F7"/>
-    <SolidColorBrush x:Key="AccentGlowBrush" Color="#30A855F7"/>
-    <SolidColorBrush x:Key="AccentBorderBrush" Color="#50A855F7"/>
+    <SolidColorBrush x:Key="AccentBrush" Color="#9E6BFF"/>
+    <SolidColorBrush x:Key="AccentLightBrush" Color="#BB95FF"/>
+    <SolidColorBrush x:Key="AccentDarkBrush" Color="#7951E8"/>
+    <SolidColorBrush x:Key="AccentSubtleBrush" Color="#149E6BFF"/>
+    <SolidColorBrush x:Key="AccentGlowBrush" Color="#2E9E6BFF"/>
+    <SolidColorBrush x:Key="AccentBorderBrush" Color="#4C9E6BFF"/>
 
     <!-- TEXT -->
-    <Color x:Key="TextPrimary">#F0F0FF</Color>
-    <Color x:Key="TextSecondary">#9898B0</Color>
-    <Color x:Key="TextTertiary">#606078</Color>
+    <Color x:Key="TextPrimary">#F4F6FF</Color>
+    <Color x:Key="TextSecondary">#A8B0CC</Color>
+    <Color x:Key="TextTertiary">#6E7898</Color>
 
     <SolidColorBrush x:Key="TextPrimaryBrush" Color="#F0F0FF"/>
     <SolidColorBrush x:Key="TextSecondaryBrush" Color="#9898B0"/>
@@ -57,8 +58,8 @@
     <SolidColorBrush x:Key="InfoSubtleBrush" Color="#1560A5FA"/>
 
     <!-- BORDERS -->
-    <Color x:Key="Border">#2D2D45</Color>
-    <Color x:Key="BorderSubtle">#1E1E30</Color>
+    <Color x:Key="Border">#3A4260</Color>
+    <Color x:Key="BorderSubtle">#2A3148</Color>
 
     <SolidColorBrush x:Key="BorderBrush" Color="#2D2D45"/>
     <SolidColorBrush x:Key="BorderSubtleBrush" Color="#1E1E30"/>
@@ -68,32 +69,32 @@
          ═══════════════════════════════════════════════════════════════ -->
 
     <!-- Application background -->
-    <SolidColorBrush x:Key="ApplicationBackgroundBrush" Color="#000000"/>
+    <SolidColorBrush x:Key="ApplicationBackgroundBrush" Color="#08090F"/>
 
     <!-- Control fills -->
-    <SolidColorBrush x:Key="ControlFillColorDefaultBrush" Color="#141428"/>
-    <SolidColorBrush x:Key="ControlFillColorSecondaryBrush" Color="#1C1C36"/>
-    <SolidColorBrush x:Key="ControlFillColorTertiaryBrush" Color="#252544"/>
-    <SolidColorBrush x:Key="ControlFillColorDisabledBrush" Color="#0D0D1A"/>
+    <SolidColorBrush x:Key="ControlFillColorDefaultBrush" Color="#171C2C"/>
+    <SolidColorBrush x:Key="ControlFillColorSecondaryBrush" Color="#20283D"/>
+    <SolidColorBrush x:Key="ControlFillColorTertiaryBrush" Color="#2A3350"/>
+    <SolidColorBrush x:Key="ControlFillColorDisabledBrush" Color="#111522"/>
 
     <!-- Control strokes -->
-    <SolidColorBrush x:Key="ControlStrokeColorDefaultBrush" Color="#2D2D45"/>
-    <SolidColorBrush x:Key="ControlStrokeColorSecondaryBrush" Color="#1E1E30"/>
-    <SolidColorBrush x:Key="ControlElevationBorderBrush" Color="#2D2D45"/>
+    <SolidColorBrush x:Key="ControlStrokeColorDefaultBrush" Color="#3A4260"/>
+    <SolidColorBrush x:Key="ControlStrokeColorSecondaryBrush" Color="#2A3148"/>
+    <SolidColorBrush x:Key="ControlElevationBorderBrush" Color="#3A4260"/>
 
     <!-- Text fills -->
-    <SolidColorBrush x:Key="TextFillColorPrimaryBrush" Color="#F0F0FF"/>
-    <SolidColorBrush x:Key="TextFillColorSecondaryBrush" Color="#9898B0"/>
-    <SolidColorBrush x:Key="TextFillColorTertiaryBrush" Color="#606078"/>
-    <SolidColorBrush x:Key="TextFillColorDisabledBrush" Color="#606078"/>
+    <SolidColorBrush x:Key="TextFillColorPrimaryBrush" Color="#F4F6FF"/>
+    <SolidColorBrush x:Key="TextFillColorSecondaryBrush" Color="#A8B0CC"/>
+    <SolidColorBrush x:Key="TextFillColorTertiaryBrush" Color="#6E7898"/>
+    <SolidColorBrush x:Key="TextFillColorDisabledBrush" Color="#6E7898"/>
 
     <!-- Accent overrides -->
-    <SolidColorBrush x:Key="SystemAccentColorPrimaryBrush" Color="#A855F7"/>
-    <SolidColorBrush x:Key="SystemAccentColorSecondaryBrush" Color="#C084FC"/>
-    <SolidColorBrush x:Key="SystemAccentColorTertiaryBrush" Color="#7C3AED"/>
-    <Color x:Key="SystemAccentColorPrimary">#A855F7</Color>
-    <Color x:Key="SystemAccentColorSecondary">#C084FC</Color>
-    <Color x:Key="SystemAccentColorTertiary">#7C3AED</Color>
+    <SolidColorBrush x:Key="SystemAccentColorPrimaryBrush" Color="#9E6BFF"/>
+    <SolidColorBrush x:Key="SystemAccentColorSecondaryBrush" Color="#BB95FF"/>
+    <SolidColorBrush x:Key="SystemAccentColorTertiaryBrush" Color="#7951E8"/>
+    <Color x:Key="SystemAccentColorPrimary">#9E6BFF</Color>
+    <Color x:Key="SystemAccentColorSecondary">#BB95FF</Color>
+    <Color x:Key="SystemAccentColorTertiary">#7951E8</Color>
 
     <!-- Button icon foreground overrides for dark theme -->
     <SolidColorBrush x:Key="ButtonForeground" Color="#F0F0FF"/>

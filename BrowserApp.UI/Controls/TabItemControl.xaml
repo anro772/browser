@@ -5,9 +5,9 @@
              x:Name="TabRoot">
 
     <Border x:Name="TabBorder"
-            CornerRadius="8,8,0,0"
-            Padding="10,6"
-            Margin="1,4,1,0"
+            CornerRadius="10,10,0,0"
+            Padding="10,7"
+            Margin="2,4,2,0"
             MinWidth="60"
             MaxWidth="240"
             Cursor="Hand"
@@ -20,7 +20,7 @@
                 <Setter Property="Background" Value="Transparent"/>
                 <Style.Triggers>
                     <DataTrigger Binding="{Binding IsActive}" Value="True">
-                        <Setter Property="Background" Value="{StaticResource AccentSubtleBrush}"/>
+                        <Setter Property="Background" Value="{StaticResource BgGlassHeaderBrush}"/>
                     </DataTrigger>
                     <Trigger Property="IsMouseOver" Value="True">
                         <Setter Property="Background" Value="{StaticResource BgSurfaceHoverBrush}"/>
@@ -69,7 +69,7 @@
                     CornerRadius="1,1,0,0"
                     Visibility="{Binding IsActive, Converter={StaticResource BoolToVisibility}}">
                 <Border.Background>
-                    <SolidColorBrush Color="#A855F7"/>
+                    <SolidColorBrush Color="{StaticResource Accent}"/>
                 </Border.Background>
             </Border>
 

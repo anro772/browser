@@ -5,8 +5,8 @@
              Visibility="Collapsed"
              x:Name="DownloadRoot">
 
-    <Border Background="{StaticResource BgSurfaceBrush}"
-            BorderBrush="{StaticResource BorderBrush}"
+    <Border Background="{StaticResource BgGlassHeaderBrush}"
+            BorderBrush="{StaticResource AccentBorderBrush}"
             BorderThickness="0,1,0,0"
             Padding="12,8">
 
@@ -41,33 +41,30 @@
             </StackPanel>
 
             <!-- Open file -->
-            <Button Grid.Column="2"
-                    x:Name="OpenButton"
-                    Content="Open"
-                    Padding="12,4"
-                    Margin="8,0"
-                    Visibility="Collapsed"
-                    Click="OpenButton_Click"/>
+            <ui:Button Grid.Column="2"
+                       x:Name="OpenButton"
+                       Content="Open"
+                       Style="{StaticResource GlassToolbarButtonStyle}"
+                       Padding="12,4"
+                       Margin="8,0"
+                       Visibility="Collapsed"
+                       Click="OpenButton_Click"/>
 
             <!-- Show in folder -->
-            <Button Grid.Column="3"
-                    x:Name="ShowInFolderButton"
-                    Content="Show in folder"
-                    Padding="12,4"
-                    Margin="0,0,8,0"
-                    Visibility="Collapsed"
-                    Click="ShowInFolderButton_Click"/>
+            <ui:Button Grid.Column="3"
+                       x:Name="ShowInFolderButton"
+                       Content="Show in folder"
+                       Style="{StaticResource GlassToolbarButtonStyle}"
+                       Padding="12,4"
+                       Margin="0,0,8,0"
+                       Visibility="Collapsed"
+                       Click="ShowInFolderButton_Click"/>
 
             <!-- Close -->
-            <Button Grid.Column="4"
-                    Content="&#xE711;"
-                    FontFamily="Segoe MDL2 Assets"
-                    FontSize="10"
-                    Width="24" Height="24"
-                    Padding="0"
-                    Background="Transparent"
-                    BorderThickness="0"
-                    Click="CloseButton_Click"/>
+            <ui:Button Grid.Column="4"
+                       Icon="{ui:SymbolIcon Dismiss24}"
+                       Style="{StaticResource GlassToolbarButtonStyle}"
+                       Click="CloseButton_Click"/>
         </Grid>
     </Border>
 </UserControl>
