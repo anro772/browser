@@ -62,19 +62,19 @@
                                         </TextBlock>
                                     </StackPanel>
 
-                                    <ToggleButton Grid.Column="2"
-                                                  IsChecked="{Binding IsEnabled}"
-                                                  Margin="8,0"
-                                                  VerticalAlignment="Center"
-                                                  Command="{Binding DataContext.ToggleExtensionCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
-                                                  CommandParameter="{Binding}"/>
+                                    <ui:ToggleSwitch Grid.Column="2"
+                                                     IsChecked="{Binding IsEnabled}"
+                                                     Margin="8,0"
+                                                     VerticalAlignment="Center"
+                                                     Command="{Binding DataContext.ToggleExtensionCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                     CommandParameter="{Binding}"/>
 
                                     <ui:Button Grid.Column="3"
                                                Icon="{ui:SymbolIcon Delete24}"
                                                ToolTip="Remove extension"
                                                Command="{Binding DataContext.UninstallExtensionCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
                                                CommandParameter="{Binding}"
-                                               Appearance="Secondary"
+                                               Appearance="Danger"
                                                VerticalAlignment="Center"/>
                                 </Grid>
                             </Border>

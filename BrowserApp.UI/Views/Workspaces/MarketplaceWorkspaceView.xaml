@@ -40,6 +40,13 @@
             </StackPanel>
         </Grid>
 
+        <!-- Search bar (row 2) -->
+        <ui:TextBox Grid.Row="2"
+                    PlaceholderText="Search rules by name, description, or author..."
+                    Icon="{ui:SymbolIcon Search24}"
+                    Text="{Binding SearchFilter, UpdateSourceTrigger=PropertyChanged}"
+                    Margin="0,0,0,8"/>
+
         <Grid Grid.Row="3">
             <Border BorderBrush="{DynamicResource ControlElevationBorderBrush}" BorderThickness="1" CornerRadius="8">
                 <DataGrid ItemsSource="{Binding Rules}"
