@@ -32,6 +32,9 @@ public partial class NetworkMonitorViewModel : ObservableObject, IDisposable
     private const int BatchSize = 50;
     private const int UpdateIntervalMs = 250;
 
+    // Running total of bytes saved from blocked requests (seeded from DB on startup)
+    private long _totalBytesSaved;
+
     [ObservableProperty]
     private ObservableCollection<NetworkRequest> _requests = new();
 
@@ -123,6 +126,7 @@ public partial class NetworkMonitorViewModel : ObservableObject, IDisposable
 
             Application.Current?.Dispatcher.Invoke(() =>
             {
+                _totalBytesSaved = stats.TotalBytes;
                 TotalRequests = stats.TotalRequests;
                 BlockedCount = stats.BlockedRequests;
                 DataSaved = stats.FormattedDataSaved;
@@ -168,6 +172,7 @@ public partial class NetworkMonitorViewModel : ObservableObject, IDisposable
         // Update UI on background priority to avoid blocking user interactions
         Application.Current?.Dispatcher.InvokeAsync(() =>
         {
+            long newBytes = 0;
             foreach (var request in batch)
             {
                 // Add to top of list
@@ -178,7 +183,15 @@ public partial class NetworkMonitorViewModel : ObservableObject, IDisposable
                 if (request.WasBlocked)
                 {
                     BlockedCount++;
+                    if (request.Size.HasValue)
+                        newBytes += request.Size.Value;
                 }
+            }
+
+            if (newBytes > 0)
+            {
+                _totalBytesSaved += newBytes;
+                DataSaved = FormatBytes(_totalBytesSaved);
             }
 
             // Trim old entries to prevent memory issues
@@ -268,6 +281,7 @@ public partial class NetworkMonitorViewModel : ObservableObject, IDisposable
 
             Application.Current?.Dispatcher.Invoke(() =>
             {
+                _totalBytesSaved = 0;
                 Requests.Clear();
                 TotalRequests = 0;
                 BlockedCount = 0;
@@ -310,6 +324,7 @@ public partial class NetworkMonitorViewModel : ObservableObject, IDisposable
 
             Application.Current?.Dispatcher.Invoke(() =>
             {
+                _totalBytesSaved = stats.TotalBytes;
                 TotalRequests = stats.TotalRequests;
                 BlockedCount = stats.BlockedRequests;
                 DataSaved = stats.FormattedDataSaved;
@@ -366,6 +381,21 @@ public partial class NetworkMonitorViewModel : ObservableObject, IDisposable
         }
 
         await File.WriteAllLinesAsync(filePath, lines);
+    }
+
+    private static string FormatBytes(long bytes)
+    {
+        string[] suffixes = { "B", "KB", "MB", "GB" };
+        int suffixIndex = 0;
+        double size = bytes;
+
+        while (size >= 1024 && suffixIndex < suffixes.Length - 1)
+        {
+            size /= 1024;
+            suffixIndex++;
+        }
+
+        return $"{size:F1} {suffixes[suffixIndex]}";
     }
 
     /// <summary>
