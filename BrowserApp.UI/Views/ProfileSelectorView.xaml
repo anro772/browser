@@ -30,79 +30,80 @@
         </StackPanel>
 
         <!-- Profiles List -->
-        <ListView Grid.Row="2"
-                  ItemsSource="{Binding Profiles}"
-                  Background="Transparent"
-                  ItemContainerStyle="{StaticResource CardListItemStyle}"
-                  BorderThickness="0">
-            <ListView.ItemTemplate>
-                <DataTemplate>
-                    <Grid Margin="4,4">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
+        <Border Grid.Row="2" Style="{StaticResource PanelBodyCardStyle}" Padding="8">
+            <ListView ItemsSource="{Binding Profiles}"
+                      Background="Transparent"
+                      ItemContainerStyle="{StaticResource CardListItemStyle}"
+                      BorderThickness="0">
+                <ListView.ItemTemplate>
+                    <DataTemplate>
+                        <Grid Margin="4,4">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
 
-                        <!-- Profile color avatar -->
-                        <Border Grid.Column="0"
-                                Width="36" Height="36"
-                                CornerRadius="18"
-                                Margin="0,0,12,0"
-                                VerticalAlignment="Center"
-                                Background="{Binding Color, Converter={StaticResource StringToBrush}}">
-                            <TextBlock Text="{Binding Name[0]}"
-                                       FontSize="16"
-                                       FontWeight="Bold"
-                                       Foreground="White"
-                                       HorizontalAlignment="Center"
-                                       VerticalAlignment="Center"/>
-                        </Border>
+                            <!-- Profile color avatar -->
+                            <Border Grid.Column="0"
+                                    Width="36" Height="36"
+                                    CornerRadius="18"
+                                    Margin="0,0,12,0"
+                                    VerticalAlignment="Center"
+                                    Background="{Binding Color, Converter={StaticResource StringToBrush}}">
+                                <TextBlock Text="{Binding Name[0]}"
+                                           FontSize="16"
+                                           FontWeight="Bold"
+                                           Foreground="White"
+                                           HorizontalAlignment="Center"
+                                           VerticalAlignment="Center"/>
+                            </Border>
 
-                        <!-- Profile name -->
-                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                            <TextBlock Text="{Binding Name}"
-                                       FontSize="14"
-                                       FontWeight="SemiBold"
-                                       Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
-                            <TextBlock FontSize="11"
-                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}">
-                                <TextBlock.Style>
-                                    <Style TargetType="TextBlock">
-                                        <Setter Property="Text" Value=""/>
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding IsDefault}" Value="True">
-                                                <Setter Property="Text" Value="Default profile"/>
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </TextBlock.Style>
-                            </TextBlock>
-                        </StackPanel>
+                            <!-- Profile name -->
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                <TextBlock Text="{Binding Name}"
+                                           FontSize="14"
+                                           FontWeight="SemiBold"
+                                           Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                                <TextBlock FontSize="11"
+                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Text" Value=""/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsDefault}" Value="True">
+                                                    <Setter Property="Text" Value="Default profile"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                            </StackPanel>
 
-                        <!-- Switch button -->
-                        <ui:Button Grid.Column="2"
-                                   Content="Switch"
-                                   Appearance="Primary"
-                                   Margin="4,0"
-                                   VerticalAlignment="Center"
-                                   Command="{Binding DataContext.SwitchProfileCommand, RelativeSource={RelativeSource AncestorType=ui:FluentWindow}}"
-                                   CommandParameter="{Binding}"/>
+                            <!-- Switch button -->
+                            <ui:Button Grid.Column="2"
+                                       Content="Switch"
+                                       Appearance="Primary"
+                                       Margin="4,0"
+                                       VerticalAlignment="Center"
+                                       Command="{Binding DataContext.SwitchProfileCommand, RelativeSource={RelativeSource AncestorType=ui:FluentWindow}}"
+                                       CommandParameter="{Binding}"/>
 
-                        <!-- Delete button (not for default) -->
-                        <ui:Button Grid.Column="3"
-                                   Icon="{ui:SymbolIcon Delete24}"
-                                   Appearance="Secondary"
-                                   VerticalAlignment="Center"
-                                   ToolTip="Delete profile"
-                                   Visibility="{Binding IsDefault, Converter={StaticResource BoolToVisibilityInverse}}"
-                                   Command="{Binding DataContext.DeleteProfileCommand, RelativeSource={RelativeSource AncestorType=ui:FluentWindow}}"
-                                   CommandParameter="{Binding}"/>
-                    </Grid>
-                </DataTemplate>
-            </ListView.ItemTemplate>
-        </ListView>
+                            <!-- Delete button (not for default) -->
+                            <ui:Button Grid.Column="3"
+                                       Icon="{ui:SymbolIcon Delete24}"
+                                       Appearance="Secondary"
+                                       VerticalAlignment="Center"
+                                       ToolTip="Delete profile"
+                                       Visibility="{Binding IsDefault, Converter={StaticResource BoolToVisibilityInverse}}"
+                                       Command="{Binding DataContext.DeleteProfileCommand, RelativeSource={RelativeSource AncestorType=ui:FluentWindow}}"
+                                       CommandParameter="{Binding}"/>
+                        </Grid>
+                    </DataTemplate>
+                </ListView.ItemTemplate>
+            </ListView>
+        </Border>
 
         <!-- Separator -->
         <Separator Grid.Row="3" Margin="0,8"/>

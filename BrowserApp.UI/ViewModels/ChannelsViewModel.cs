@@ -20,6 +20,11 @@ public partial class ChannelsViewModel : ObservableObject
     private readonly IChannelSyncService _syncService;
     private readonly IServiceScopeFactory _scopeFactory;
 
+    private List<ChannelItemViewModel> _allAvailableChannels = new();
+
+    [ObservableProperty]
+    private string _searchFilter = string.Empty;
+
     [ObservableProperty]
     private ObservableCollection<ChannelItemViewModel> _availableChannels = new();
 
@@ -67,6 +72,7 @@ public partial class ChannelsViewModel : ObservableObject
                     {
                         AvailableChannels.Add(new ChannelItemViewModel(channel));
                     }
+                    _allAvailableChannels = AvailableChannels.ToList();
                 });
             }
 
@@ -263,6 +269,22 @@ public partial class ChannelsViewModel : ObservableObject
         {
             IsLoading = false;
         }
+    }
+
+    partial void OnSearchFilterChanged(string value) => FilterAvailableChannels();
+
+    private void FilterAvailableChannels()
+    {
+        Application.Current.Dispatcher.Invoke(() =>
+        {
+            AvailableChannels.Clear();
+            var filtered = string.IsNullOrWhiteSpace(SearchFilter)
+                ? _allAvailableChannels
+                : _allAvailableChannels.Where(c =>
+                    c.Name.Contains(SearchFilter, StringComparison.OrdinalIgnoreCase) ||
+                    c.Description.Contains(SearchFilter, StringComparison.OrdinalIgnoreCase)).ToList();
+            foreach (var c in filtered) AvailableChannels.Add(c);
+        });
     }
 
     private string ShowPasswordDialog(string channelName)

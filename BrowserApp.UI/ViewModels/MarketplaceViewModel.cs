@@ -36,6 +36,29 @@ public partial class MarketplaceViewModel : ObservableObject
     [ObservableProperty]
     private string _statusMessage = string.Empty;
 
+    private List<MarketplaceRuleItemViewModel> _allRules = new();
+
+    [ObservableProperty]
+    private string _searchFilter = string.Empty;
+
+    partial void OnSearchFilterChanged(string value) => FilterRules();
+
+    private void FilterRules()
+    {
+        Application.Current.Dispatcher.Invoke(() =>
+        {
+            Rules.Clear();
+            var filtered = string.IsNullOrWhiteSpace(SearchFilter)
+                ? _allRules
+                : _allRules.Where(r =>
+                    r.Name.Contains(SearchFilter, StringComparison.OrdinalIgnoreCase) ||
+                    r.Description.Contains(SearchFilter, StringComparison.OrdinalIgnoreCase) ||
+                    r.AuthorUsername.Contains(SearchFilter, StringComparison.OrdinalIgnoreCase)).ToList();
+            foreach (var r in filtered) Rules.Add(r);
+            TotalRules = Rules.Count;
+        });
+    }
+
     public MarketplaceViewModel(
         IMarketplaceApiClient apiClient,
         IServiceScopeFactory scopeFactory,
@@ -78,6 +101,7 @@ public partial class MarketplaceViewModel : ObservableObject
                         Rules.Add(item);
                     }
                     TotalRules = response.TotalCount;
+                    _allRules = Rules.ToList();
                 });
 
                 StatusMessage = $"Loaded {Rules.Count} rules from marketplace";

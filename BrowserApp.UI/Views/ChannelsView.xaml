@@ -26,19 +26,34 @@
         <ui:TitleBar Grid.Row="0" Title="Channels Manager" ShowMinimize="True" ShowMaximize="True" ShowClose="True"/>
 
         <!-- Header -->
-        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="16,16,16,8">
-            <ui:SymbolIcon Symbol="People24" FontSize="24" Margin="0,0,8,0"/>
-            <TextBlock Text="Channels" Style="{StaticResource SectionTextStyle}" VerticalAlignment="Center"/>
-            <ui:Button Content="Refresh" Margin="16,0,0,0"
-                       Command="{Binding LoadChannelsCommand}"
-                       Appearance="Secondary"/>
-            <ui:Button Content="Sync Now" Margin="8,0,0,0"
-                       Command="{Binding SyncNowCommand}"
-                       Appearance="Primary"/>
-            <ui:Button Content="Create Channel" Margin="8,0,0,0"
-                       Command="{Binding CreateChannelCommand}"
-                       Appearance="Secondary"/>
-        </StackPanel>
+        <Grid Grid.Row="1" Margin="16,16,16,8">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <StackPanel Grid.Column="0" Orientation="Horizontal">
+                <ui:SymbolIcon Symbol="People24" FontSize="24" Margin="0,0,8,0"/>
+                <StackPanel VerticalAlignment="Center">
+                    <TextBlock Text="Channels" Style="{StaticResource SectionTextStyle}"/>
+                    <TextBlock Text="Browse and manage your channel subscriptions"
+                               Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12"/>
+                </StackPanel>
+            </StackPanel>
+
+            <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                <ui:Button Content="Refresh" Margin="0,0,8,0"
+                           Command="{Binding LoadChannelsCommand}"
+                           Appearance="Secondary"/>
+                <ui:Button Content="Sync Now" Margin="0,0,8,0"
+                           Command="{Binding SyncNowCommand}"
+                           Appearance="Primary"/>
+                <ui:Button Content="Create Channel"
+                           Command="{Binding CreateChannelCommand}"
+                           Appearance="Secondary"/>
+            </StackPanel>
+        </Grid>
 
         <!-- Content -->
         <Grid Grid.Row="2" Margin="16,8,16,8">
@@ -61,6 +76,7 @@
 
                     <ListBox Grid.Row="1" ItemsSource="{Binding JoinedChannels}"
                              SelectedItem="{Binding SelectedChannel}"
+                             ItemContainerStyle="{StaticResource ThemedListBoxItem}"
                              BorderThickness="0" Background="Transparent">
                         <ListBox.ItemTemplate>
                             <DataTemplate>
@@ -78,9 +94,10 @@
                                         </Grid.RowDefinitions>
 
                                         <TextBlock Grid.Row="0" Text="{Binding ChannelName}"
+                                                   Foreground="{DynamicResource TextFillColorPrimaryBrush}"
                                                    FontWeight="SemiBold" FontSize="14"/>
                                         <TextBlock Grid.Row="1" Text="{Binding ChannelDescription}"
-                                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                                   Foreground="{DynamicResource TextFillColorPrimaryBrush}"
                                                    TextTrimming="CharacterEllipsis"/>
                                         <TextBlock Grid.Row="2" Text="{Binding LastSyncedDisplay}"
                                                    FontSize="11"
@@ -95,7 +112,7 @@
                                                 </StackPanel>
                                             </ui:Badge>
                                             <ui:Button Content="Leave" Margin="0,8,0,0"
-                                                       Appearance="Secondary"
+                                                       Appearance="Danger"
                                                        Command="{Binding DataContext.LeaveChannelCommand, RelativeSource={RelativeSource AncestorType=ui:FluentWindow}}"
                                                        CommandParameter="{Binding}"/>
                                         </StackPanel>
@@ -122,9 +139,16 @@
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
 
-                    <TextBlock Text="Available Channels" FontWeight="SemiBold" Margin="8,8,8,8"/>
+                    <StackPanel Grid.Row="0">
+                        <TextBlock Text="Available Channels" FontWeight="SemiBold" Margin="8,8,8,8"/>
+                        <ui:TextBox PlaceholderText="Search channels..."
+                                    Text="{Binding SearchFilter, UpdateSourceTrigger=PropertyChanged}"
+                                    Icon="{ui:SymbolIcon Search24}"
+                                    Margin="4,0,4,8"/>
+                    </StackPanel>
 
                     <ListBox Grid.Row="1" ItemsSource="{Binding AvailableChannels}"
+                             ItemContainerStyle="{StaticResource ThemedListBoxItem}"
                              BorderThickness="0" Background="Transparent">
                         <ListBox.ItemTemplate>
                             <DataTemplate>
@@ -139,9 +163,11 @@
                                             <RowDefinition Height="Auto"/>
                                             <RowDefinition Height="Auto"/>
                                             <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
                                         </Grid.RowDefinitions>
 
                                         <TextBlock Grid.Row="0" Text="{Binding Name}"
+                                                   Foreground="{DynamicResource TextFillColorPrimaryBrush}"
                                                    FontWeight="SemiBold" FontSize="14"/>
                                         <TextBlock Grid.Row="1" Text="{Binding Description}"
                                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
@@ -149,8 +175,11 @@
                                         <TextBlock Grid.Row="2" Text="{Binding DisplayInfo}"
                                                    FontSize="11"
                                                    Foreground="{DynamicResource TextFillColorTertiaryBrush}"/>
+                                        <TextBlock Grid.Row="3" Text="{Binding OwnerUsername}"
+                                                   FontSize="11"
+                                                   Foreground="{DynamicResource TextFillColorTertiaryBrush}"/>
 
-                                        <ui:Button Grid.Column="1" Grid.RowSpan="3"
+                                        <ui:Button Grid.Column="1" Grid.RowSpan="4"
                                                    Content="Join"
                                                    VerticalAlignment="Center"
                                                    Appearance="Primary"

@@ -31,6 +31,28 @@
                       VerticalScrollBarVisibility="Auto">
             <StackPanel>
 
+                <!-- Account Section -->
+                <Border Background="{StaticResource BgSurfaceBrush}"
+                        CornerRadius="8"
+                        BorderBrush="{StaticResource BorderSubtleBrush}"
+                        BorderThickness="1"
+                        Padding="16"
+                        Margin="0,0,0,12">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                            <ui:SymbolIcon Symbol="Person24" FontSize="20"
+                                           Foreground="{StaticResource AccentBrush}" Margin="0,0,8,0"/>
+                            <TextBlock Text="Account" FontSize="14" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                        </StackPanel>
+                        <TextBlock Text="Your username is used for channel membership and rule sharing."
+                                   FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                   TextWrapping="Wrap" Margin="0,0,0,12"/>
+                        <ui:TextBox PlaceholderText="Username"
+                                    Text="{Binding Username, UpdateSourceTrigger=PropertyChanged}"
+                                    Icon="{ui:SymbolIcon Person24}"/>
+                    </StackPanel>
+                </Border>
+
                 <!-- Privacy Mode Section -->
                 <Border Background="{StaticResource BgSurfaceBrush}"
                         CornerRadius="8"

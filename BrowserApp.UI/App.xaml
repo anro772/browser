@@ -31,6 +31,13 @@
             <converters:EnumToVisibilityConverter x:Key="EnumToVisibilityConverter"/>
             <converters:ResourceTypeToColorConverter x:Key="ResourceTypeToColor"/>
             <converters:StatusCodeToColorConverter x:Key="StatusCodeToColor"/>
+
+            <!-- Typography override: sharper Win11 font -->
+            <Style x:Key="{x:Type TextBlock}" TargetType="TextBlock">
+                <Setter Property="FontFamily" Value="Segoe UI Variable Text"/>
+                <Setter Property="TextOptions.TextFormattingMode" Value="Display"/>
+                <Setter Property="TextOptions.TextRenderingMode" Value="ClearType"/>
+            </Style>
         </ResourceDictionary>
     </Application.Resources>
 </Application>

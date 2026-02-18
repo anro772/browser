@@ -37,6 +37,9 @@ public partial class SettingsViewModel : ObservableObject
     [ObservableProperty]
     private bool _isSaving;
 
+    [ObservableProperty]
+    private string _username = "default_user";
+
     /// <summary>
     /// Available privacy modes for the dropdown.
     /// </summary>

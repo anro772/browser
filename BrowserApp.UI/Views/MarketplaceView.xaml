@@ -19,6 +19,7 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
@@ -31,8 +32,17 @@
             <TextBlock Text="Browse and install community rules" Foreground="{StaticResource TextSecondaryBrush}"/>
         </StackPanel>
 
+        <!-- Search Bar -->
+        <Border Grid.Row="2" Background="{StaticResource BgSurfaceBrush}" CornerRadius="8"
+                BorderBrush="{StaticResource BorderSubtleBrush}" BorderThickness="1"
+                Padding="8,6" Margin="0,0,0,8">
+            <ui:TextBox PlaceholderText="Search marketplace rules..."
+                        Text="{Binding SearchFilter, UpdateSourceTrigger=PropertyChanged}"
+                        Icon="{ui:SymbolIcon Search24}" BorderThickness="0" Background="Transparent"/>
+        </Border>
+
         <!-- Stats and Actions -->
-        <Grid Grid.Row="2" Margin="0,0,0,12">
+        <Grid Grid.Row="3" Margin="0,0,0,12">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
@@ -49,7 +59,7 @@
         </Grid>
 
         <!-- Rules List -->
-        <Border Grid.Row="3" BorderBrush="{DynamicResource ControlElevationBorderBrush}" BorderThickness="1" CornerRadius="8">
+        <Border Grid.Row="4" Style="{StaticResource PanelBodyCardStyle}" Padding="0">
             <DataGrid ItemsSource="{Binding Rules}"
                       Style="{StaticResource ThemedDataGrid}"
                       SelectedItem="{Binding SelectedRule}"
@@ -67,7 +77,16 @@
                     <DataGridTextColumn Header="Description" Binding="{Binding Description}" Width="200"/>
                     <DataGridTextColumn Header="Site" Binding="{Binding Site}" Width="120"/>
                     <DataGridTextColumn Header="Author" Binding="{Binding AuthorUsername}" Width="100"/>
-                    <DataGridTextColumn Header="Downloads" Binding="{Binding DownloadCount}" Width="80"/>
+                    <DataGridTemplateColumn Header="Downloads" Width="80">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Center">
+                                    <ui:SymbolIcon Symbol="ArrowDownload24" FontSize="11" Foreground="{DynamicResource TextFillColorTertiaryBrush}" Margin="0,0,4,0"/>
+                                    <TextBlock Text="{Binding DownloadCount}" FontSize="11" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
 
                     <DataGridTemplateColumn Header="" Width="100">
                         <DataGridTemplateColumn.CellTemplate>
@@ -87,7 +106,7 @@
         </Border>
 
         <!-- Loading Indicator -->
-        <Border Grid.Row="3"
+        <Border Grid.Row="4"
                 Background="{StaticResource BgPrimaryBrush}"
                 Opacity="0.82"
                 Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisibilityConverter}}">
@@ -95,7 +114,7 @@
         </Border>
 
         <!-- Status Message -->
-        <TextBlock Grid.Row="4"
+        <TextBlock Grid.Row="5"
                    Text="{Binding StatusMessage}"
                    Foreground="{StaticResource TextSecondaryBrush}"
                    Margin="0,8,0,0"

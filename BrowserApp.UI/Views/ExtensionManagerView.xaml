@@ -36,61 +36,66 @@
                            HorizontalAlignment="Stretch"
                            Margin="0,0,0,12"/>
 
-                <ItemsControl ItemsSource="{Binding Extensions}">
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate>
-                            <Border Background="{StaticResource BgGlassHeaderBrush}"
-                                    CornerRadius="8"
-                                    BorderBrush="{StaticResource BorderSubtleBrush}"
-                                    BorderThickness="1"
-                                    Padding="12"
-                                    Margin="0,0,0,8">
-                                <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="Auto"/>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="Auto"/>
-                                        <ColumnDefinition Width="Auto"/>
-                                    </Grid.ColumnDefinitions>
+                <Border Style="{StaticResource PanelBodyCardStyle}" Padding="8">
+                    <ItemsControl ItemsSource="{Binding Extensions}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Background="{StaticResource BgGlassHeaderBrush}"
+                                        CornerRadius="8"
+                                        BorderBrush="{StaticResource BorderSubtleBrush}"
+                                        BorderThickness="1"
+                                        Padding="12"
+                                        Margin="0,0,0,8">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
 
-                                    <ui:SymbolIcon Grid.Column="0"
-                                                   Symbol="PuzzlePiece24"
-                                                   FontSize="24"
-                                                   Margin="0,0,12,0"
-                                                   VerticalAlignment="Center"
-                                                   Foreground="{StaticResource AccentBrush}"/>
+                                        <ui:SymbolIcon Grid.Column="0"
+                                                       Symbol="PuzzlePiece24"
+                                                       FontSize="24"
+                                                       Margin="0,0,12,0"
+                                                       VerticalAlignment="Center"
+                                                       Foreground="{StaticResource AccentBrush}"/>
 
-                                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                                        <TextBlock Text="{Binding Name}"
-                                                   FontSize="14"
-                                                   FontWeight="Medium"
-                                                   Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
-                                        <TextBlock FontSize="12"
-                                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}">
-                                            <Run Text="v"/>
-                                            <Run Text="{Binding Version, Mode=OneWay}"/>
-                                        </TextBlock>
-                                    </StackPanel>
+                                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding Name}"
+                                                       FontSize="14"
+                                                       FontWeight="Medium"
+                                                       Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                                            <TextBlock FontSize="12"
+                                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}">
+                                                <Run Text="v"/>
+                                                <Run Text="{Binding Version, Mode=OneWay}"/>
+                                            </TextBlock>
+                                            <TextBlock Text="{Binding Description}" FontSize="11"
+                                                       Foreground="{DynamicResource TextFillColorTertiaryBrush}"
+                                                       TextTrimming="CharacterEllipsis" MaxWidth="280"/>
+                                        </StackPanel>
 
-                                    <ToggleButton Grid.Column="2"
-                                                  IsChecked="{Binding IsEnabled}"
-                                                  Margin="8,0"
-                                                  VerticalAlignment="Center"
-                                                  Command="{Binding DataContext.ToggleExtensionCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
-                                                  CommandParameter="{Binding}"/>
+                                        <ui:ToggleSwitch Grid.Column="2"
+                                                         IsChecked="{Binding IsEnabled, Mode=OneWay}"
+                                                         Margin="8,0"
+                                                         VerticalAlignment="Center"
+                                                         Command="{Binding DataContext.ToggleExtensionCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                         CommandParameter="{Binding}"/>
 
-                                    <ui:Button Grid.Column="3"
-                                               Icon="{ui:SymbolIcon Delete24}"
-                                               ToolTip="Remove extension"
-                                               Command="{Binding DataContext.UninstallExtensionCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
-                                               CommandParameter="{Binding}"
-                                               Appearance="Secondary"
-                                               VerticalAlignment="Center"/>
-                                </Grid>
-                            </Border>
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
+                                        <ui:Button Grid.Column="3"
+                                                   Icon="{ui:SymbolIcon Delete24}"
+                                                   ToolTip="Remove extension"
+                                                   Command="{Binding DataContext.UninstallExtensionCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                   CommandParameter="{Binding}"
+                                                   Appearance="Secondary"
+                                                   VerticalAlignment="Center"/>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </Border>
 
                 <!-- Empty State -->
                 <StackPanel Visibility="{Binding Extensions.Count, Converter={StaticResource CountToVisibility}}"
@@ -105,6 +110,9 @@
                                Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                                HorizontalAlignment="Center"
                                Margin="0,8,0,0"/>
+                    <TextBlock Text="Click 'Add Extension' to load an unpacked Chromium extension." FontSize="11"
+                               Foreground="{DynamicResource TextFillColorTertiaryBrush}" HorizontalAlignment="Center"
+                               TextWrapping="Wrap" MaxWidth="240" Margin="0,4,0,0" TextAlignment="Center"/>
                 </StackPanel>
             </StackPanel>
         </ScrollViewer>

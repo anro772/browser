@@ -23,6 +23,8 @@ public partial class RuleManagerViewModel : ObservableObject
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly IRuleEngine _ruleEngine;
 
+    private List<RuleItemViewModel> _allRules = new();
+
     [ObservableProperty]
     private ObservableCollection<RuleItemViewModel> _rules = new();
 
@@ -37,6 +39,11 @@ public partial class RuleManagerViewModel : ObservableObject
 
     [ObservableProperty]
     private int _enabledRules;
+
+    [ObservableProperty]
+    private string _searchFilter = string.Empty;
+
+    partial void OnSearchFilterChanged(string value) => FilterRules();
 
     public RuleManagerViewModel(IServiceScopeFactory scopeFactory, IRuleEngine ruleEngine)
     {
@@ -64,6 +71,7 @@ public partial class RuleManagerViewModel : ObservableObject
                 {
                     Rules.Add(item);
                 }
+                _allRules = Rules.ToList();
                 UpdateStats();
             });
         }
@@ -229,6 +237,27 @@ public partial class RuleManagerViewModel : ObservableObject
             Debug.WriteLine($"[RuleManager] Error loading template: {ex.Message}");
             MessageBox.Show($"Error loading template: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
         }
+    }
+
+    [RelayCommand]
+    private void CreateRule()
+    {
+        // TODO: Open rule creation dialog
+    }
+
+    private void FilterRules()
+    {
+        Application.Current.Dispatcher.Invoke(() =>
+        {
+            Rules.Clear();
+            var filtered = string.IsNullOrWhiteSpace(SearchFilter)
+                ? _allRules
+                : _allRules.Where(r =>
+                    r.Name.Contains(SearchFilter, StringComparison.OrdinalIgnoreCase) ||
+                    r.Site.Contains(SearchFilter, StringComparison.OrdinalIgnoreCase)).ToList();
+            foreach (var r in filtered) Rules.Add(r);
+            UpdateStats();
+        });
     }
 
     private void UpdateStats()

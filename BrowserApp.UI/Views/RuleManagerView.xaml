@@ -19,6 +19,7 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
@@ -30,8 +31,25 @@
             <TextBlock Text="Manage blocking and content injection rules" Foreground="{StaticResource TextSecondaryBrush}"/>
         </StackPanel>
 
+        <!-- Search Bar -->
+        <Border Grid.Row="2" Background="{StaticResource BgSurfaceBrush}" CornerRadius="8"
+                BorderBrush="{StaticResource BorderSubtleBrush}" BorderThickness="1"
+                Padding="8,6" Margin="0,0,0,8">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <ui:TextBox Grid.Column="0" PlaceholderText="Search rules by name or site..."
+                            Text="{Binding SearchFilter, UpdateSourceTrigger=PropertyChanged}"
+                            Icon="{ui:SymbolIcon Search24}" BorderThickness="0" Background="Transparent"/>
+                <ui:Button Grid.Column="1" Content="+ New Rule" Appearance="Primary"
+                           Command="{Binding CreateRuleCommand}" Margin="8,0,0,0" Padding="12,6"/>
+            </Grid>
+        </Border>
+
         <!-- Stats and Actions -->
-        <Grid Grid.Row="2" Margin="0,0,0,12">
+        <Grid Grid.Row="3" Margin="0,0,0,12">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
@@ -58,7 +76,7 @@
         </Grid>
 
         <!-- Rules List -->
-        <Border Grid.Row="3" BorderBrush="{DynamicResource ControlElevationBorderBrush}" BorderThickness="1" CornerRadius="8">
+        <Border Grid.Row="4" Style="{StaticResource PanelBodyCardStyle}" Padding="0">
             <DataGrid ItemsSource="{Binding Rules}"
                       Style="{StaticResource ThemedDataGrid}"
                       SelectedItem="{Binding SelectedRule}"
@@ -107,7 +125,7 @@
         </Border>
 
         <!-- Loading Indicator -->
-        <Border Grid.Row="3"
+        <Border Grid.Row="4"
                 Background="{StaticResource BgPrimaryBrush}"
                 Opacity="0.82"
                 Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisibilityConverter}}">

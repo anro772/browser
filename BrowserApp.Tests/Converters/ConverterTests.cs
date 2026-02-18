@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Windows;
+using System.Windows.Media;
 using BrowserApp.UI.Converters;
 using Xunit;
 
@@ -87,5 +88,86 @@ public class PercentToWidthConverterTests
     {
         var result = _converter.Convert("not a double", typeof(double), null!, CultureInfo.InvariantCulture);
         Assert.Equal(0.0, result);
+    }
+}
+
+public class ResourceTypeToColorConverterTests
+{
+    private readonly ResourceTypeToColorConverter _converter = new();
+    private readonly CultureInfo _culture = CultureInfo.InvariantCulture;
+
+    [Theory]
+    [InlineData("script", "#FBBF24")]
+    [InlineData("Script", "#FBBF24")]
+    [InlineData("SCRIPT", "#FBBF24")]
+    [InlineData("stylesheet", "#A78BFA")]
+    [InlineData("image", "#60A5FA")]
+    [InlineData("xhr", "#22D3EE")]
+    [InlineData("fetch", "#22D3EE")]
+    [InlineData("document", "#34D399")]
+    [InlineData("other", "#738099")]
+    [InlineData("unknown", "#738099")]
+    [InlineData("", "#738099")]
+    public void Convert_ReturnsCorrectBrush(string resourceType, string expectedHex)
+    {
+        var result = _converter.Convert(resourceType, typeof(object), null!, _culture);
+        Assert.IsType<SolidColorBrush>(result);
+        var brush = (SolidColorBrush)result;
+        var expected = (Color)ColorConverter.ConvertFromString(expectedHex);
+        Assert.Equal(expected, brush.Color);
+    }
+
+    [Fact]
+    public void Convert_NullValue_ReturnsTertiaryColor()
+    {
+        var result = _converter.Convert(null!, typeof(object), null!, _culture);
+        Assert.IsType<SolidColorBrush>(result);
+    }
+
+    [Fact]
+    public void ConvertBack_ThrowsNotImplementedException()
+    {
+        Assert.Throws<NotImplementedException>(() =>
+            _converter.ConvertBack(null!, typeof(string), null!, _culture));
+    }
+}
+
+public class StatusCodeToColorConverterTests
+{
+    private readonly StatusCodeToColorConverter _converter = new();
+    private readonly CultureInfo _culture = CultureInfo.InvariantCulture;
+
+    [Theory]
+    [InlineData(null, "#F87171")]
+    [InlineData(200, "#34D399")]
+    [InlineData(100, "#34D399")]
+    [InlineData(299, "#34D399")]
+    [InlineData(301, "#FBBF24")]
+    [InlineData(399, "#FBBF24")]
+    [InlineData(404, "#FB923C")]
+    [InlineData(499, "#FB923C")]
+    [InlineData(500, "#F87171")]
+    [InlineData(503, "#F87171")]
+    public void Convert_ReturnsCorrectBrush(int? statusCode, string expectedHex)
+    {
+        var result = _converter.Convert(statusCode, typeof(object), null!, _culture);
+        Assert.IsType<SolidColorBrush>(result);
+        var brush = (SolidColorBrush)result;
+        var expected = (Color)ColorConverter.ConvertFromString(expectedHex);
+        Assert.Equal(expected, brush.Color);
+    }
+
+    [Fact]
+    public void Convert_StringValue_ReturnsFallbackBrush()
+    {
+        var result = _converter.Convert("not-a-code", typeof(object), null!, _culture);
+        Assert.IsType<SolidColorBrush>(result);
+    }
+
+    [Fact]
+    public void ConvertBack_ThrowsNotImplementedException()
+    {
+        Assert.Throws<NotImplementedException>(() =>
+            _converter.ConvertBack(null!, typeof(int), null!, _culture));
     }
 }
