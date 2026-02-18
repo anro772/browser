@@ -29,6 +29,8 @@
             <converters:StringToBrushConverter x:Key="StringToBrush"/>
             <converters:EnumToBooleanConverter x:Key="EnumToBooleanConverter"/>
             <converters:EnumToVisibilityConverter x:Key="EnumToVisibilityConverter"/>
+            <converters:ResourceTypeToColorConverter x:Key="ResourceTypeToColor"/>
+            <converters:StatusCodeToColorConverter x:Key="StatusCodeToColor"/>
         </ResourceDictionary>
     </Application.Resources>
 </Application>

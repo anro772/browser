@@ -5,6 +5,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
              xmlns:vm="clr-namespace:BrowserApp.UI.ViewModels"
+             xmlns:converters="clr-namespace:BrowserApp.UI.Converters"
              mc:Ignorable="d"
              d:DesignHeight="600"
              d:DesignWidth="350"
@@ -62,7 +63,7 @@
                     BorderThickness="1"
                     Padding="8"
                     Margin="0,0,4,0">
-                <StackPanel HorizontalAlignment="Center">
+                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
                     <TextBlock Text="{Binding TotalRequests}"
                                FontSize="18"
                                FontWeight="Bold"
@@ -82,7 +83,7 @@
                     BorderThickness="1"
                     Padding="8"
                     Margin="2,0">
-                <StackPanel HorizontalAlignment="Center">
+                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
                     <TextBlock Text="{Binding BlockedCount}"
                                FontSize="18"
                                FontWeight="Bold"
@@ -102,9 +103,9 @@
                     BorderThickness="1"
                     Padding="8"
                     Margin="4,0,0,0">
-                <StackPanel HorizontalAlignment="Center">
+                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
                     <TextBlock Text="{Binding DataSaved}"
-                               FontSize="14"
+                               FontSize="18"
                                FontWeight="Bold"
                                HorizontalAlignment="Center"
                                Foreground="{StaticResource SuccessBrush}"/>
@@ -179,18 +180,53 @@
                           EnableRowVirtualization="True"
                           Background="Transparent"
                           BorderThickness="0"
-                          RowHeight="32"
+                          RowHeight="36"
                           FontSize="12">
                     <DataGrid.Columns>
-                        <DataGridTextColumn Header="Type"
-                                            Binding="{Binding ResourceType}"
-                                            Width="70"/>
-                        <DataGridTextColumn Header="URL"
-                                            Binding="{Binding ShortUrl}"
-                                            Width="*"/>
-                        <DataGridTextColumn Header="Status"
-                                            Binding="{Binding StatusCode}"
-                                            Width="50"/>
+                        <!-- Type — colored pill badge -->
+                        <DataGridTemplateColumn Header="Type" Width="80">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <Border CornerRadius="4" Padding="5,2" Margin="2"
+                                            Background="{Binding ResourceType, Converter={StaticResource ResourceTypeToColor}}">
+                                        <TextBlock Text="{Binding ResourceType}" FontSize="10" FontWeight="SemiBold"
+                                                   Foreground="#0B0E12" HorizontalAlignment="Center"/>
+                                    </Border>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+
+                        <!-- URL — bold domain + lighter path -->
+                        <DataGridTemplateColumn Header="URL" Width="*">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <StackPanel Margin="4,2" VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding Host}" FontSize="11" FontWeight="SemiBold"
+                                                   Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                                                   TextTrimming="CharacterEllipsis"/>
+                                        <TextBlock Text="{Binding ShortUrl}" FontSize="10"
+                                                   Foreground="{DynamicResource TextFillColorTertiaryBrush}"
+                                                   TextTrimming="CharacterEllipsis"/>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+
+                        <!-- Status — colored dot + code -->
+                        <DataGridTemplateColumn Header="Status" Width="54">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                        <Ellipse Width="6" Height="6" Margin="0,0,4,0"
+                                                 Fill="{Binding StatusCode, Converter={StaticResource StatusCodeToColor}}"/>
+                                        <TextBlock Text="{Binding StatusCode, TargetNullValue='—'}" FontSize="11"
+                                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+
+                        <!-- Size — plain text, already clean -->
                         <DataGridTextColumn Header="Size"
                                             Binding="{Binding FormattedSize}"
                                             Width="60"/>
@@ -200,7 +236,7 @@
                         <Style TargetType="DataGridRow">
                             <Style.Triggers>
                                 <DataTrigger Binding="{Binding WasBlocked}" Value="True">
-                                    <Setter Property="Foreground" Value="{StaticResource ErrorBrush}"/>
+                                    <Setter Property="Background" Value="#18F87171"/>
                                 </DataTrigger>
                                 <Trigger Property="IsMouseOver" Value="True">
                                     <Setter Property="Background" Value="{StaticResource BgSurfaceHoverBrush}"/>

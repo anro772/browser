@@ -68,7 +68,7 @@
                         Padding="12"
                         Margin="0,0,4,0"
                         ToolTip="{Binding PrivacyModeDescription}">
-                    <StackPanel HorizontalAlignment="Center">
+                    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
                         <ui:SymbolIcon Symbol="Shield24"
                                        FontSize="24"
                                        Foreground="{Binding PrivacyModeColor}"
@@ -94,20 +94,16 @@
                         BorderThickness="1"
                         Padding="12"
                         Margin="2,0">
-                    <StackPanel HorizontalAlignment="Center">
+                    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
                         <TextBlock Text="{Binding BlockedToday}"
-                                   FontSize="22"
+                                   FontSize="18"
                                    FontWeight="Bold"
                                    HorizontalAlignment="Center"
                                    Foreground="{StaticResource ErrorBrush}"/>
-                        <TextBlock Text="Blocked"
+                        <TextBlock Text="Blocked Today"
                                    FontSize="10"
                                    HorizontalAlignment="Center"
                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
-                        <TextBlock Text="Today"
-                                   FontSize="10"
-                                   HorizontalAlignment="Center"
-                                   Foreground="{DynamicResource TextFillColorTertiaryBrush}"/>
                     </StackPanel>
                 </Border>
 
@@ -119,20 +115,16 @@
                         BorderThickness="1"
                         Padding="12"
                         Margin="4,0,0,0">
-                    <StackPanel HorizontalAlignment="Center">
+                    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
                         <TextBlock Text="{Binding DataSaved}"
-                                   FontSize="14"
+                                   FontSize="18"
                                    FontWeight="Bold"
                                    HorizontalAlignment="Center"
                                    Foreground="{StaticResource SuccessBrush}"/>
-                        <TextBlock Text="Data"
+                        <TextBlock Text="Data Saved"
                                    FontSize="10"
                                    HorizontalAlignment="Center"
                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
-                        <TextBlock Text="Saved"
-                                   FontSize="10"
-                                   HorizontalAlignment="Center"
-                                   Foreground="{DynamicResource TextFillColorTertiaryBrush}"/>
                     </StackPanel>
                 </Border>
             </Grid>
