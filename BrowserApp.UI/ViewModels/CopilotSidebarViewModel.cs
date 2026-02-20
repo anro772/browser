@@ -301,6 +301,66 @@ public partial class CopilotSidebarViewModel : ObservableObject, IDisposable
     }
 
     [RelayCommand]
+    public async Task ApplyAllSuggestedRulesAsync()
+    {
+        if (_ruleGenerationService == null || IsGenerating)
+            return;
+
+        var ruleSuggestions = Messages
+            .Where(m => m.IsRuleSuggestion && !string.IsNullOrEmpty(m.SuggestedRuleJson))
+            .ToList();
+
+        if (ruleSuggestions.Count == 0)
+            return;
+
+        IsGenerating = true;
+
+        try
+        {
+            var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+            var rules = new List<Rule>();
+
+            foreach (var msg in ruleSuggestions)
+            {
+                var rule = JsonSerializer.Deserialize<Rule>(msg.SuggestedRuleJson!, options);
+                if (rule != null)
+                    rules.Add(rule);
+            }
+
+            if (rules.Count > 0)
+            {
+                await _ruleGenerationService.ApplyAllRulesAsync(rules);
+
+                RunOnUIThread(() =>
+                {
+                    Messages.Add(new ChatMessageItem
+                    {
+                        Role = "assistant",
+                        Content = $"Applied all {rules.Count} rules successfully! They will take effect on the next page load.",
+                        Timestamp = DateTime.UtcNow
+                    });
+                });
+            }
+        }
+        catch (Exception ex)
+        {
+            RunOnUIThread(() =>
+            {
+                Messages.Add(new ChatMessageItem
+                {
+                    Role = "assistant",
+                    Content = $"Failed to apply rules: {ex.Message}",
+                    Timestamp = DateTime.UtcNow
+                });
+            });
+        }
+        finally
+        {
+            IsGenerating = false;
+        }
+    }
+
+    [RelayCommand]
     public async Task ApplyRuleAsync(string? ruleJson)
     {
         if (string.IsNullOrEmpty(ruleJson) || _ruleGenerationService == null)

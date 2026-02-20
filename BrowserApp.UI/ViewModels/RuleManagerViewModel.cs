@@ -11,6 +11,7 @@ using BrowserApp.Core.Interfaces;
 using BrowserApp.Core.Models;
 using BrowserApp.Data.Entities;
 using BrowserApp.Data.Interfaces;
+using BrowserApp.UI.Views;
 
 namespace BrowserApp.UI.ViewModels;
 
@@ -142,6 +143,7 @@ public partial class RuleManagerViewModel : ObservableObject
 
             await repository.DeleteAsync(rule.Id);
             Rules.Remove(rule);
+            _allRules.Remove(rule);
             await _ruleEngine.ReloadRulesAsync();
             UpdateStats();
         }
@@ -242,7 +244,50 @@ public partial class RuleManagerViewModel : ObservableObject
     [RelayCommand]
     private void CreateRule()
     {
-        // TODO: Open rule creation dialog
+        var viewModel = new RuleEditorViewModel(_scopeFactory, _ruleEngine);
+        var dialog = new RuleEditorDialog(viewModel);
+        dialog.Owner = Application.Current.MainWindow;
+
+        if (dialog.ShowDialog() == true)
+        {
+            LoadRulesCommand.Execute(null);
+        }
+    }
+
+    [RelayCommand]
+    private async Task EditRuleAsync(RuleItemViewModel? rule)
+    {
+        if (rule == null) return;
+
+        if (rule.IsEnforced)
+        {
+            MessageBox.Show("This rule is enforced by a channel and cannot be edited.", "Enforced Rule", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        try
+        {
+            using var scope = _scopeFactory.CreateScope();
+            var repository = scope.ServiceProvider.GetRequiredService<IRuleRepository>();
+            var entity = await repository.GetByIdAsync(rule.Id);
+            if (entity == null) return;
+
+            var viewModel = new RuleEditorViewModel(_scopeFactory, _ruleEngine);
+            viewModel.LoadFromEntity(entity);
+
+            var dialog = new RuleEditorDialog(viewModel);
+            dialog.Owner = Application.Current.MainWindow;
+
+            if (dialog.ShowDialog() == true)
+            {
+                await LoadRulesAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[RuleManager] Error editing rule: {ex.Message}");
+            MessageBox.Show($"Error editing rule: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
     }
 
     private void FilterRules()
@@ -280,6 +325,12 @@ public partial class RuleItemViewModel : ObservableObject
     public string Source { get; }
     public bool IsEnforced { get; }
     public int ActionCount { get; }
+    public int BlockActionCount { get; }
+    public int CssActionCount { get; }
+    public int JsActionCount { get; }
+    public bool HasBlockActions { get; }
+    public bool HasCssActions { get; }
+    public bool HasJsActions { get; }
 
     [ObservableProperty]
     private bool _isEnabled;
@@ -295,17 +346,24 @@ public partial class RuleItemViewModel : ObservableObject
         IsEnforced = entity.IsEnforced;
         IsEnabled = entity.Enabled;
 
-        // Count actions
+        // Parse and count actions by type
         try
         {
             var actions = JsonSerializer.Deserialize<List<RuleAction>>(entity.RulesJson,
                 new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
             ActionCount = actions?.Count ?? 0;
+            BlockActionCount = actions?.Count(a => a.Type == "block") ?? 0;
+            CssActionCount = actions?.Count(a => a.Type == "inject_css") ?? 0;
+            JsActionCount = actions?.Count(a => a.Type == "inject_js") ?? 0;
         }
         catch
         {
             ActionCount = 0;
         }
+
+        HasBlockActions = BlockActionCount > 0;
+        HasCssActions = CssActionCount > 0;
+        HasJsActions = JsActionCount > 0;
     }
 
     public string SourceDisplay => Source switch
@@ -314,6 +372,7 @@ public partial class RuleItemViewModel : ObservableObject
         "template" => "Template",
         "marketplace" => "Marketplace",
         "channel" => "Channel",
+        "ai" => "AI",
         _ => Source
     };
 }

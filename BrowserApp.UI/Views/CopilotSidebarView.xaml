@@ -338,13 +338,34 @@
                 Visibility="{Binding IsOllamaConnected, Converter={StaticResource BoolToVisibility}}">
             <StackPanel>
                 <!-- Generate Rules toolbar -->
-                <ui:Button Content="Generate Rules for Page"
-                           Icon="{ui:SymbolIcon Shield24}"
-                           Command="{Binding GenerateRulesForCurrentPageCommand}"
-                           Appearance="Secondary"
-                           HorizontalAlignment="Stretch"
-                           FontSize="12"
-                           Margin="0,0,0,8"/>
+                <Grid Margin="0,0,0,8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="8"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <ui:Button Grid.Column="0"
+                               Content="Generate Rules for Page"
+                               Command="{Binding GenerateRulesForCurrentPageCommand}"
+                               Appearance="Secondary"
+                               HorizontalAlignment="Stretch"
+                               FontSize="12">
+                        <ui:Button.Icon>
+                            <ui:SymbolIcon Symbol="Shield24" Foreground="{StaticResource AccentBrush}"/>
+                        </ui:Button.Icon>
+                    </ui:Button>
+
+                    <ui:Button Grid.Column="2"
+                               Content="Apply All"
+                               Command="{Binding ApplyAllSuggestedRulesCommand}"
+                               Appearance="Primary"
+                               FontSize="12">
+                        <ui:Button.Icon>
+                            <ui:SymbolIcon Symbol="CheckmarkCircle24"/>
+                        </ui:Button.Icon>
+                    </ui:Button>
+                </Grid>
 
                 <!-- Pill-shaped input container -->
                 <Border Style="{StaticResource PillInputContainerStyle}">

@@ -6,4 +6,5 @@ public interface IRuleGenerationService
 {
     Task<List<Rule>> GenerateRuleSuggestionsAsync(string url, string? title = null);
     Task ApplyRuleAsync(Rule rule);
+    Task ApplyAllRulesAsync(List<Rule> rules);
 }

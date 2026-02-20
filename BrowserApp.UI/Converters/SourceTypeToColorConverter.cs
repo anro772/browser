@@ -15,6 +15,7 @@ public class SourceTypeToColorConverter : IValueConverter
             "template"    => new SolidColorBrush(Color.FromRgb(0xA7, 0x8B, 0xFA)), // purple
             "marketplace" => new SolidColorBrush(Color.FromRgb(0x34, 0xD3, 0x99)), // green
             "channel"     => new SolidColorBrush(Color.FromRgb(0x22, 0xD3, 0xEE)), // cyan
+            "ai"          => new SolidColorBrush(Color.FromRgb(0xFB, 0xBF, 0x24)), // yellow/amber
             _             => new SolidColorBrush(Color.FromRgb(0x73, 0x80, 0x99))  // gray
         };
     }
