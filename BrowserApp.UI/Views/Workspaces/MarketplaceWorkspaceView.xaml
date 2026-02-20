@@ -71,13 +71,25 @@
                         <DataGridTemplateColumn Header="" Width="100">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
-                                    <ui:Button Content="{Binding InstallButtonText}"
-                                               Appearance="Primary"
-                                               Command="{Binding DataContext.InstallRuleCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
-                                               CommandParameter="{Binding}"
-                                               IsEnabled="{Binding IsInstalled, Converter={StaticResource InverseBoolConverter}}"
-                                               Padding="8,4"
-                                               HorizontalAlignment="Center"/>
+                                    <Grid>
+                                        <ui:Button Content="Install"
+                                                   Appearance="Primary"
+                                                   Command="{Binding DataContext.InstallRuleCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                                   CommandParameter="{Binding}"
+                                                   Padding="8,4"
+                                                   HorizontalAlignment="Center"
+                                                   Visibility="{Binding IsInstalled, Converter={StaticResource BoolToVisibilityInverse}}"/>
+                                        <Border CornerRadius="4" Padding="8,4" HorizontalAlignment="Center"
+                                                Background="#1A34D399" BorderBrush="#4D34D399" BorderThickness="1"
+                                                Visibility="{Binding IsInstalled, Converter={StaticResource BoolToVisibility}}">
+                                            <StackPanel Orientation="Horizontal">
+                                                <TextBlock Text="✓" FontSize="11" FontWeight="SemiBold"
+                                                           Foreground="#34D399" VerticalAlignment="Center"/>
+                                                <TextBlock Text=" Installed" FontSize="11" FontWeight="SemiBold"
+                                                           Foreground="#34D399"/>
+                                            </StackPanel>
+                                        </Border>
+                                    </Grid>
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>

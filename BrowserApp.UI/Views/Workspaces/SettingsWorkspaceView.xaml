@@ -36,6 +36,7 @@
                                        FontWeight="SemiBold"
                                        VerticalAlignment="Center"/>
                         </StackPanel>
+                        <Separator Margin="0,0,0,10" Opacity="0.2"/>
                         <TextBlock Text="Your username is used when joining or creating channels."
                                    FontSize="12"
                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
@@ -64,7 +65,7 @@
                                        FontWeight="SemiBold"
                                        VerticalAlignment="Center"/>
                         </StackPanel>
-
+                        <Separator Margin="0,0,0,10" Opacity="0.2"/>
                         <TextBlock Text="Choose how aggressively to block trackers and ads."
                                    FontSize="12"
                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
@@ -107,7 +108,7 @@
                                        FontWeight="SemiBold"
                                        VerticalAlignment="Center"/>
                         </StackPanel>
-
+                        <Separator Margin="0,0,0,10" Opacity="0.2"/>
                         <TextBlock Text="Choose your default search engine for address bar queries."
                                    FontSize="12"
                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
@@ -143,7 +144,7 @@
                                        FontWeight="SemiBold"
                                        VerticalAlignment="Center"/>
                         </StackPanel>
-
+                        <Separator Margin="0,0,0,10" Opacity="0.2"/>
                         <TextBlock Text="URL for marketplace and channel sync services."
                                    FontSize="12"
                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
@@ -171,7 +172,7 @@
                                        FontWeight="SemiBold"
                                        VerticalAlignment="Center"/>
                         </StackPanel>
-
+                        <Separator Margin="0,0,0,10" Opacity="0.2"/>
                         <TextBlock Text="Clear stored browsing data."
                                    FontSize="12"
                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"

@@ -91,7 +91,18 @@
                         <DataGridTextColumn Header="Site" Binding="{Binding Site}" Width="150"/>
                         <DataGridTextColumn Header="Actions" Binding="{Binding ActionCount}" Width="60"/>
                         <DataGridTextColumn Header="Priority" Binding="{Binding Priority}" Width="60"/>
-                        <DataGridTextColumn Header="Source" Binding="{Binding SourceDisplay}" Width="80"/>
+                        <DataGridTemplateColumn Header="Source" Width="90">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <Border CornerRadius="4" Padding="6,2" Margin="2"
+                                            Background="{Binding SourceDisplay, Converter={StaticResource SourceTypeToColor}}"
+                                            HorizontalAlignment="Left">
+                                        <TextBlock Text="{Binding SourceDisplay}" FontSize="10" FontWeight="SemiBold"
+                                                   Foreground="#0B0E12" HorizontalAlignment="Center"/>
+                                    </Border>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
 
                         <DataGridTemplateColumn Header="" Width="50">
                             <DataGridTemplateColumn.CellTemplate>
