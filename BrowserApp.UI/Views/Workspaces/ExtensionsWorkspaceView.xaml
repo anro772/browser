@@ -12,19 +12,33 @@
 
         <StackPanel Grid.Row="0" Margin="0,0,0,16">
             <TextBlock Text="Extensions" Style="{StaticResource TitleTextStyle}"/>
-            <TextBlock Text="Manage browser extensions (unpacked Chromium extensions)"
+            <TextBlock Text="Install and manage Chrome extensions (unpacked folders or .crx files)"
                        Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                        Margin="0,4,0,0"/>
         </StackPanel>
 
         <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
             <StackPanel>
-                <ui:Button Content="Add Extension..."
-                           Icon="{ui:SymbolIcon Add24}"
-                           Command="{Binding InstallExtensionCommand}"
-                           Appearance="Primary"
-                           HorizontalAlignment="Stretch"
-                           Margin="0,0,0,12"/>
+                <Grid Margin="0,0,0,12">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="8"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <ui:Button Grid.Column="0"
+                               Content="Add From Folder..."
+                               Icon="{ui:SymbolIcon Folder24}"
+                               Command="{Binding InstallExtensionCommand}"
+                               Appearance="Primary"
+                               HorizontalAlignment="Stretch"/>
+
+                    <ui:Button Grid.Column="2"
+                               Content="Install .crx File..."
+                               Icon="{ui:SymbolIcon ArrowDownload24}"
+                               Command="{Binding InstallFromCrxCommand}"
+                               HorizontalAlignment="Stretch"/>
+                </Grid>
 
                 <ItemsControl ItemsSource="{Binding Extensions}">
                     <ItemsControl.ItemTemplate>
@@ -55,11 +69,22 @@
                                                    FontSize="14"
                                                    FontWeight="Medium"
                                                    Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
-                                        <TextBlock FontSize="12"
-                                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}">
-                                            <Run Text="v"/>
-                                            <Run Text="{Binding Version, Mode=OneWay}"/>
-                                        </TextBlock>
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock FontSize="12"
+                                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}">
+                                                <Run Text="v"/>
+                                                <Run Text="{Binding Version, Mode=OneWay}"/>
+                                            </TextBlock>
+                                            <TextBlock Text=" | "
+                                                       FontSize="12"
+                                                       Foreground="{DynamicResource TextFillColorTertiaryBrush}"/>
+                                            <TextBlock Text="{Binding FolderPath, Mode=OneWay}"
+                                                       FontSize="11"
+                                                       Foreground="{DynamicResource TextFillColorTertiaryBrush}"
+                                                       MaxWidth="300"
+                                                       TextTrimming="CharacterEllipsis"
+                                                       ToolTip="{Binding FolderPath, Mode=OneWay}"/>
+                                        </StackPanel>
                                     </StackPanel>
 
                                     <ui:ToggleSwitch Grid.Column="2"
@@ -94,6 +119,11 @@
                                Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                                HorizontalAlignment="Center"
                                Margin="0,8,0,0"/>
+                    <TextBlock Text="Add an unpacked extension folder or install a .crx file"
+                               FontSize="12"
+                               Foreground="{DynamicResource TextFillColorTertiaryBrush}"
+                               HorizontalAlignment="Center"
+                               Margin="0,4,0,0"/>
                 </StackPanel>
             </StackPanel>
         </ScrollViewer>

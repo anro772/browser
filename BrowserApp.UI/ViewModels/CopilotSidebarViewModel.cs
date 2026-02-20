@@ -1,19 +1,15 @@
 using System.Collections.ObjectModel;
-using System.Text.Json;
 using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using BrowserApp.Core.DTOs.Ollama;
 using BrowserApp.Core.Interfaces;
-using BrowserApp.Core.Models;
 
 namespace BrowserApp.UI.ViewModels;
 
 public partial class CopilotSidebarViewModel : ObservableObject, IDisposable
 {
     private readonly IOllamaClient _ollamaClient;
-    private readonly IRuleGenerationService? _ruleGenerationService;
-    private readonly TabStripViewModel? _tabStrip;
     private CancellationTokenSource? _streamCts;
 
     [ObservableProperty]
@@ -40,16 +36,6 @@ public partial class CopilotSidebarViewModel : ObservableObject, IDisposable
     public CopilotSidebarViewModel(IOllamaClient ollamaClient)
     {
         _ollamaClient = ollamaClient;
-    }
-
-    public CopilotSidebarViewModel(
-        IOllamaClient ollamaClient,
-        IRuleGenerationService ruleGenerationService,
-        TabStripViewModel tabStrip)
-    {
-        _ollamaClient = ollamaClient;
-        _ruleGenerationService = ruleGenerationService;
-        _tabStrip = tabStrip;
     }
 
     public void Dispose()
@@ -225,179 +211,6 @@ public partial class CopilotSidebarViewModel : ObservableObject, IDisposable
         RunOnUIThread(() => Messages.Clear());
     }
 
-    [RelayCommand]
-    public async Task GenerateRulesForCurrentPageAsync()
-    {
-        if (_ruleGenerationService == null || _tabStrip?.ActiveTab == null || IsGenerating)
-            return;
-
-        var url = _tabStrip.ActiveTab.Url;
-        var title = _tabStrip.ActiveTab.Title;
-
-        if (string.IsNullOrEmpty(url))
-            return;
-
-        // Add system message about rule generation
-        RunOnUIThread(() =>
-        {
-            Messages.Add(new ChatMessageItem
-            {
-                Role = "user",
-                Content = $"Generate blocking rules for: {url}",
-                Timestamp = DateTime.UtcNow
-            });
-        });
-
-        IsGenerating = true;
-
-        try
-        {
-            var rules = await _ruleGenerationService.GenerateRuleSuggestionsAsync(url, title);
-
-            RunOnUIThread(() =>
-            {
-                if (rules.Count == 0)
-                {
-                    Messages.Add(new ChatMessageItem
-                    {
-                        Role = "assistant",
-                        Content = "Could not generate rules for this page. The AI may not have recognized common trackers for this site.",
-                        Timestamp = DateTime.UtcNow
-                    });
-                }
-                else
-                {
-                    foreach (var rule in rules)
-                    {
-                        Messages.Add(new ChatMessageItem
-                        {
-                            Role = "assistant",
-                            Content = $"Suggested rule: {rule.Name}\n{rule.Description}\nSite: {rule.Site}\nActions: {rule.Rules.Count} action(s)",
-                            Timestamp = DateTime.UtcNow,
-                            IsRuleSuggestion = true,
-                            SuggestedRuleJson = JsonSerializer.Serialize(rule)
-                        });
-                    }
-                }
-            });
-        }
-        catch (Exception ex)
-        {
-            RunOnUIThread(() =>
-            {
-                Messages.Add(new ChatMessageItem
-                {
-                    Role = "assistant",
-                    Content = $"Error generating rules: {ex.Message}",
-                    Timestamp = DateTime.UtcNow
-                });
-            });
-            ErrorLogger.LogError("Rule generation failed", ex);
-        }
-        finally
-        {
-            IsGenerating = false;
-        }
-    }
-
-    [RelayCommand]
-    public async Task ApplyAllSuggestedRulesAsync()
-    {
-        if (_ruleGenerationService == null || IsGenerating)
-            return;
-
-        var ruleSuggestions = Messages
-            .Where(m => m.IsRuleSuggestion && !string.IsNullOrEmpty(m.SuggestedRuleJson))
-            .ToList();
-
-        if (ruleSuggestions.Count == 0)
-            return;
-
-        IsGenerating = true;
-
-        try
-        {
-            var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-            var rules = new List<Rule>();
-
-            foreach (var msg in ruleSuggestions)
-            {
-                var rule = JsonSerializer.Deserialize<Rule>(msg.SuggestedRuleJson!, options);
-                if (rule != null)
-                    rules.Add(rule);
-            }
-
-            if (rules.Count > 0)
-            {
-                await _ruleGenerationService.ApplyAllRulesAsync(rules);
-
-                RunOnUIThread(() =>
-                {
-                    Messages.Add(new ChatMessageItem
-                    {
-                        Role = "assistant",
-                        Content = $"Applied all {rules.Count} rules successfully! They will take effect on the next page load.",
-                        Timestamp = DateTime.UtcNow
-                    });
-                });
-            }
-        }
-        catch (Exception ex)
-        {
-            RunOnUIThread(() =>
-            {
-                Messages.Add(new ChatMessageItem
-                {
-                    Role = "assistant",
-                    Content = $"Failed to apply rules: {ex.Message}",
-                    Timestamp = DateTime.UtcNow
-                });
-            });
-        }
-        finally
-        {
-            IsGenerating = false;
-        }
-    }
-
-    [RelayCommand]
-    public async Task ApplyRuleAsync(string? ruleJson)
-    {
-        if (string.IsNullOrEmpty(ruleJson) || _ruleGenerationService == null)
-            return;
-
-        try
-        {
-            var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-            var rule = JsonSerializer.Deserialize<Rule>(ruleJson, options);
-            if (rule == null) return;
-
-            await _ruleGenerationService.ApplyRuleAsync(rule);
-
-            RunOnUIThread(() =>
-            {
-                Messages.Add(new ChatMessageItem
-                {
-                    Role = "assistant",
-                    Content = $"Rule '{rule.Name}' applied successfully! It will take effect on the next page load.",
-                    Timestamp = DateTime.UtcNow
-                });
-            });
-        }
-        catch (Exception ex)
-        {
-            RunOnUIThread(() =>
-            {
-                Messages.Add(new ChatMessageItem
-                {
-                    Role = "assistant",
-                    Content = $"Failed to apply rule: {ex.Message}",
-                    Timestamp = DateTime.UtcNow
-                });
-            });
-        }
-    }
-
     private List<OllamaChatMessage> BuildChatMessages()
     {
         var chatMessages = new List<OllamaChatMessage>
@@ -438,10 +251,4 @@ public partial class ChatMessageItem : ObservableObject
 
     [ObservableProperty]
     private bool _isStreaming;
-
-    [ObservableProperty]
-    private bool _isRuleSuggestion;
-
-    [ObservableProperty]
-    private string? _suggestedRuleJson;
 }

@@ -39,117 +39,138 @@ public class RuleGenerationServiceTests
     }
 
     [Fact]
-    public async Task GenerateRuleSuggestionsAsync_ReturnsRulesFromValidJson()
+    public async Task GenerateRuleSuggestionsAsync_ReturnsStandardRules()
     {
-        var rules = new List<Rule>
-        {
-            new()
-            {
-                Name = "Block Trackers",
-                Description = "Blocks tracking scripts",
-                Site = "*.example.com",
-                Rules = new List<RuleAction>
-                {
-                    new() { Type = "block", Match = new RuleMatch { UrlPattern = "*tracker.com/*" } }
-                }
-            }
-        };
-        var json = JsonSerializer.Serialize(rules);
-
+        // AI domain suggestions - return empty so we just get standard rules
         _ollamaClientMock
-            .Setup(x => x.ChatAsync(It.IsAny<List<OllamaChatMessage>>(), It.IsAny<string?>()))
-            .ReturnsAsync(json);
+            .Setup(x => x.ChatJsonAsync(It.IsAny<List<OllamaChatMessage>>(), It.IsAny<string?>()))
+            .ReturnsAsync("{\"domains\":[]}");
 
         var result = await _service.GenerateRuleSuggestionsAsync("https://example.com", "Example");
 
-        Assert.Single(result);
-        Assert.Equal("Block Trackers", result[0].Name);
-        Assert.Equal("ai", result[0].Source);
+        // Should have at least 3 standard rules: block networks, hide ads, remove popups
+        Assert.True(result.Count >= 3);
+        Assert.Contains(result, r => r.Name.Contains("Block Ad Networks"));
+        Assert.Contains(result, r => r.Name.Contains("Hide Ad Elements"));
+        Assert.Contains(result, r => r.Name.Contains("Remove Popups"));
     }
 
     [Fact]
-    public async Task GenerateRuleSuggestionsAsync_HandlesMarkdownWrappedJson()
+    public async Task GenerateRuleSuggestionsAsync_SetsAiSource()
     {
-        var rules = new List<Rule>
-        {
-            new()
-            {
-                Name = "Block Ads",
-                Description = "Blocks ad scripts",
-                Site = "*",
-                Rules = new List<RuleAction>
-                {
-                    new() { Type = "block", Match = new RuleMatch { UrlPattern = "*ads.com/*" } }
-                }
-            }
-        };
-        var json = "```json\n" + JsonSerializer.Serialize(rules) + "\n```";
-
         _ollamaClientMock
-            .Setup(x => x.ChatAsync(It.IsAny<List<OllamaChatMessage>>(), It.IsAny<string?>()))
-            .ReturnsAsync(json);
+            .Setup(x => x.ChatJsonAsync(It.IsAny<List<OllamaChatMessage>>(), It.IsAny<string?>()))
+            .ReturnsAsync("{\"domains\":[]}");
 
         var result = await _service.GenerateRuleSuggestionsAsync("https://example.com");
 
-        Assert.Single(result);
-        Assert.Equal("Block Ads", result[0].Name);
+        Assert.All(result, r => Assert.Equal("ai", r.Source));
     }
 
     [Fact]
-    public async Task GenerateRuleSuggestionsAsync_ReturnsEmptyOnInvalidJson()
+    public async Task GenerateRuleSuggestionsAsync_AssignsIds()
     {
         _ollamaClientMock
-            .Setup(x => x.ChatAsync(It.IsAny<List<OllamaChatMessage>>(), It.IsAny<string?>()))
-            .ReturnsAsync("This is not valid JSON at all");
+            .Setup(x => x.ChatJsonAsync(It.IsAny<List<OllamaChatMessage>>(), It.IsAny<string?>()))
+            .ReturnsAsync("{\"domains\":[]}");
 
         var result = await _service.GenerateRuleSuggestionsAsync("https://example.com");
 
+        Assert.All(result, r => Assert.False(string.IsNullOrEmpty(r.Id)));
+    }
+
+    [Fact]
+    public async Task GenerateRuleSuggestionsAsync_EmptyUrl_ReturnsEmpty()
+    {
+        var result = await _service.GenerateRuleSuggestionsAsync("");
         Assert.Empty(result);
     }
 
     [Fact]
-    public async Task GenerateRuleSuggestionsAsync_ReturnsEmptyOnException()
+    public async Task GenerateRuleSuggestionsAsync_BlockRuleContainsAdDomains()
     {
         _ollamaClientMock
-            .Setup(x => x.ChatAsync(It.IsAny<List<OllamaChatMessage>>(), It.IsAny<string?>()))
+            .Setup(x => x.ChatJsonAsync(It.IsAny<List<OllamaChatMessage>>(), It.IsAny<string?>()))
+            .ReturnsAsync("{\"domains\":[]}");
+
+        var result = await _service.GenerateRuleSuggestionsAsync("https://example.com");
+        var blockRule = result.First(r => r.Name.Contains("Block Ad Networks"));
+
+        // Should contain standard ad network block actions
+        Assert.Contains(blockRule.Rules, a => a.Match.UrlPattern!.Contains("doubleclick.net"));
+        Assert.Contains(blockRule.Rules, a => a.Match.UrlPattern!.Contains("googlesyndication.com"));
+        Assert.Contains(blockRule.Rules, a => a.Match.UrlPattern!.Contains("google-analytics.com"));
+    }
+
+    [Fact]
+    public async Task GenerateRuleSuggestionsAsync_CssRuleHidesAdElements()
+    {
+        _ollamaClientMock
+            .Setup(x => x.ChatJsonAsync(It.IsAny<List<OllamaChatMessage>>(), It.IsAny<string?>()))
+            .ReturnsAsync("{\"domains\":[]}");
+
+        var result = await _service.GenerateRuleSuggestionsAsync("https://example.com");
+        var cssRule = result.First(r => r.Name.Contains("Hide Ad Elements"));
+
+        Assert.Single(cssRule.Rules);
+        Assert.Equal("inject_css", cssRule.Rules[0].Type);
+        Assert.Contains("display: none", cssRule.Rules[0].Css);
+        Assert.Contains(".ad-container", cssRule.Rules[0].Css);
+    }
+
+    [Fact]
+    public async Task GenerateRuleSuggestionsAsync_JsRuleRemovesPopups()
+    {
+        _ollamaClientMock
+            .Setup(x => x.ChatJsonAsync(It.IsAny<List<OllamaChatMessage>>(), It.IsAny<string?>()))
+            .ReturnsAsync("{\"domains\":[]}");
+
+        var result = await _service.GenerateRuleSuggestionsAsync("https://example.com");
+        var jsRule = result.First(r => r.Name.Contains("Remove Popups"));
+
+        Assert.Single(jsRule.Rules);
+        Assert.Equal("inject_js", jsRule.Rules[0].Type);
+        Assert.Contains("overflow", jsRule.Rules[0].Js);
+    }
+
+    [Fact]
+    public async Task GenerateRuleSuggestionsAsync_AiDomainSuggestions_AddsExtraBlockRule()
+    {
+        _ollamaClientMock
+            .Setup(x => x.ChatJsonAsync(It.IsAny<List<OllamaChatMessage>>(), It.IsAny<string?>()))
+            .ReturnsAsync("{\"domains\":[\"siteads.example.net\",\"tracker.example.net\"]}");
+
+        var result = await _service.GenerateRuleSuggestionsAsync("https://example.com");
+
+        // Should have 4 rules: 3 standard + 1 AI-suggested
+        Assert.Equal(4, result.Count);
+        var aiRule = result.First(r => r.Name.Contains("Site-Specific"));
+        Assert.Contains(aiRule.Rules, a => a.Match.UrlPattern!.Contains("siteads.example.net"));
+    }
+
+    [Fact]
+    public async Task GenerateRuleSuggestionsAsync_AiFailure_StillReturnsStandardRules()
+    {
+        _ollamaClientMock
+            .Setup(x => x.ChatJsonAsync(It.IsAny<List<OllamaChatMessage>>(), It.IsAny<string?>()))
             .ThrowsAsync(new HttpRequestException("Connection refused"));
 
         var result = await _service.GenerateRuleSuggestionsAsync("https://example.com");
 
-        Assert.Empty(result);
+        // Standard rules should still be generated even if AI fails
+        Assert.True(result.Count >= 3);
     }
 
     [Fact]
-    public async Task GenerateRuleSuggestionsAsync_IncludesUrlInPrompt()
+    public async Task GenerateRuleSuggestionsAsync_SetsSitePattern()
     {
-        List<OllamaChatMessage>? capturedMessages = null;
         _ollamaClientMock
-            .Setup(x => x.ChatAsync(It.IsAny<List<OllamaChatMessage>>(), It.IsAny<string?>()))
-            .Callback<List<OllamaChatMessage>, string?>((msgs, _) => capturedMessages = msgs)
-            .ReturnsAsync("[]");
-
-        await _service.GenerateRuleSuggestionsAsync("https://test.com", "Test Page");
-
-        Assert.NotNull(capturedMessages);
-        var userMsg = capturedMessages!.Last();
-        Assert.Equal("user", userMsg.Role);
-        Assert.Contains("https://test.com", userMsg.Content);
-        Assert.Contains("Test Page", userMsg.Content);
-    }
-
-    [Fact]
-    public async Task GenerateRuleSuggestionsAsync_AssignsIdsToRulesWithoutIds()
-    {
-        var json = "[{\"Name\":\"Test\",\"Description\":\"test\",\"Site\":\"*\",\"Rules\":[]}]";
-
-        _ollamaClientMock
-            .Setup(x => x.ChatAsync(It.IsAny<List<OllamaChatMessage>>(), It.IsAny<string?>()))
-            .ReturnsAsync(json);
+            .Setup(x => x.ChatJsonAsync(It.IsAny<List<OllamaChatMessage>>(), It.IsAny<string?>()))
+            .ReturnsAsync("{\"domains\":[]}");
 
         var result = await _service.GenerateRuleSuggestionsAsync("https://example.com");
 
-        Assert.Single(result);
-        Assert.False(string.IsNullOrEmpty(result[0].Id));
+        Assert.All(result, r => Assert.Equal("*.example.com", r.Site));
     }
 
     [Fact]
@@ -201,79 +222,29 @@ public class RuleGenerationServiceTests
     }
 
     [Fact]
-    public async Task GenerateRuleSuggestionsAsync_EmptyUrl_StillCallsOllama()
-    {
-        _ollamaClientMock
-            .Setup(x => x.ChatAsync(It.IsAny<List<OllamaChatMessage>>(), It.IsAny<string?>()))
-            .ReturnsAsync("[]");
-        var result = await _service.GenerateRuleSuggestionsAsync("");
-        _ollamaClientMock.Verify(x => x.ChatAsync(It.IsAny<List<OllamaChatMessage>>(), It.IsAny<string?>()), Times.Once);
-        Assert.Empty(result);
-    }
-
-    [Fact]
-    public async Task GenerateRuleSuggestionsAsync_EmptyResponse_ReturnsEmpty()
-    {
-        _ollamaClientMock
-            .Setup(x => x.ChatAsync(It.IsAny<List<OllamaChatMessage>>(), It.IsAny<string?>()))
-            .ReturnsAsync("");
-        var result = await _service.GenerateRuleSuggestionsAsync("https://example.com");
-        Assert.Empty(result);
-    }
-
-    [Fact]
-    public async Task GenerateRuleSuggestionsAsync_JsonWithExtraTextBeforeArray_Parses()
-    {
-        var rules = new List<object> { new { Name = "Test", Description = "test", Site = "*", Rules = new List<object>() } };
-        var json = "Here are the rules: " + System.Text.Json.JsonSerializer.Serialize(rules);
-        _ollamaClientMock
-            .Setup(x => x.ChatAsync(It.IsAny<List<OllamaChatMessage>>(), It.IsAny<string?>()))
-            .ReturnsAsync(json);
-        var result = await _service.GenerateRuleSuggestionsAsync("https://example.com");
-        Assert.Single(result);
-        Assert.Equal("Test", result[0].Name);
-    }
-
-    [Fact]
-    public async Task GenerateRuleSuggestionsAsync_MultipleRules_ReturnsAll()
-    {
-        var rules = new List<object>
-        {
-            new { Name = "Rule1", Description = "d1", Site = "*", Rules = new List<object>() },
-            new { Name = "Rule2", Description = "d2", Site = "*", Rules = new List<object>() },
-            new { Name = "Rule3", Description = "d3", Site = "*", Rules = new List<object>() }
-        };
-        _ollamaClientMock
-            .Setup(x => x.ChatAsync(It.IsAny<List<OllamaChatMessage>>(), It.IsAny<string?>()))
-            .ReturnsAsync(System.Text.Json.JsonSerializer.Serialize(rules));
-        var result = await _service.GenerateRuleSuggestionsAsync("https://example.com");
-        Assert.Equal(3, result.Count);
-    }
-
-    [Fact]
     public async Task ApplyRuleAsync_WhenRepoThrows_PropagatesException()
     {
         _ruleRepoMock
-            .Setup(x => x.AddAsync(It.IsAny<BrowserApp.Data.Entities.RuleEntity>()))
+            .Setup(x => x.AddAsync(It.IsAny<RuleEntity>()))
             .ThrowsAsync(new InvalidOperationException("DB error"));
-        var rule = new BrowserApp.Core.Models.Rule { Name = "Test", Rules = new List<BrowserApp.Core.Models.RuleAction>() };
+        var rule = new Rule { Name = "Test", Rules = new List<RuleAction>() };
         await Assert.ThrowsAsync<InvalidOperationException>(() => _service.ApplyRuleAsync(rule));
     }
 
     [Fact]
     public async Task ApplyRuleAsync_SerializesRulesJsonCorrectly()
     {
-        BrowserApp.Data.Entities.RuleEntity? capturedEntity = null;
+        RuleEntity? capturedEntity = null;
         _ruleRepoMock
-            .Setup(x => x.AddAsync(It.IsAny<BrowserApp.Data.Entities.RuleEntity>()))
-            .Callback<BrowserApp.Data.Entities.RuleEntity>(e => capturedEntity = e)
+            .Setup(x => x.AddAsync(It.IsAny<RuleEntity>()))
+            .Callback<RuleEntity>(e => capturedEntity = e)
             .Returns(Task.CompletedTask);
-        var rule = new BrowserApp.Core.Models.Rule
+        var rule = new Rule
         {
             Name = "JSON Test",
-            Rules = new List<BrowserApp.Core.Models.RuleAction>
+            Rules = new List<RuleAction>
             {
-                new() { Type = "block", Match = new BrowserApp.Core.Models.RuleMatch { UrlPattern = "*test*" } }
+                new() { Type = "block", Match = new RuleMatch { UrlPattern = "*test*" } }
             }
         };
         await _service.ApplyRuleAsync(rule);

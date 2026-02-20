@@ -20,7 +20,7 @@
 
         <StackPanel Grid.Row="0" Margin="0,0,0,16">
             <TextBlock Text="Rules" Style="{StaticResource TitleTextStyle}" Margin="0,0,0,4"/>
-            <TextBlock Text="Manage blocking and content injection rules" Foreground="{StaticResource TextSecondaryBrush}"/>
+            <TextBlock Text="Site customizations and tweaks" Foreground="{StaticResource TextSecondaryBrush}"/>
         </StackPanel>
 
         <Grid Grid.Row="1" Margin="0,0,0,8">
@@ -40,8 +40,9 @@
                 <ui:DropDownButton Content="Load Template" Margin="0,0,8,0">
                     <ui:DropDownButton.Flyout>
                         <ContextMenu>
-                            <MenuItem Header="Hide Cookie Banners" Command="{Binding LoadTemplateCommand}" CommandParameter="cookie-banners"/>
+                            <MenuItem Header="Auto-Dismiss Cookie Banners" Command="{Binding LoadTemplateCommand}" CommandParameter="cookie-banners"/>
                             <MenuItem Header="Remove Sticky Headers" Command="{Binding LoadTemplateCommand}" CommandParameter="remove-sticky-headers"/>
+                            <MenuItem Header="Force Dark Mode" Command="{Binding LoadTemplateCommand}" CommandParameter="force-dark-mode"/>
                         </ContextMenu>
                     </ui:DropDownButton.Flyout>
                 </ui:DropDownButton>

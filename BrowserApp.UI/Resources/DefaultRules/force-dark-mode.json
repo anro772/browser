@@ -1,0 +1,22 @@
+{
+  "id": "00000000-0000-0000-0000-000000000007",
+  "name": "Force Dark Mode",
+  "description": "Applies a dark mode filter to all websites using CSS inversion, with exclusions for images, videos, and other media to keep them looking correct",
+  "site": "*",
+  "enabled": false,
+  "priority": 50,
+  "rules": [
+    {
+      "type": "inject_css",
+      "match": { "urlPattern": "*" },
+      "css": "html { filter: invert(1) hue-rotate(180deg) !important; background-color: #111 !important; } img, video, picture, canvas, svg image, [style*=\"background-image\"], .emoji, iframe { filter: invert(1) hue-rotate(180deg) !important; }",
+      "timing": "dom_ready"
+    },
+    {
+      "type": "inject_css",
+      "match": { "urlPattern": "*" },
+      "css": "img[src$=\".svg\"] { filter: invert(1) hue-rotate(180deg) !important; } pre, code { filter: none !important; background-color: #1e1e1e !important; color: #d4d4d4 !important; }",
+      "timing": "dom_ready"
+    }
+  ]
+}

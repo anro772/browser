@@ -42,6 +42,7 @@ public partial class MainWindow : FluentWindow
     private BrowserTabItem? _certTrackedTab;
     private readonly Dictionary<BrowserTabItem, EventHandler<NetworkRequest>> _requestCapturedHandlers = new();
     private readonly Dictionary<BrowserTabItem, CoreWebView2> _wiredWebViews = new();
+    private bool _extensionProfileWired;
 
     public MainWindow(
         MainViewModel viewModel,
@@ -231,9 +232,9 @@ public partial class MainWindow : FluentWindow
 
     /// <summary>
     /// Called after CoreWebView2 is fully initialized on a tab.
-    /// Wires up network logging, download notifications, and download tracking.
+    /// Wires up network logging, download notifications, download tracking, and extensions.
     /// </summary>
-    private void OnTabReady(object? sender, BrowserTabItem tab)
+    private async void OnTabReady(object? sender, BrowserTabItem tab)
     {
         // Wire this tab's request interceptor to the network logger (Bug 8: use stored handler)
         if (tab.RequestInterceptor != null)
@@ -251,6 +252,23 @@ public partial class MainWindow : FluentWindow
         {
             DownloadNotificationControl.WireToWebView(tab.CoreWebView2);
             _wiredWebViews[tab] = tab.CoreWebView2;
+        }
+
+        // Wire ExtensionService to the WebView2 profile on first tab init
+        if (!_extensionProfileWired && tab.CoreWebView2 != null)
+        {
+            _extensionProfileWired = true;
+            try
+            {
+                var extensionService = _serviceProvider.GetRequiredService<ExtensionService>();
+                extensionService.SetProfile(tab.CoreWebView2.Profile);
+                await extensionService.LoadAllEnabledAsync();
+                ErrorLogger.LogInfo("[MainWindow] Extension service wired to WebView2 profile");
+            }
+            catch (Exception ex)
+            {
+                ErrorLogger.LogError("[MainWindow] Failed to wire extension service", ex);
+            }
         }
     }
 

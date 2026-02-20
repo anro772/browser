@@ -95,6 +95,28 @@ public class OllamaClient : IOllamaClient, IDisposable
         return chatResponse?.Message?.Content ?? string.Empty;
     }
 
+    public async Task<string> ChatJsonAsync(List<OllamaChatMessage> messages, string? model = null)
+    {
+        var request = new OllamaChatRequest
+        {
+            Model = model ?? _defaultModel,
+            Messages = messages,
+            Stream = false,
+            Format = "json"
+        };
+
+        var json = JsonSerializer.Serialize(request);
+        var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+        var response = await _httpClient.PostAsync("/api/chat", content);
+        response.EnsureSuccessStatusCode();
+
+        var responseJson = await response.Content.ReadAsStringAsync();
+        var chatResponse = JsonSerializer.Deserialize<OllamaChatResponse>(responseJson);
+
+        return chatResponse?.Message?.Content ?? string.Empty;
+    }
+
     public async IAsyncEnumerable<string> ChatStreamAsync(
         List<OllamaChatMessage> messages,
         string? model = null,

@@ -84,6 +84,41 @@ public partial class ExtensionManagerViewModel : ObservableObject
     }
 
     [RelayCommand]
+    private async Task InstallFromCrxAsync()
+    {
+        try
+        {
+            var dialog = new Microsoft.Win32.OpenFileDialog
+            {
+                Title = "Select Extension File",
+                Filter = "Chrome Extension (*.crx)|*.crx|All Files (*.*)|*.*",
+                DefaultExt = ".crx"
+            };
+
+            if (dialog.ShowDialog() == true)
+            {
+                var result = await _extensionService.InstallFromCrxAsync(dialog.FileName);
+                if (result != null)
+                {
+                    await LoadExtensionsAsync();
+                }
+                else
+                {
+                    MessageBox.Show(
+                        "Failed to install extension from .crx file. The file may be invalid or corrupted.",
+                        "Install Extension",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Warning);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"CRX install error: {ex.Message}");
+        }
+    }
+
+    [RelayCommand]
     private async Task UninstallExtensionAsync(ExtensionEntity ext)
     {
         try

@@ -92,6 +92,18 @@ public partial class App : Application
 
         ErrorLogger.LogInfo("Blocking service initialized");
 
+        // Initialize filter list service (downloads EasyList/EasyPrivacy if needed)
+        try
+        {
+            var filterListService = _serviceProvider.GetRequiredService<IFilterListService>();
+            await filterListService.InitializeAsync();
+            ErrorLogger.LogInfo($"Filter list service initialized: {filterListService.GetTotalFilterCount()} filters");
+        }
+        catch (Exception ex)
+        {
+            ErrorLogger.LogError("Filter list initialization failed (non-fatal)", ex);
+        }
+
         // Start network logger background task - AWAIT to ensure it starts
         var networkLogger = _serviceProvider.GetRequiredService<INetworkLogger>();
         await networkLogger.StartAsync();
@@ -141,9 +153,13 @@ public partial class App : Application
         services.AddSingleton<JSInjector>();
         services.AddSingleton<IJSInjector>(sp => sp.GetRequiredService<JSInjector>());
 
+        // Filter List Service (EasyList/EasyPrivacy)
+        services.AddSingleton<IFilterListService, FilterListService>();
+
         // Network Monitoring Services (Phase 2) - with blocking support
         services.AddSingleton<RequestInterceptor>(sp => new RequestInterceptor(
-            sp.GetRequiredService<IBlockingService>()));
+            sp.GetRequiredService<IBlockingService>(),
+            sp.GetRequiredService<IFilterListService>()));
         services.AddSingleton<IRequestInterceptor>(sp => sp.GetRequiredService<RequestInterceptor>());
         services.AddSingleton<INetworkLogger, NetworkLogger>();
 

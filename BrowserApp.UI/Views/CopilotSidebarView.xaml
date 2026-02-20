@@ -97,53 +97,6 @@
             </Grid>
         </DataTemplate>
 
-        <!-- Rule suggestion template: assistant bubble with Apply button -->
-        <DataTemplate x:Key="RuleSuggestionTemplate">
-            <Grid Margin="8,4,40,4" HorizontalAlignment="Left">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="*"/>
-                </Grid.ColumnDefinitions>
-
-                <Border Grid.Column="0"
-                        Width="24" Height="24"
-                        CornerRadius="12"
-                        Background="{StaticResource SuccessSubtleBrush}"
-                        VerticalAlignment="Top"
-                        Margin="0,2,8,0">
-                    <ui:SymbolIcon Symbol="Shield24"
-                                   FontSize="12"
-                                   Foreground="{StaticResource SuccessBrush}"
-                                   HorizontalAlignment="Center"
-                                   VerticalAlignment="Center"/>
-                </Border>
-
-                <Border Grid.Column="1"
-                        Background="{StaticResource SuccessSubtleBrush}"
-                        BorderBrush="{StaticResource SuccessBrush}"
-                        BorderThickness="1"
-                        CornerRadius="12,12,12,2"
-                        Padding="12,8"
-                        MaxWidth="280">
-                    <StackPanel>
-                        <TextBlock Text="{Binding Content}"
-                                   TextWrapping="Wrap"
-                                   FontSize="13"
-                                   LineHeight="19"
-                                   Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
-                        <ui:Button Content="Apply Rule"
-                                   Icon="{ui:SymbolIcon Checkmark24}"
-                                   Appearance="Success"
-                                   FontSize="11"
-                                   Padding="8,4"
-                                   Margin="0,8,0,0"
-                                   Command="{Binding DataContext.ApplyRuleCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                   CommandParameter="{Binding SuggestedRuleJson}"/>
-                    </StackPanel>
-                </Border>
-            </Grid>
-        </DataTemplate>
-
         <!-- Template selector via style triggers on ItemsControl -->
         <Style x:Key="ChatMessageContainerStyle" TargetType="ContentPresenter">
             <Setter Property="ContentTemplate" Value="{StaticResource AssistantMessageTemplate}"/>
@@ -166,9 +119,6 @@
                 </EventTrigger>
                 <DataTrigger Binding="{Binding Role}" Value="user">
                     <Setter Property="ContentTemplate" Value="{StaticResource UserMessageTemplate}"/>
-                </DataTrigger>
-                <DataTrigger Binding="{Binding IsRuleSuggestion}" Value="True">
-                    <Setter Property="ContentTemplate" Value="{StaticResource RuleSuggestionTemplate}"/>
                 </DataTrigger>
             </Style.Triggers>
         </Style>
@@ -329,108 +279,76 @@
             </Border>
         </Grid>
 
-        <!-- Input area -->
+        <!-- Input area (only visible when connected) -->
         <Border Grid.Row="2"
                 Background="{StaticResource BgElevatedBrush}"
                 BorderBrush="{StaticResource BorderSubtleBrush}"
                 BorderThickness="0,1,0,0"
                 Padding="8"
                 Visibility="{Binding IsOllamaConnected, Converter={StaticResource BoolToVisibility}}">
-            <StackPanel>
-                <!-- Generate Rules toolbar -->
-                <Grid Margin="0,0,0,8">
+            <!-- Pill-shaped input container -->
+            <Border Style="{StaticResource PillInputContainerStyle}">
+                <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="8"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
 
-                    <ui:Button Grid.Column="0"
-                               Content="Generate Rules for Page"
-                               Command="{Binding GenerateRulesForCurrentPageCommand}"
-                               Appearance="Secondary"
-                               HorizontalAlignment="Stretch"
-                               FontSize="12">
-                        <ui:Button.Icon>
-                            <ui:SymbolIcon Symbol="Shield24" Foreground="{StaticResource AccentBrush}"/>
-                        </ui:Button.Icon>
-                    </ui:Button>
+                    <!-- Input TextBox (transparent, no border — pill provides chrome) -->
+                    <TextBox Grid.Column="0"
+                             x:Name="ChatInput"
+                             Text="{Binding UserInput, UpdateSourceTrigger=PropertyChanged}"
+                             FontSize="13"
+                             Padding="12,6"
+                             AcceptsReturn="False"
+                             TextWrapping="Wrap"
+                             MaxHeight="80"
+                             VerticalScrollBarVisibility="Auto"
+                             Background="Transparent"
+                             BorderThickness="0"
+                             Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                             CaretBrush="{DynamicResource TextFillColorPrimaryBrush}"
+                             VerticalAlignment="Center"
+                             PreviewKeyDown="ChatInput_PreviewKeyDown">
+                        <TextBox.Style>
+                            <Style TargetType="TextBox">
+                                <Style.Triggers>
+                                    <Trigger Property="Text" Value="">
+                                        <Setter Property="Tag" Value="Ask the copilot..."/>
+                                    </Trigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBox.Style>
+                    </TextBox>
 
-                    <ui:Button Grid.Column="2"
-                               Content="Apply All"
-                               Command="{Binding ApplyAllSuggestedRulesCommand}"
-                               Appearance="Primary"
-                               FontSize="12">
-                        <ui:Button.Icon>
-                            <ui:SymbolIcon Symbol="CheckmarkCircle24"/>
-                        </ui:Button.Icon>
-                    </ui:Button>
+                    <!-- Embedded Send / Stop buttons inside the pill -->
+                    <StackPanel Grid.Column="1"
+                                Orientation="Horizontal"
+                                VerticalAlignment="Center"
+                                Margin="0,0,4,0">
+
+                        <!-- Send button (circular, visible when not generating) -->
+                        <ui:Button Icon="{ui:SymbolIcon Send24}"
+                                   ToolTip="Send message (Enter)"
+                                   Command="{Binding SendMessageCommand}"
+                                   Appearance="Primary"
+                                   Width="32" Height="32"
+                                   Padding="0"
+                                   CornerRadius="16"
+                                   Visibility="{Binding IsGenerating, Converter={StaticResource BoolToVisibilityInverse}}"/>
+
+                        <!-- Stop button (circular, visible when generating) -->
+                        <ui:Button Icon="{ui:SymbolIcon Stop24}"
+                                   ToolTip="Stop generation"
+                                   Command="{Binding StopGenerationCommand}"
+                                   Appearance="Caution"
+                                   Width="32" Height="32"
+                                   Padding="0"
+                                   CornerRadius="16"
+                                   Visibility="{Binding IsGenerating, Converter={StaticResource BoolToVisibility}}"/>
+                    </StackPanel>
                 </Grid>
-
-                <!-- Pill-shaped input container -->
-                <Border Style="{StaticResource PillInputContainerStyle}">
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
-
-                        <!-- Input TextBox (transparent, no border — pill provides chrome) -->
-                        <TextBox Grid.Column="0"
-                                 x:Name="ChatInput"
-                                 Text="{Binding UserInput, UpdateSourceTrigger=PropertyChanged}"
-                                 FontSize="13"
-                                 Padding="12,6"
-                                 AcceptsReturn="False"
-                                 TextWrapping="Wrap"
-                                 MaxHeight="80"
-                                 VerticalScrollBarVisibility="Auto"
-                                 Background="Transparent"
-                                 BorderThickness="0"
-                                 Foreground="{DynamicResource TextFillColorPrimaryBrush}"
-                                 CaretBrush="{DynamicResource TextFillColorPrimaryBrush}"
-                                 VerticalAlignment="Center"
-                                 PreviewKeyDown="ChatInput_PreviewKeyDown">
-                            <TextBox.Style>
-                                <Style TargetType="TextBox">
-                                    <Style.Triggers>
-                                        <Trigger Property="Text" Value="">
-                                            <Setter Property="Tag" Value="Ask the copilot..."/>
-                                        </Trigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </TextBox.Style>
-                        </TextBox>
-
-                        <!-- Embedded Send / Stop buttons inside the pill -->
-                        <StackPanel Grid.Column="1"
-                                    Orientation="Horizontal"
-                                    VerticalAlignment="Center"
-                                    Margin="0,0,4,0">
-
-                            <!-- Send button (circular, visible when not generating) -->
-                            <ui:Button Icon="{ui:SymbolIcon Send24}"
-                                       ToolTip="Send message (Enter)"
-                                       Command="{Binding SendMessageCommand}"
-                                       Appearance="Primary"
-                                       Width="32" Height="32"
-                                       Padding="0"
-                                       CornerRadius="16"
-                                       Visibility="{Binding IsGenerating, Converter={StaticResource BoolToVisibilityInverse}}"/>
-
-                            <!-- Stop button (circular, visible when generating) -->
-                            <ui:Button Icon="{ui:SymbolIcon Stop24}"
-                                       ToolTip="Stop generation"
-                                       Command="{Binding StopGenerationCommand}"
-                                       Appearance="Caution"
-                                       Width="32" Height="32"
-                                       Padding="0"
-                                       CornerRadius="16"
-                                       Visibility="{Binding IsGenerating, Converter={StaticResource BoolToVisibility}}"/>
-                        </StackPanel>
-                    </Grid>
-                </Border>
-            </StackPanel>
+            </Border>
         </Border>
     </Grid>
 </UserControl>

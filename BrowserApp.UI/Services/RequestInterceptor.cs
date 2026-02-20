@@ -12,6 +12,7 @@ public class RequestInterceptor : IRequestInterceptor
 {
     private CoreWebView2? _coreWebView2;
     private readonly IBlockingService? _blockingService;
+    private readonly IFilterListService? _filterListService;
     private bool _isEnabled;
     private bool _isInitialized;
 
@@ -26,6 +27,12 @@ public class RequestInterceptor : IRequestInterceptor
     public RequestInterceptor(IBlockingService blockingService)
     {
         _blockingService = blockingService;
+    }
+
+    public RequestInterceptor(IBlockingService blockingService, IFilterListService filterListService)
+    {
+        _blockingService = blockingService;
+        _filterListService = filterListService;
     }
 
     /// <summary>
@@ -92,10 +99,29 @@ public class RequestInterceptor : IRequestInterceptor
             string? blockedByRuleId = null;
             string? blockReason = null;
 
-            // Check BlockingService (custom rules)
-            if (_blockingService != null)
+            // Never block first-party document/navigation requests (the page itself).
+            // This prevents rules with broad patterns from breaking the site.
+            // Only block sub-resources (scripts, images, XHR, etc.) and third-party documents.
+            var currentPageUrl = _coreWebView2?.Source;
+            bool isFirstPartyDocument = false;
+            if (e.ResourceContext == CoreWebView2WebResourceContext.Document)
             {
-                var currentPageUrl = _coreWebView2?.Source;
+                if (!string.IsNullOrEmpty(currentPageUrl) &&
+                    Uri.TryCreate(currentPageUrl, UriKind.Absolute, out var pageUri) &&
+                    Uri.TryCreate(e.Request.Uri, UriKind.Absolute, out var reqUri))
+                {
+                    isFirstPartyDocument = pageUri.Host.Equals(reqUri.Host, StringComparison.OrdinalIgnoreCase);
+                }
+                else
+                {
+                    // First navigation (no current page yet) — always allow
+                    isFirstPartyDocument = true;
+                }
+            }
+
+            // Check BlockingService (custom rules)
+            if (_blockingService != null && !isFirstPartyDocument)
+            {
                 var evaluation = _blockingService.ShouldBlockRequest(request, currentPageUrl);
 
                 if (evaluation.ShouldBlock)
@@ -104,6 +130,17 @@ public class RequestInterceptor : IRequestInterceptor
                     blockedByRuleId = evaluation.BlockedByRuleId?.ToString();
                     blockReason = $"Custom Rule {evaluation.BlockedByRuleId}";
                     System.Diagnostics.Debug.WriteLine($"[RequestInterceptor] Blocked by Custom Rule: {request.Url}");
+                }
+            }
+
+            // Check FilterListService (EasyList/EasyPrivacy)
+            if (!shouldBlock && _filterListService != null && !isFirstPartyDocument)
+            {
+                if (_filterListService.ShouldBlock(request.Url, currentPageUrl, request.ResourceType))
+                {
+                    shouldBlock = true;
+                    blockReason = "Filter List";
+                    System.Diagnostics.Debug.WriteLine($"[RequestInterceptor] Blocked by Filter List: {request.Url}");
                 }
             }
 

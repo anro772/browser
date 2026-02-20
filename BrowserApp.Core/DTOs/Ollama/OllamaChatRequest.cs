@@ -15,6 +15,10 @@ public class OllamaChatRequest
 
     [JsonPropertyName("temperature")]
     public double? Temperature { get; set; }
+
+    [JsonPropertyName("format")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Format { get; set; }
 }
 
 public class OllamaChatMessage

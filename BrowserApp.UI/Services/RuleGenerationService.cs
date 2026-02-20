@@ -14,62 +14,33 @@ public class RuleGenerationService : IRuleGenerationService
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly IRuleEngine _ruleEngine;
 
-    private const string SystemPrompt = @"You are an expert ad-blocking and privacy rule generator for a browser. Generate comprehensive blocking rules similar to uBlock Origin filter lists.
+    private const string SystemPrompt = @"You generate ad-blocking rules as JSON. Respond with ONLY a JSON array, no other text.
 
-Given a URL and page info, create rules covering ALL of these categories:
+Output this exact structure with the site filled in:
+{""rules"":[
+{""Name"":""Block Ad Networks"",""Site"":""SITE_HERE"",""Priority"":50,""Rules"":[
+{""Type"":""block"",""Match"":{""UrlPattern"":""*doubleclick.net*""},""Css"":null,""Js"":null},
+{""Type"":""block"",""Match"":{""UrlPattern"":""*googlesyndication.com*""},""Css"":null,""Js"":null},
+{""Type"":""block"",""Match"":{""UrlPattern"":""*google-analytics.com*""},""Css"":null,""Js"":null},
+{""Type"":""block"",""Match"":{""UrlPattern"":""*googletagmanager.com*""},""Css"":null,""Js"":null},
+{""Type"":""block"",""Match"":{""UrlPattern"":""*googleadservices.com*""},""Css"":null,""Js"":null},
+{""Type"":""block"",""Match"":{""UrlPattern"":""*facebook.net*""},""Css"":null,""Js"":null},
+{""Type"":""block"",""Match"":{""UrlPattern"":""*adnxs.com*""},""Css"":null,""Js"":null},
+{""Type"":""block"",""Match"":{""UrlPattern"":""*amazon-adsystem.com*""},""Css"":null,""Js"":null},
+{""Type"":""block"",""Match"":{""UrlPattern"":""*taboola.com*""},""Css"":null,""Js"":null},
+{""Type"":""block"",""Match"":{""UrlPattern"":""*outbrain.com*""},""Css"":null,""Js"":null},
+{""Type"":""block"",""Match"":{""UrlPattern"":""*criteo.com*""},""Css"":null,""Js"":null},
+{""Type"":""block"",""Match"":{""UrlPattern"":""*pubmatic.com*""},""Css"":null,""Js"":null}
+]},
+{""Name"":""Hide Ad Elements"",""Site"":""SITE_HERE"",""Priority"":40,""Rules"":[
+{""Type"":""inject_css"",""Match"":{""UrlPattern"":""*""},""Css"":"".ad-container,.ad-banner,.ad-wrapper,[class*=ad-],[id*=ad-],.sponsored,.advertisement,[class*=popup],[class*=overlay],.interstitial{display:none!important}"",""Js"":null}
+]},
+{""Name"":""Remove Popups"",""Site"":""SITE_HERE"",""Priority"":30,""Rules"":[
+{""Type"":""inject_js"",""Match"":{""UrlPattern"":""*""},""Css"":null,""Js"":""document.body.style.overflow='auto';setInterval(function(){document.querySelectorAll('[class*=popup],[class*=overlay],[class*=modal]').forEach(function(e){if(getComputedStyle(e).position==='fixed')e.remove()})},2000)""}
+]}
+]}
 
-1. **Network Blocking Rules** (type: ""block"") - Block requests to ad/tracker domains:
-   - Google ads: *doubleclick.net/*, *googlesyndication.com/*, *google-analytics.com/*, *googletagmanager.com/*, *googleadservices.com/*, *pagead2.googlesyndication.com/*
-   - Facebook: *facebook.net/tr*, *facebook.com/tr*, *connect.facebook.net/*
-   - Ad networks: *adnxs.com/*, *amazon-adsystem.com/*, *outbrain.com/*, *taboola.com/*, *criteo.com/*, *rubiconproject.com/*, *pubmatic.com/*, *openx.net/*
-   - Analytics: *hotjar.com/*, *fullstory.com/*, *mixpanel.com/*, *segment.io/*
-   - Also block site-specific ad patterns based on the URL
-
-2. **CSS Cosmetic Filtering Rules** (type: ""inject_css"") - Hide ad containers and overlays with CSS:
-   - Common ad selectors: [class*=""ad-""], [class*=""ad_""], [id*=""ad-""], [id*=""ad_""], .advertisement, .ad-container, .ad-wrapper, .sponsored
-   - Popup overlays: .modal-overlay, .popup-overlay, .interstitial, [class*=""popup""], [class*=""overlay""]
-   - Cookie/consent banners, newsletter signup nag screens
-   - Fake download buttons, deceptive CTAs
-   - Site-specific ad containers
-
-3. **JavaScript Rules** (type: ""inject_js"") - Remove dynamic overlays and popups:
-   - Anti-adblock detection removal
-   - Scroll lock removal: document.body.style.overflow='auto'
-   - Popup/overlay auto-dismiss scripts
-   - Timer-based popup removal with MutationObserver
-
-Each rule must follow this exact JSON schema:
-{
-  ""Name"": ""string - descriptive rule name"",
-  ""Description"": ""string - what this rule does"",
-  ""Site"": ""string - URL pattern with wildcards, e.g. *.example.com"",
-  ""Priority"": number (10=normal, 50=important, 90=critical),
-  ""Rules"": [
-    {
-      ""Type"": ""block"" | ""inject_css"" | ""inject_js"",
-      ""Match"": {
-        ""UrlPattern"": ""string - URL pattern to match (required for block, optional for inject)"",
-        ""ResourceType"": ""Script"" | ""Stylesheet"" | ""Image"" | ""XHR"" | ""Fetch"" | null,
-        ""Method"": ""GET"" | ""POST"" | null
-      },
-      ""Css"": ""CSS rules string (for inject_css only)"",
-      ""Js"": ""JavaScript code string (for inject_js only)"",
-      ""Timing"": ""dom_ready"" | ""load""
-    }
-  ]
-}
-
-IMPORTANT RULES:
-- Generate 5-8 comprehensive rules
-- Group related block patterns into single rules with MULTIPLE actions (e.g. one rule with 5-10 block actions for ad networks)
-- CSS rules should use !important to override inline styles
-- JS injection should be wrapped to avoid errors
-- Be SPECIFIC to the site domain and its known ad patterns
-- For torrent/streaming/download sites: focus on popup ads, overlay ads, fake download buttons, and interstitials
-- For news/media sites: focus on paywall overlays, newsletter popups, and sidebar ads
-- For social media: focus on sponsored content markers and tracking pixels
-
-Respond with a JSON array ONLY. No markdown fences, no explanations, just the raw JSON array.";
+Replace SITE_HERE with the actual domain pattern. Add MORE site-specific block domains. NEVER block the site's own domain.";
 
     public RuleGenerationService(
         IOllamaClient ollamaClient,
@@ -83,36 +54,194 @@ Respond with a JSON array ONLY. No markdown fences, no explanations, just the ra
 
     public async Task<List<Rule>> GenerateRuleSuggestionsAsync(string url, string? title = null)
     {
+        var domain = string.Empty;
+        try { domain = new Uri(url).Host.ToLowerInvariant(); } catch { }
+
+        if (string.IsNullOrEmpty(domain))
+            return new List<Rule>();
+
+        // Build reliable rules programmatically with standard ad-blocking patterns
+        var sitePattern = $"*.{domain}";
+        var rules = new List<Rule>();
+
+        // Rule 1: Block common ad/tracker network domains
+        var blockRule = new Rule
+        {
+            Id = Guid.NewGuid().ToString(),
+            Name = $"Block Ad Networks on {domain}",
+            Description = "Block third-party ad and tracker network requests",
+            Site = sitePattern,
+            Priority = 50,
+            Source = "ai",
+            Rules = GetStandardBlockActions()
+        };
+        rules.Add(blockRule);
+
+        // Rule 2: CSS cosmetic filtering - hide ad elements
+        var cssRule = new Rule
+        {
+            Id = Guid.NewGuid().ToString(),
+            Name = $"Hide Ad Elements on {domain}",
+            Description = "Hide ad containers, banners, and overlays with CSS",
+            Site = sitePattern,
+            Priority = 40,
+            Source = "ai",
+            Rules = new List<RuleAction>
+            {
+                new()
+                {
+                    Type = "inject_css",
+                    Match = new RuleMatch { UrlPattern = "*" },
+                    Css = GetStandardAdHidingCss(),
+                    Timing = "dom_ready"
+                }
+            }
+        };
+        rules.Add(cssRule);
+
+        // Rule 3: JS popup/overlay removal
+        var jsRule = new Rule
+        {
+            Id = Guid.NewGuid().ToString(),
+            Name = $"Remove Popups on {domain}",
+            Description = "Remove popup overlays and restore scrolling",
+            Site = sitePattern,
+            Priority = 30,
+            Source = "ai",
+            Rules = new List<RuleAction>
+            {
+                new()
+                {
+                    Type = "inject_js",
+                    Match = new RuleMatch { UrlPattern = "*" },
+                    Js = GetStandardPopupRemovalJs(),
+                    Timing = "dom_ready"
+                }
+            }
+        };
+        rules.Add(jsRule);
+
+        // Try to get AI-suggested additional domains to block
         try
         {
-            var domain = string.Empty;
-            try { domain = new Uri(url).Host.ToLowerInvariant(); } catch { }
-
-            var userMessage = $"Generate comprehensive blocking rules for: {url}";
-            if (!string.IsNullOrEmpty(title))
-                userMessage += $"\nPage title: {title}";
-            if (!string.IsNullOrEmpty(domain))
+            var aiDomains = await GetAiSuggestedBlockDomains(url, domain, title);
+            if (aiDomains.Count > 0)
             {
-                userMessage += $"\nDomain: {domain}";
-                userMessage += $"\nSite category: {InferSiteCategory(domain)}";
+                var aiBlockRule = new Rule
+                {
+                    Id = Guid.NewGuid().ToString(),
+                    Name = $"Block Site-Specific Ads on {domain}",
+                    Description = "Block site-specific ad domains suggested by AI",
+                    Site = sitePattern,
+                    Priority = 45,
+                    Source = "ai",
+                    Rules = aiDomains.Select(d => new RuleAction
+                    {
+                        Type = "block",
+                        Match = new RuleMatch { UrlPattern = $"*{d}*" }
+                    }).ToList()
+                };
+                rules.Add(aiBlockRule);
             }
-            userMessage += "\nGenerate rules that block ALL ads, trackers, popups, and overlays on this site.";
-
-            var messages = new List<OllamaChatMessage>
-            {
-                new() { Role = "system", Content = SystemPrompt },
-                new() { Role = "user", Content = userMessage }
-            };
-
-            var response = await _ollamaClient.ChatAsync(messages);
-
-            return ParseRulesFromResponse(response);
         }
         catch (Exception ex)
         {
-            ErrorLogger.LogError("Failed to generate rule suggestions", ex);
-            return new List<Rule>();
+            // AI enhancement is optional - standard rules still work
+            ErrorLogger.LogInfo($"AI domain suggestions unavailable: {ex.Message}");
         }
+
+        return rules;
+    }
+
+    private async Task<List<string>> GetAiSuggestedBlockDomains(string url, string domain, string? title)
+    {
+        var messages = new List<OllamaChatMessage>
+        {
+            new() { Role = "system", Content = "List ad/tracker domains for a website as JSON: {\"domains\":[\"ad.example.com\",\"tracker.example.com\"]}. Only list third-party domains, NOT the site itself. Respond with JSON only." },
+            new() { Role = "user", Content = $"List ad domains for {domain}" + (title != null ? $" ({title})" : "") }
+        };
+
+        var response = await _ollamaClient.ChatJsonAsync(messages);
+        if (string.IsNullOrEmpty(response)) return new List<string>();
+
+        try
+        {
+            using var doc = JsonDocument.Parse(response);
+            var root = doc.RootElement;
+
+            foreach (var prop in root.EnumerateObject())
+            {
+                if (prop.Value.ValueKind == JsonValueKind.Array)
+                {
+                    return prop.Value.EnumerateArray()
+                        .Where(e => e.ValueKind == JsonValueKind.String)
+                        .Select(e => e.GetString()!)
+                        .Where(d => !string.IsNullOrWhiteSpace(d) && !d.Contains(domain)) // Filter out the site's own domain
+                        .Take(10)
+                        .ToList();
+                }
+            }
+        }
+        catch { }
+
+        return new List<string>();
+    }
+
+    private static List<RuleAction> GetStandardBlockActions()
+    {
+        var adDomains = new[]
+        {
+            "doubleclick.net", "googlesyndication.com", "google-analytics.com",
+            "googletagmanager.com", "googleadservices.com", "pagead2.googlesyndication.com",
+            "adnxs.com", "amazon-adsystem.com", "taboola.com", "outbrain.com",
+            "criteo.com", "pubmatic.com", "openx.net", "rubiconproject.com",
+            "facebook.net/tr", "facebook.com/tr", "connect.facebook.net",
+            "hotjar.com", "mixpanel.com", "segment.io",
+            "popads.net", "popcash.net", "propellerads.com",
+            "exoclick.com", "juicyads.com", "trafficjunky.net",
+        };
+
+        return adDomains.Select(d => new RuleAction
+        {
+            Type = "block",
+            Match = new RuleMatch { UrlPattern = $"*{d}*" }
+        }).ToList();
+    }
+
+    private static string GetStandardAdHidingCss()
+    {
+        return string.Join(", ", new[]
+        {
+            ".ad-container", ".ad-banner", ".ad-wrapper", ".ad-block",
+            "[class*=\"ad-\"]", "[class*=\"ad_\"]", "[id*=\"ad-\"]", "[id*=\"ad_\"]",
+            ".advertisement", ".sponsored", ".ad-slot",
+            "[class*=\"popup\"]", "[class*=\"overlay\"]",
+            ".interstitial", ".modal-overlay",
+            "[class*=\"banner-ad\"]", "[id*=\"banner-ad\"]",
+            ".adsbygoogle", "[id*=\"google_ads\"]",
+            "iframe[src*=\"ads\"]", "iframe[src*=\"doubleclick\"]",
+        }) + " { display: none !important; }";
+    }
+
+    private static string GetStandardPopupRemovalJs()
+    {
+        return @"(function(){
+            document.body.style.overflow='auto';
+            document.documentElement.style.overflow='auto';
+            setInterval(function(){
+                document.querySelectorAll('[class*=""popup""],[class*=""overlay""],[class*=""modal""],[class*=""interstitial""]').forEach(function(el){
+                    var s=getComputedStyle(el);
+                    if(s.position==='fixed'||s.position==='absolute'){
+                        var r=el.getBoundingClientRect();
+                        if(r.width>window.innerWidth*0.5&&r.height>window.innerHeight*0.3){
+                            el.remove();
+                        }
+                    }
+                });
+                document.body.style.overflow='auto';
+                document.documentElement.style.overflow='auto';
+            },3000);
+        })();";
     }
 
     public async Task ApplyRuleAsync(Rule rule)
@@ -233,26 +362,18 @@ Respond with a JSON array ONLY. No markdown fences, no explanations, just the ra
     {
         try
         {
-            // Try to extract JSON array from response
             var json = response.Trim();
 
             // Strip markdown code fences if present
             if (json.StartsWith("```"))
             {
-                var startIdx = json.IndexOf('[');
-                var endIdx = json.LastIndexOf(']');
+                var startIdx = json.IndexOf('{') < json.IndexOf('[') || json.IndexOf('[') < 0
+                    ? json.IndexOf('{') : json.IndexOf('[');
+                var endIdx = Math.Max(json.LastIndexOf(']'), json.LastIndexOf('}'));
                 if (startIdx >= 0 && endIdx > startIdx)
                 {
                     json = json.Substring(startIdx, endIdx - startIdx + 1);
                 }
-            }
-
-            // Find the JSON array bounds
-            var arrayStart = json.IndexOf('[');
-            var arrayEnd = json.LastIndexOf(']');
-            if (arrayStart >= 0 && arrayEnd > arrayStart)
-            {
-                json = json.Substring(arrayStart, arrayEnd - arrayStart + 1);
             }
 
             var options = new JsonSerializerOptions
@@ -260,23 +381,134 @@ Respond with a JSON array ONLY. No markdown fences, no explanations, just the ra
                 PropertyNameCaseInsensitive = true
             };
 
-            var rules = JsonSerializer.Deserialize<List<Rule>>(json, options);
-            if (rules == null) return new List<Rule>();
-
-            // Ensure each rule has an ID
-            foreach (var rule in rules)
+            // Try parsing as a JSON array first: [{ ... }, { ... }]
+            var arrayStart = json.IndexOf('[');
+            var arrayEnd = json.LastIndexOf(']');
+            if (arrayStart >= 0 && arrayEnd > arrayStart)
             {
-                if (string.IsNullOrEmpty(rule.Id))
-                    rule.Id = Guid.NewGuid().ToString();
-                rule.Source = "ai";
+                var arrayJson = json.Substring(arrayStart, arrayEnd - arrayStart + 1);
+                try
+                {
+                    var rules = JsonSerializer.Deserialize<List<Rule>>(arrayJson, options);
+                    if (rules != null && rules.Count > 0)
+                        return FinalizeRules(rules);
+                }
+                catch { /* Try next format */ }
             }
 
-            return rules;
+            // Try parsing as wrapper object: {"rules": [{ ... }]}
+            if (json.StartsWith("{"))
+            {
+                try
+                {
+                    using var doc = JsonDocument.Parse(json);
+                    var root = doc.RootElement;
+
+                    // Look for an array property (could be "rules", "Rules", "data", etc.)
+                    foreach (var prop in root.EnumerateObject())
+                    {
+                        if (prop.Value.ValueKind == JsonValueKind.Array)
+                        {
+                            var rulesJson = prop.Value.GetRawText();
+                            var rules = JsonSerializer.Deserialize<List<Rule>>(rulesJson, options);
+                            if (rules != null && rules.Count > 0)
+                                return FinalizeRules(rules);
+                        }
+                    }
+                }
+                catch { /* Fall through */ }
+            }
+
+            ErrorLogger.LogError("Failed to parse AI rule response", new Exception($"No valid rules found in: {json.Substring(0, Math.Min(200, json.Length))}"));
+            return new List<Rule>();
         }
         catch (Exception ex)
         {
             ErrorLogger.LogError("Failed to parse AI rule response", ex);
             return new List<Rule>();
+        }
+    }
+
+    private List<Rule> FinalizeRules(List<Rule> rules)
+    {
+        var toRemove = new List<Rule>();
+
+        foreach (var rule in rules)
+        {
+            if (string.IsNullOrEmpty(rule.Id))
+                rule.Id = Guid.NewGuid().ToString();
+            rule.Source = "ai";
+
+            var countBefore = rule.Rules.Count;
+            SanitizeRuleActions(rule);
+
+            // Remove rules that had actions but lost them all to sanitization
+            if (countBefore > 0 && rule.Rules.Count == 0)
+                toRemove.Add(rule);
+        }
+
+        foreach (var r in toRemove)
+            rules.Remove(r);
+
+        return rules;
+    }
+
+    /// <summary>
+    /// Sanitizes AI-generated rule actions to prevent destructive CSS/JS.
+    /// Removes actions that would hide the entire page or break site functionality.
+    /// </summary>
+    private static void SanitizeRuleActions(Rule rule)
+    {
+        // Dangerous CSS patterns that hide/break entire pages
+        var dangerousCssPatterns = new[]
+        {
+            "body { display: none", "body{display:none",
+            "html { display: none", "html{display:none",
+            "body { visibility: hidden", "body{visibility:hidden",
+            "html { visibility: hidden", "html{visibility:hidden",
+            "* { display: none", "*{display:none",
+            "body { opacity: 0", "body{opacity:0",
+            "body { overflow: hidden", "body{overflow:hidden",
+        };
+
+        // Dangerous JS patterns
+        var dangerousJsPatterns = new[]
+        {
+            "document.body.style.display",
+            "document.body.innerHTML",
+            "document.documentElement.innerHTML",
+            "document.write(",
+            "window.location",
+            "document.body.remove(",
+        };
+
+        var actionsToRemove = new List<RuleAction>();
+
+        foreach (var action in rule.Rules)
+        {
+            if (action.Type == "inject_css" && !string.IsNullOrEmpty(action.Css))
+            {
+                var cssLower = action.Css.Replace(" ", "").ToLowerInvariant();
+                if (dangerousCssPatterns.Any(p => cssLower.Contains(p.Replace(" ", "").ToLowerInvariant())))
+                {
+                    ErrorLogger.LogInfo($"Sanitized dangerous CSS from AI rule '{rule.Name}': {action.Css.Substring(0, Math.Min(100, action.Css.Length))}");
+                    actionsToRemove.Add(action);
+                }
+            }
+
+            if (action.Type == "inject_js" && !string.IsNullOrEmpty(action.Js))
+            {
+                if (dangerousJsPatterns.Any(p => action.Js.Contains(p, StringComparison.OrdinalIgnoreCase)))
+                {
+                    ErrorLogger.LogInfo($"Sanitized dangerous JS from AI rule '{rule.Name}': {action.Js.Substring(0, Math.Min(100, action.Js.Length))}");
+                    actionsToRemove.Add(action);
+                }
+            }
+        }
+
+        foreach (var action in actionsToRemove)
+        {
+            rule.Rules.Remove(action);
         }
     }
 }

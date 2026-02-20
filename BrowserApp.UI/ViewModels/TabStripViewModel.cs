@@ -20,6 +20,7 @@ public partial class TabStripViewModel : ObservableObject, IDisposable
     private readonly IBlockingService _blockingService;
     private readonly IRuleEngine _ruleEngine;
     private readonly ISearchEngineService _searchEngineService;
+    private readonly IFilterListService? _filterListService;
     private CoreWebView2Environment? _environment;
     private bool _isDisposed;
 
@@ -52,11 +53,13 @@ public partial class TabStripViewModel : ObservableObject, IDisposable
     public TabStripViewModel(
         IBlockingService blockingService,
         IRuleEngine ruleEngine,
-        ISearchEngineService searchEngineService)
+        ISearchEngineService searchEngineService,
+        IFilterListService? filterListService = null)
     {
         _blockingService = blockingService;
         _ruleEngine = ruleEngine;
         _searchEngineService = searchEngineService;
+        _filterListService = filterListService;
     }
 
     /// <summary>
@@ -64,9 +67,15 @@ public partial class TabStripViewModel : ObservableObject, IDisposable
     /// </summary>
     public async Task InitializeAsync(string userDataFolder)
     {
+        var options = new CoreWebView2EnvironmentOptions
+        {
+            AreBrowserExtensionsEnabled = true
+        };
+
         _environment = await CoreWebView2Environment.CreateAsync(
             browserExecutableFolder: null,
-            userDataFolder: userDataFolder);
+            userDataFolder: userDataFolder,
+            options: options);
     }
 
     /// <summary>
@@ -89,7 +98,7 @@ public partial class TabStripViewModel : ObservableObject, IDisposable
         TabAdded?.Invoke(this, tab);
 
         // Phase 2: Initialize CoreWebView2 (now that WebView2 has an HWND)
-        await tab.InitializeCoreAsync(_environment, _blockingService, _ruleEngine);
+        await tab.InitializeCoreAsync(_environment, _blockingService, _ruleEngine, _filterListService);
 
         // Signal that the tab is fully ready (interceptor, CoreWebView2 available)
         TabReady?.Invoke(this, tab);

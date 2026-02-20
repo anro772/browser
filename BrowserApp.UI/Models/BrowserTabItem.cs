@@ -32,6 +32,7 @@ public partial class BrowserTabItem : ObservableObject, IDisposable
     private CSSInjector? _cssInjector;
     private JSInjector? _jsInjector;
     private IRuleEngine? _ruleEngine;
+    private IFilterListService? _filterListService;
     private bool _isDisposed;
     private bool _isCoreInitialized;
     private readonly HashSet<string> _allowedCertErrorUrls = new(StringComparer.OrdinalIgnoreCase);
@@ -121,7 +122,8 @@ public partial class BrowserTabItem : ObservableObject, IDisposable
     public async Task InitializeCoreAsync(
         CoreWebView2Environment environment,
         IBlockingService blockingService,
-        IRuleEngine ruleEngine)
+        IRuleEngine ruleEngine,
+        IFilterListService? filterListService = null)
     {
         if (_webView == null || _isCoreInitialized) return;
 
@@ -133,7 +135,9 @@ public partial class BrowserTabItem : ObservableObject, IDisposable
         SubscribeToEvents();
 
         // Create per-tab interceptor, CSS injector, JS injector
-        _requestInterceptor = new RequestInterceptor(blockingService);
+        _requestInterceptor = filterListService != null
+            ? new RequestInterceptor(blockingService, filterListService)
+            : new RequestInterceptor(blockingService);
         _requestInterceptor.SetCoreWebView2(_coreWebView2);
         await _requestInterceptor.InitializeAsync();
 
@@ -143,8 +147,9 @@ public partial class BrowserTabItem : ObservableObject, IDisposable
         _jsInjector = new JSInjector();
         _jsInjector.SetCoreWebView2(_coreWebView2);
 
-        // Store rule engine for injection handler
+        // Store rule engine and filter list service for injection handler
         _ruleEngine = ruleEngine;
+        _filterListService = filterListService;
 
         // Wire navigation completed to execute injections (named method for proper cleanup)
         _coreWebView2.NavigationCompleted += OnNavigationCompletedForInjection;
@@ -311,6 +316,7 @@ public partial class BrowserTabItem : ObservableObject, IDisposable
             var currentUrl = _coreWebView2?.Source;
             if (string.IsNullOrEmpty(currentUrl)) return;
 
+            // Rule-based injections
             var injections = ruleEngine.GetInjectionsForPage(currentUrl);
 
             foreach (var injection in injections)
@@ -322,6 +328,23 @@ public partial class BrowserTabItem : ObservableObject, IDisposable
                 else if (injection.Type == "inject_js" && _jsInjector != null && !string.IsNullOrEmpty(injection.Js))
                 {
                     await _jsInjector.InjectAsync(injection.Js, injection.Timing);
+                }
+            }
+
+            // Filter list cosmetic CSS (EasyList element hiding)
+            if (_filterListService != null && _cssInjector != null)
+            {
+                try
+                {
+                    var cosmeticCss = _filterListService.GetCosmeticCss(currentUrl);
+                    if (!string.IsNullOrEmpty(cosmeticCss))
+                    {
+                        await _cssInjector.InjectAsync(cosmeticCss, "dom_ready");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[BrowserTabItem] Cosmetic CSS error: {ex.Message}");
                 }
             }
         }

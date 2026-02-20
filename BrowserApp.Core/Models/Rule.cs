@@ -70,13 +70,47 @@ public class Rule
 
     /// <summary>
     /// Checks if this rule applies to the given page URL.
+    /// The Site field is a domain pattern (e.g., "*.1337x.to" or "1337x.to").
+    /// It is matched against the hostname extracted from the page URL.
     /// </summary>
     public bool AppliesTo(string pageUrl)
     {
         if (string.IsNullOrEmpty(Site) || Site == "*")
             return true;
 
-        return UrlMatcher.Matches(pageUrl, Site);
+        // First try matching against the full URL (backwards-compatible)
+        if (UrlMatcher.Matches(pageUrl, Site))
+            return true;
+
+        // Extract hostname from URL and match the site pattern against it
+        try
+        {
+            if (Uri.TryCreate(pageUrl, UriKind.Absolute, out var uri))
+            {
+                var host = uri.Host; // e.g., "1337x.to" or "www.1337x.to"
+
+                // Direct match of site pattern against hostname
+                if (UrlMatcher.Matches(host, Site))
+                    return true;
+
+                // Handle "*.domain.tld" patterns matching bare "domain.tld" (no subdomain)
+                // e.g., "*.1337x.to" should also match "1337x.to" itself
+                if (Site.StartsWith("*."))
+                {
+                    var domainPart = Site.Substring(2); // "1337x.to"
+                    if (host.Equals(domainPart, StringComparison.OrdinalIgnoreCase))
+                        return true;
+                    if (host.EndsWith("." + domainPart, StringComparison.OrdinalIgnoreCase))
+                        return true;
+                }
+            }
+        }
+        catch
+        {
+            // If URL parsing fails, fall through to false
+        }
+
+        return false;
     }
 
     /// <summary>
