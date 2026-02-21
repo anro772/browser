@@ -66,8 +66,9 @@
                 <ui:DropDownButton Content="Load Template" Margin="0,0,8,0">
                     <ui:DropDownButton.Flyout>
                         <ContextMenu>
-                            <MenuItem Header="Hide Cookie Banners" Command="{Binding LoadTemplateCommand}" CommandParameter="cookie-banners"/>
+                            <MenuItem Header="Auto-Dismiss Cookie Banners" Command="{Binding LoadTemplateCommand}" CommandParameter="cookie-banners"/>
                             <MenuItem Header="Remove Sticky Headers" Command="{Binding LoadTemplateCommand}" CommandParameter="remove-sticky-headers"/>
+                            <MenuItem Header="Force Dark Mode" Command="{Binding LoadTemplateCommand}" CommandParameter="force-dark-mode"/>
                         </ContextMenu>
                     </ui:DropDownButton.Flyout>
                 </ui:DropDownButton>

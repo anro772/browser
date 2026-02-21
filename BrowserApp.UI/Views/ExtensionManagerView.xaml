@@ -21,7 +21,7 @@
         <StackPanel Grid.Row="1" Margin="0,0,0,16">
             <TextBlock Text="Extensions"
                        Style="{StaticResource TitleTextStyle}"/>
-            <TextBlock Text="Manage browser extensions (unpacked Chromium extensions)"
+            <TextBlock Text="Install and manage Chrome extensions (unpacked folders or .crx files)"
                        Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                        Margin="0,4,0,0"/>
         </StackPanel>
@@ -29,12 +29,26 @@
         <!-- Extensions List -->
         <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
             <StackPanel>
-                <ui:Button Content="Add Extension..."
-                           Icon="{ui:SymbolIcon Add24}"
-                           Command="{Binding InstallExtensionCommand}"
-                           Appearance="Primary"
-                           HorizontalAlignment="Stretch"
-                           Margin="0,0,0,12"/>
+                <Grid Margin="0,0,0,12">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="8"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <ui:Button Grid.Column="0"
+                               Content="Add From Folder..."
+                               Icon="{ui:SymbolIcon Folder24}"
+                               Command="{Binding InstallExtensionCommand}"
+                               Appearance="Primary"
+                               HorizontalAlignment="Stretch"/>
+
+                    <ui:Button Grid.Column="2"
+                               Content="Install .crx File..."
+                               Icon="{ui:SymbolIcon ArrowDownload24}"
+                               Command="{Binding InstallFromCrxCommand}"
+                               HorizontalAlignment="Stretch"/>
+                </Grid>
 
                 <Border Style="{StaticResource PanelBodyCardStyle}" Padding="8">
                     <ItemsControl ItemsSource="{Binding Extensions}">
@@ -71,7 +85,7 @@
                                                 <Run Text="v"/>
                                                 <Run Text="{Binding Version, Mode=OneWay}"/>
                                             </TextBlock>
-                                            <TextBlock Text="{Binding Description}" FontSize="11"
+                                            <TextBlock Text="{Binding FolderPath}" FontSize="11"
                                                        Foreground="{DynamicResource TextFillColorTertiaryBrush}"
                                                        TextTrimming="CharacterEllipsis" MaxWidth="280"/>
                                         </StackPanel>
@@ -110,7 +124,7 @@
                                Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                                HorizontalAlignment="Center"
                                Margin="0,8,0,0"/>
-                    <TextBlock Text="Click 'Add Extension' to load an unpacked Chromium extension." FontSize="11"
+                    <TextBlock Text="Add an extension from a folder or install a .crx file." FontSize="11"
                                Foreground="{DynamicResource TextFillColorTertiaryBrush}" HorizontalAlignment="Center"
                                TextWrapping="Wrap" MaxWidth="240" Margin="0,4,0,0" TextAlignment="Center"/>
                 </StackPanel>

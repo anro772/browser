@@ -142,9 +142,11 @@ public class ExtensionService
             var zipOffset = FindZipOffset(crxBytes);
             if (zipOffset < 0)
             {
-                ErrorLogger.LogInfo($"[ExtensionService] Invalid CRX file: {crxFilePath}");
+                ErrorLogger.LogInfo($"[ExtensionService] Invalid CRX file (no ZIP data found): {crxFilePath} ({crxBytes.Length} bytes)");
                 return null;
             }
+
+            ErrorLogger.LogInfo($"[ExtensionService] CRX file: {Path.GetFileName(crxFilePath)}, size: {crxBytes.Length}, ZIP offset: {zipOffset}");
 
             // Extract to a temp directory first to read manifest
             var tempDir = Path.Combine(ExtractDir, $"_temp_{Guid.NewGuid():N}");
@@ -264,20 +266,47 @@ public class ExtensionService
     }
 
     /// <summary>
-    /// Finds the start of the ZIP data within a CRX file.
-    /// CRX3 format: magic (4) + version (4) + header_length (4) + header + ZIP data
-    /// CRX2 format: magic (4) + version (4) + pub_key_len (4) + sig_len (4) + pub_key + sig + ZIP data
+    /// Finds the start of the ZIP data within a CRX file by parsing the header format.
+    /// CRX3 format: "Cr24" (4) + version uint32 (4) + header_length uint32 (4) + header bytes + ZIP data
+    /// CRX2 format: "Cr24" (4) + version uint32 (4) + pub_key_len uint32 (4) + sig_len uint32 (4) + pub_key + sig + ZIP data
     /// </summary>
     private static int FindZipOffset(byte[] data)
     {
-        if (data.Length < 12) return -1;
+        if (data.Length < 16) return -1;
 
-        // Look for ZIP magic number (PK\x03\x04) anywhere in the first 1KB
-        var zipMagic = new byte[] { 0x50, 0x4B, 0x03, 0x04 };
-        for (int i = 0; i < Math.Min(data.Length - 4, 1024); i++)
+        // Check for CRX magic "Cr24"
+        bool isCrx = data[0] == 0x43 && data[1] == 0x72 && data[2] == 0x32 && data[3] == 0x34;
+
+        if (isCrx)
         {
-            if (data[i] == zipMagic[0] && data[i + 1] == zipMagic[1] &&
-                data[i + 2] == zipMagic[2] && data[i + 3] == zipMagic[3])
+            uint version = BitConverter.ToUInt32(data, 4);
+
+            if (version == 3)
+            {
+                // CRX3: 12-byte fixed header + variable header
+                uint headerLength = BitConverter.ToUInt32(data, 8);
+                int offset = 12 + (int)headerLength;
+                if (offset + 4 <= data.Length &&
+                    data[offset] == 0x50 && data[offset + 1] == 0x4B)
+                    return offset;
+            }
+            else if (version == 2)
+            {
+                // CRX2: 16-byte fixed header + pub_key + signature
+                uint pubKeyLen = BitConverter.ToUInt32(data, 8);
+                uint sigLen = BitConverter.ToUInt32(data, 12);
+                int offset = 16 + (int)pubKeyLen + (int)sigLen;
+                if (offset + 4 <= data.Length &&
+                    data[offset] == 0x50 && data[offset + 1] == 0x4B)
+                    return offset;
+            }
+        }
+
+        // Fallback: scan for ZIP magic (PK\x03\x04) in the first 64KB
+        for (int i = 0; i < Math.Min(data.Length - 4, 65536); i++)
+        {
+            if (data[i] == 0x50 && data[i + 1] == 0x4B &&
+                data[i + 2] == 0x03 && data[i + 3] == 0x04)
             {
                 return i;
             }
