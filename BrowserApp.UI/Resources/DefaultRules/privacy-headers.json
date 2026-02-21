@@ -1,0 +1,19 @@
+{
+  "id": "00000000-0000-0000-0000-000000000010",
+  "name": "Privacy Headers",
+  "description": "Adds privacy-enhancing HTTP headers to all requests: Do Not Track, Global Privacy Control, and removes Referer header to prevent cross-site tracking",
+  "site": "*",
+  "enabled": false,
+  "priority": 80,
+  "rules": [
+    {
+      "type": "modify_headers",
+      "match": { "urlPattern": "*" },
+      "headers": [
+        { "operation": "set", "name": "DNT", "value": "1" },
+        { "operation": "set", "name": "Sec-GPC", "value": "1" },
+        { "operation": "remove", "name": "Referer" }
+      ]
+    }
+  ]
+}

@@ -34,6 +34,12 @@
 
   <ItemGroup>
     <EmbeddedResource Include="Resources\DefaultRules\*.json" />
+    <EmbeddedResource Include="Resources\ContentPolicies\*.json" />
+    <EmbeddedResource Include="Resources\block-page.html" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Resources\BuiltInExtensions\**\*" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

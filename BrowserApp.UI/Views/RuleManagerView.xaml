@@ -69,6 +69,9 @@
                             <MenuItem Header="Auto-Dismiss Cookie Banners" Command="{Binding LoadTemplateCommand}" CommandParameter="cookie-banners"/>
                             <MenuItem Header="Remove Sticky Headers" Command="{Binding LoadTemplateCommand}" CommandParameter="remove-sticky-headers"/>
                             <MenuItem Header="Force Dark Mode" Command="{Binding LoadTemplateCommand}" CommandParameter="force-dark-mode"/>
+                            <Separator/>
+                            <MenuItem Header="Privacy Headers" Command="{Binding LoadTemplateCommand}" CommandParameter="privacy-headers"/>
+                            <MenuItem Header="Enterprise Content Policy" Command="{Binding LoadTemplateCommand}" CommandParameter="content-policy"/>
                         </ContextMenu>
                     </ui:DropDownButton.Flyout>
                 </ui:DropDownButton>

@@ -100,7 +100,8 @@
                                                Command="{Binding DataContext.UninstallExtensionCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
                                                CommandParameter="{Binding}"
                                                Appearance="Danger"
-                                               VerticalAlignment="Center"/>
+                                               VerticalAlignment="Center"
+                                               Visibility="{Binding IsBuiltIn, Converter={StaticResource BoolToVisibilityInverse}}"/>
                                 </Grid>
                             </Border>
                         </DataTemplate>

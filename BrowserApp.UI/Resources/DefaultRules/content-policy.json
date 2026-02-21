@@ -1,0 +1,15 @@
+{
+  "id": "00000000-0000-0000-0000-000000000011",
+  "name": "Enterprise Content Policy",
+  "description": "Blocks access to AI services, torrent sites, adult content, and gambling platforms. Suitable for corporate environments where content filtering is required.",
+  "site": "*",
+  "enabled": false,
+  "priority": 100,
+  "rules": [
+    {
+      "type": "content_policy",
+      "match": { "urlPattern": "*" },
+      "categories": ["ai_services", "torrents", "adult_content", "gambling"]
+    }
+  ]
+}

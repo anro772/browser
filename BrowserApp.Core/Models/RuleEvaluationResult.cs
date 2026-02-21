@@ -26,6 +26,16 @@ public class RuleEvaluationResult
     public List<RuleAction> InjectionsToApply { get; set; } = new();
 
     /// <summary>
+    /// Header modifications to apply for this request.
+    /// </summary>
+    public List<HeaderModification> HeaderModifications { get; set; } = new();
+
+    /// <summary>
+    /// Content policy category that caused the block (if any).
+    /// </summary>
+    public string? BlockedByCategory { get; set; }
+
+    /// <summary>
     /// Creates a result indicating no blocking.
     /// </summary>
     public static RuleEvaluationResult Allow() => new() { ShouldBlock = false };
@@ -38,5 +48,16 @@ public class RuleEvaluationResult
         ShouldBlock = true,
         BlockedByRuleId = ruleId,
         BlockedByRuleName = ruleName
+    };
+
+    /// <summary>
+    /// Creates a result indicating the request should be blocked by content policy.
+    /// </summary>
+    public static RuleEvaluationResult BlockByContentPolicy(string ruleId, string ruleName, string category) => new()
+    {
+        ShouldBlock = true,
+        BlockedByRuleId = ruleId,
+        BlockedByRuleName = ruleName,
+        BlockedByCategory = category
     };
 }

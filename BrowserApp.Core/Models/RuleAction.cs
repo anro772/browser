@@ -29,4 +29,15 @@ public class RuleAction
     /// Timing for injection: "dom_ready" or "load".
     /// </summary>
     public string? Timing { get; set; } = "dom_ready";
+
+    /// <summary>
+    /// Header modifications to apply (for modify_headers type).
+    /// </summary>
+    public List<HeaderModification>? Headers { get; set; }
+
+    /// <summary>
+    /// Content policy categories to block (for content_policy type).
+    /// Example: ["ai_services", "torrents", "adult_content", "gambling"]
+    /// </summary>
+    public List<string>? Categories { get; set; }
 }

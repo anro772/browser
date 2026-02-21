@@ -118,6 +118,7 @@ public class BrowserDbContext : DbContext
             entity.Property(e => e.Version).IsRequired().HasMaxLength(50);
             entity.Property(e => e.FolderPath).IsRequired();
             entity.Property(e => e.IsEnabled).HasDefaultValue(true);
+            entity.Property(e => e.IsBuiltIn).HasDefaultValue(false);
             entity.HasIndex(e => e.IsEnabled);
             entity.HasIndex(e => e.InstalledAt);
         });

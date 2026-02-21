@@ -1,0 +1,147 @@
+{
+  "categories": {
+    "ai_services": {
+      "name": "AI & Chat Services",
+      "description": "Artificial intelligence chatbots, image generators, and AI-powered tools",
+      "domains": [
+        "chatgpt.com",
+        "chat.openai.com",
+        "openai.com",
+        "claude.ai",
+        "anthropic.com",
+        "gemini.google.com",
+        "bard.google.com",
+        "perplexity.ai",
+        "midjourney.com",
+        "copilot.microsoft.com",
+        "poe.com",
+        "character.ai",
+        "huggingface.co",
+        "replicate.com",
+        "stability.ai"
+      ]
+    },
+    "torrents": {
+      "name": "Torrent & Piracy",
+      "description": "Torrent sites, piracy portals, and unauthorized content distribution",
+      "domains": [
+        "thepiratebay.org",
+        "1337x.to",
+        "nyaa.si",
+        "yts.mx",
+        "fitgirl-repacks.site",
+        "rarbg.to",
+        "rutracker.org",
+        "torrentgalaxy.to",
+        "eztv.re",
+        "limetorrents.info",
+        "kickasstorrents.to",
+        "torlock.com",
+        "zooqle.com",
+        "bt4gprx.com"
+      ]
+    },
+    "adult_content": {
+      "name": "Adult Content",
+      "description": "Explicit adult material and age-restricted content",
+      "domains": [
+        "pornhub.com",
+        "xvideos.com",
+        "xhamster.com",
+        "onlyfans.com",
+        "xnxx.com",
+        "redtube.com",
+        "youporn.com",
+        "spankbang.com",
+        "tube8.com",
+        "brazzers.com",
+        "chaturbate.com",
+        "stripchat.com",
+        "livejasmin.com",
+        "cam4.com",
+        "bongacams.com"
+      ]
+    },
+    "gambling": {
+      "name": "Gambling & Betting",
+      "description": "Online casinos, sports betting, and gambling platforms",
+      "domains": [
+        "bet365.com",
+        "pokerstars.com",
+        "draftkings.com",
+        "fanduel.com",
+        "stake.com",
+        "betway.com",
+        "888casino.com",
+        "williamhill.com",
+        "unibet.com",
+        "betfair.com",
+        "paddy power.com",
+        "bovada.lv",
+        "mybookie.ag",
+        "betonline.ag"
+      ]
+    },
+    "social_media": {
+      "name": "Social Media",
+      "description": "Social networking platforms and community sites",
+      "domains": [
+        "facebook.com",
+        "instagram.com",
+        "twitter.com",
+        "x.com",
+        "tiktok.com",
+        "reddit.com",
+        "linkedin.com",
+        "snapchat.com",
+        "pinterest.com",
+        "tumblr.com",
+        "mastodon.social",
+        "threads.net",
+        "bluesky.social",
+        "discord.com"
+      ]
+    },
+    "gaming": {
+      "name": "Gaming & Stores",
+      "description": "Gaming platforms, digital storefronts, and game-related sites",
+      "domains": [
+        "steampowered.com",
+        "store.steampowered.com",
+        "epicgames.com",
+        "twitch.tv",
+        "roblox.com",
+        "ea.com",
+        "gog.com",
+        "itch.io",
+        "humblebundle.com",
+        "xbox.com",
+        "playstation.com",
+        "nintendo.com",
+        "battlenet.com",
+        "origin.com"
+      ]
+    },
+    "streaming": {
+      "name": "Video Streaming",
+      "description": "Video and music streaming platforms",
+      "domains": [
+        "youtube.com",
+        "netflix.com",
+        "spotify.com",
+        "twitch.tv",
+        "disneyplus.com",
+        "hulu.com",
+        "primevideo.com",
+        "hbomax.com",
+        "max.com",
+        "peacocktv.com",
+        "paramountplus.com",
+        "crunchyroll.com",
+        "deezer.com",
+        "soundcloud.com",
+        "apple.com/tv"
+      ]
+    }
+  }
+}

@@ -1,3 +1,5 @@
+using System.IO;
+using System.Reflection;
 using Microsoft.Web.WebView2.Core;
 using BrowserApp.Core.Interfaces;
 using BrowserApp.Core.Models;
@@ -13,8 +15,10 @@ public class RequestInterceptor : IRequestInterceptor
     private CoreWebView2? _coreWebView2;
     private readonly IBlockingService? _blockingService;
     private readonly IFilterListService? _filterListService;
+    private readonly ContentPolicyService? _contentPolicyService;
     private bool _isEnabled;
     private bool _isInitialized;
+    private string? _blockPageHtml;
 
     public event EventHandler<NetworkRequest>? RequestCaptured;
 
@@ -33,6 +37,44 @@ public class RequestInterceptor : IRequestInterceptor
     {
         _blockingService = blockingService;
         _filterListService = filterListService;
+    }
+
+    public RequestInterceptor(IBlockingService blockingService, IFilterListService filterListService, ContentPolicyService contentPolicyService)
+    {
+        _blockingService = blockingService;
+        _filterListService = filterListService;
+        _contentPolicyService = contentPolicyService;
+        LoadBlockPageHtml();
+    }
+
+    private void LoadBlockPageHtml()
+    {
+        try
+        {
+            var assembly = Assembly.GetExecutingAssembly();
+            var resourceName = "BrowserApp.UI.Resources.block-page.html";
+
+            using var stream = assembly.GetManifestResourceStream(resourceName);
+            if (stream != null)
+            {
+                using var reader = new StreamReader(stream);
+                _blockPageHtml = reader.ReadToEnd();
+            }
+            else
+            {
+                // Fall back to file system
+                var basePath = AppDomain.CurrentDomain.BaseDirectory;
+                var filePath = Path.Combine(basePath, "Resources", "block-page.html");
+                if (File.Exists(filePath))
+                {
+                    _blockPageHtml = File.ReadAllText(filePath);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[RequestInterceptor] Failed to load block page HTML: {ex.Message}");
+        }
     }
 
     /// <summary>
@@ -120,6 +162,7 @@ public class RequestInterceptor : IRequestInterceptor
             }
 
             // Check BlockingService (custom rules)
+            string? blockedByCategory = null;
             if (_blockingService != null && !isFirstPartyDocument)
             {
                 var evaluation = _blockingService.ShouldBlockRequest(request, currentPageUrl);
@@ -128,28 +171,70 @@ public class RequestInterceptor : IRequestInterceptor
                 {
                     shouldBlock = true;
                     blockedByRuleId = evaluation.BlockedByRuleId?.ToString();
-                    blockReason = $"Custom Rule {evaluation.BlockedByRuleId}";
-                    System.Diagnostics.Debug.WriteLine($"[RequestInterceptor] Blocked by Custom Rule: {request.Url}");
+                    blockedByCategory = evaluation.BlockedByCategory;
+                    blockReason = evaluation.BlockedByCategory != null
+                        ? $"Content Policy ({evaluation.BlockedByCategory})"
+                        : $"Custom Rule {evaluation.BlockedByRuleId}";
+                    System.Diagnostics.Debug.WriteLine($"[RequestInterceptor] Blocked by {blockReason}: {request.Url}");
+                }
+
+                // Apply header modifications for non-blocked requests
+                if (!shouldBlock && evaluation.HeaderModifications.Count > 0)
+                {
+                    foreach (var mod in evaluation.HeaderModifications)
+                    {
+                        try
+                        {
+                            switch (mod.Operation.ToLowerInvariant())
+                            {
+                                case "set":
+                                    if (!string.IsNullOrEmpty(mod.Value))
+                                        e.Request.Headers.SetHeader(mod.Name, mod.Value);
+                                    break;
+                                case "remove":
+                                    e.Request.Headers.RemoveHeader(mod.Name);
+                                    break;
+                                case "append":
+                                    if (!string.IsNullOrEmpty(mod.Value))
+                                        e.Request.Headers.SetHeader(mod.Name, mod.Value);
+                                    break;
+                            }
+                        }
+                        catch (Exception headerEx)
+                        {
+                            System.Diagnostics.Debug.WriteLine($"[RequestInterceptor] Header mod error ({mod.Operation} {mod.Name}): {headerEx.Message}");
+                        }
+                    }
                 }
             }
 
-            // Check FilterListService (EasyList/EasyPrivacy)
-            if (!shouldBlock && _filterListService != null && !isFirstPartyDocument)
-            {
-                if (_filterListService.ShouldBlock(request.Url, currentPageUrl, request.ResourceType))
-                {
-                    shouldBlock = true;
-                    blockReason = "Filter List";
-                    System.Diagnostics.Debug.WriteLine($"[RequestInterceptor] Blocked by Filter List: {request.Url}");
-                }
-            }
+            // Note: FilterListService blocking removed — AdBlock Plus handles ad/tracker blocking natively
+            // FilterListService cosmetic CSS injection is still used in the navigation-completed handler
 
             // Block the request if needed
             if (shouldBlock)
             {
-                var stream = new System.IO.MemoryStream(System.Text.Encoding.UTF8.GetBytes($"Blocked by {blockReason}"));
-                e.Response = _coreWebView2!.Environment.CreateWebResourceResponse(
-                    stream, 403, "Blocked", "Content-Type: text/plain");
+                // Serve styled block page for content policy blocks on document requests
+                if (blockedByCategory != null &&
+                    e.ResourceContext == CoreWebView2WebResourceContext.Document &&
+                    !string.IsNullOrEmpty(_blockPageHtml) &&
+                    _contentPolicyService != null)
+                {
+                    var categoryName = _contentPolicyService.GetCategoryDisplayName(blockedByCategory);
+                    var html = _blockPageHtml
+                        .Replace("{{CATEGORY_NAME}}", System.Net.WebUtility.HtmlEncode(categoryName))
+                        .Replace("{{BLOCKED_URL}}", System.Net.WebUtility.HtmlEncode(request.Url));
+
+                    var htmlStream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(html));
+                    e.Response = _coreWebView2!.Environment.CreateWebResourceResponse(
+                        htmlStream, 403, "Blocked", "Content-Type: text/html; charset=utf-8");
+                }
+                else
+                {
+                    var stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes($"Blocked by {blockReason}"));
+                    e.Response = _coreWebView2!.Environment.CreateWebResourceResponse(
+                        stream, 403, "Blocked", "Content-Type: text/plain");
+                }
 
                 // Estimate size savings based on resource type (industry-standard approach)
                 var estimatedSize = EstimateBlockedResourceSize(request.ResourceType, request.Url);

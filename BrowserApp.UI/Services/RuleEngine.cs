@@ -17,6 +17,7 @@ namespace BrowserApp.UI.Services;
 public class RuleEngine : IRuleEngine, IDisposable
 {
     private readonly IServiceScopeFactory _scopeFactory;
+    private readonly ContentPolicyService? _contentPolicyService;
     private readonly MemoryCache _evaluationCache;
     private List<Rule> _cachedRules = new();
     private readonly object _cacheLock = new();
@@ -30,9 +31,10 @@ public class RuleEngine : IRuleEngine, IDisposable
 
     public event EventHandler? RulesReloaded;
 
-    public RuleEngine(IServiceScopeFactory scopeFactory)
+    public RuleEngine(IServiceScopeFactory scopeFactory, ContentPolicyService? contentPolicyService = null)
     {
         _scopeFactory = scopeFactory;
+        _contentPolicyService = contentPolicyService;
 
         // Initialize evaluation cache with 100MB size limit
         _evaluationCache = new MemoryCache(new MemoryCacheOptions
@@ -131,6 +133,7 @@ public class RuleEngine : IRuleEngine, IDisposable
             .ToList();
 
         var injections = new List<RuleAction>();
+        var headerMods = new List<HeaderModification>();
 
         foreach (var rule in rulesToEvaluate)
         {
@@ -148,6 +151,28 @@ public class RuleEngine : IRuleEngine, IDisposable
                     // First matching block rule wins
                     return RuleEvaluationResult.Block(rule.Id, rule.Name);
                 }
+                else if (action.Type == "content_policy")
+                {
+                    // Check content policy categories against the request URL
+                    if (_contentPolicyService != null && action.Categories != null && action.Categories.Count > 0)
+                    {
+                        var blockedCategory = _contentPolicyService.GetBlockedCategory(
+                            request.Url, action.Categories);
+                        if (blockedCategory != null)
+                        {
+                            return RuleEvaluationResult.BlockByContentPolicy(
+                                rule.Id, rule.Name, blockedCategory);
+                        }
+                    }
+                }
+                else if (action.Type == "modify_headers")
+                {
+                    // Collect header modifications
+                    if (action.Headers != null)
+                    {
+                        headerMods.AddRange(action.Headers);
+                    }
+                }
                 else if (action.Type == "inject_css" || action.Type == "inject_js")
                 {
                     // Collect injections
@@ -156,11 +181,12 @@ public class RuleEngine : IRuleEngine, IDisposable
             }
         }
 
-        // No blocking, but may have injections
+        // No blocking, but may have injections and/or header modifications
         return new RuleEvaluationResult
         {
             ShouldBlock = false,
-            InjectionsToApply = injections
+            InjectionsToApply = injections,
+            HeaderModifications = headerMods
         };
     }
 

@@ -18,9 +18,116 @@ public class ExtensionService
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
         "BrowserApp", "Extensions");
 
+    private static readonly string BuiltInExtensionsDir = Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+        "BrowserApp", "Extensions");
+
     public ExtensionService(IServiceScopeFactory scopeFactory)
     {
         _scopeFactory = scopeFactory;
+    }
+
+    /// <summary>
+    /// Ensures built-in extensions are installed. Copies from embedded resources if needed.
+    /// </summary>
+    public async Task EnsureBuiltInExtensionsAsync()
+    {
+        if (!_profileReady || _profile == null) return;
+
+        try
+        {
+            // Check if adblock-plus is already in the database as built-in
+            using var scope = _scopeFactory.CreateScope();
+            var repo = scope.ServiceProvider.GetRequiredService<IExtensionRepository>();
+            var extensions = await repo.GetAllAsync();
+            var existingBuiltIn = extensions.FirstOrDefault(e => e.IsBuiltIn && e.Name.Contains("Adblock Plus", StringComparison.OrdinalIgnoreCase));
+
+            if (existingBuiltIn != null)
+            {
+                ErrorLogger.LogInfo("[ExtensionService] Built-in Adblock Plus already installed");
+                return;
+            }
+
+            // Look for bundled extension in resources
+            var basePath = AppDomain.CurrentDomain.BaseDirectory;
+            var builtInSource = Path.Combine(basePath, "Resources", "BuiltInExtensions", "adblock-plus");
+
+            if (!Directory.Exists(builtInSource))
+            {
+                ErrorLogger.LogInfo("[ExtensionService] Built-in Adblock Plus source not found — skipping auto-install");
+                return;
+            }
+
+            // Copy to extensions directory
+            Directory.CreateDirectory(BuiltInExtensionsDir);
+            var targetDir = Path.Combine(BuiltInExtensionsDir, "adblock-plus");
+
+            if (!Directory.Exists(targetDir))
+            {
+                CopyDirectory(builtInSource, targetDir);
+                ErrorLogger.LogInfo($"[ExtensionService] Copied built-in Adblock Plus to: {targetDir}");
+            }
+
+            // Install and mark as built-in
+            var manifestPath = Path.Combine(targetDir, "manifest.json");
+            if (!File.Exists(manifestPath))
+            {
+                ErrorLogger.LogInfo("[ExtensionService] Built-in Adblock Plus manifest not found after copy");
+                return;
+            }
+
+            var json = await File.ReadAllTextAsync(manifestPath);
+            using var doc = JsonDocument.Parse(json);
+            var root = doc.RootElement;
+
+            var name = root.TryGetProperty("name", out var nameProp) ? nameProp.GetString() ?? "Adblock Plus" : "Adblock Plus";
+            var version = root.TryGetProperty("version", out var verProp) ? verProp.GetString() ?? "0.0" : "0.0";
+
+            // Load into WebView2
+            try
+            {
+                await _profile.AddBrowserExtensionAsync(targetDir);
+                ErrorLogger.LogInfo($"[ExtensionService] Built-in extension loaded into WebView2: {name}");
+            }
+            catch (Exception ex)
+            {
+                ErrorLogger.LogError($"[ExtensionService] Failed to load built-in extension into WebView2", ex);
+            }
+
+            var entity = new ExtensionEntity
+            {
+                Name = name,
+                Version = version,
+                FolderPath = targetDir,
+                IsEnabled = true,
+                IsBuiltIn = true,
+                InstalledAt = DateTime.UtcNow
+            };
+
+            await repo.AddAsync(entity);
+            ErrorLogger.LogInfo($"[ExtensionService] Built-in extension registered: {name} v{version}");
+        }
+        catch (Exception ex)
+        {
+            ErrorLogger.LogError("[ExtensionService] Failed to ensure built-in extensions", ex);
+        }
+    }
+
+    private static void CopyDirectory(string sourceDir, string destinationDir)
+    {
+        Directory.CreateDirectory(destinationDir);
+
+        foreach (var file in Directory.GetFiles(sourceDir))
+        {
+            var destFile = Path.Combine(destinationDir, Path.GetFileName(file));
+            File.Copy(file, destFile, true);
+        }
+
+        foreach (var dir in Directory.GetDirectories(sourceDir))
+        {
+            var destDir = Path.Combine(destinationDir, Path.GetFileName(dir));
+            CopyDirectory(dir, destDir);
+        }
     }
 
     /// <summary>
@@ -205,6 +312,13 @@ public class ExtensionService
         var repo = scope.ServiceProvider.GetRequiredService<IExtensionRepository>();
         var all = await repo.GetAllAsync();
         var ext = all.FirstOrDefault(e => e.Id == id);
+
+        // Prevent uninstalling built-in extensions
+        if (ext?.IsBuiltIn == true)
+        {
+            ErrorLogger.LogInfo($"[ExtensionService] Cannot uninstall built-in extension: {ext.Name}");
+            return;
+        }
 
         // Remove from WebView2 profile
         if (_profileReady && _profile != null && ext != null)

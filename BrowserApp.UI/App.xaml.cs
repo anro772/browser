@@ -104,6 +104,18 @@ public partial class App : Application
             ErrorLogger.LogError("Filter list initialization failed (non-fatal)", ex);
         }
 
+        // Initialize content policy service (loads category definitions)
+        try
+        {
+            var contentPolicyService = _serviceProvider.GetRequiredService<ContentPolicyService>();
+            await contentPolicyService.InitializeAsync();
+            ErrorLogger.LogInfo("Content policy service initialized");
+        }
+        catch (Exception ex)
+        {
+            ErrorLogger.LogError("Content policy initialization failed (non-fatal)", ex);
+        }
+
         // Start network logger background task - AWAIT to ensure it starts
         var networkLogger = _serviceProvider.GetRequiredService<INetworkLogger>();
         await networkLogger.StartAsync();
@@ -146,20 +158,26 @@ public partial class App : Application
         services.AddSingleton<ISearchEngineService, SearchEngineService>();
 
         // Phase 3: Rule System Services
-        services.AddSingleton<IRuleEngine, RuleEngine>();
+        services.AddSingleton<IRuleEngine>(sp => new RuleEngine(
+            sp.GetRequiredService<IServiceScopeFactory>(),
+            sp.GetRequiredService<ContentPolicyService>()));
         services.AddSingleton<IBlockingService, BlockingService>();
         services.AddSingleton<CSSInjector>();
         services.AddSingleton<ICSSInjector>(sp => sp.GetRequiredService<CSSInjector>());
         services.AddSingleton<JSInjector>();
         services.AddSingleton<IJSInjector>(sp => sp.GetRequiredService<JSInjector>());
 
-        // Filter List Service (EasyList/EasyPrivacy)
+        // Filter List Service (EasyList/EasyPrivacy — cosmetic CSS only, blocking handled by AdBlock Plus)
         services.AddSingleton<IFilterListService, FilterListService>();
 
-        // Network Monitoring Services (Phase 2) - with blocking support
+        // Content Policy Service
+        services.AddSingleton<ContentPolicyService>();
+
+        // Network Monitoring Services (Phase 2) - with blocking and content policy support
         services.AddSingleton<RequestInterceptor>(sp => new RequestInterceptor(
             sp.GetRequiredService<IBlockingService>(),
-            sp.GetRequiredService<IFilterListService>()));
+            sp.GetRequiredService<IFilterListService>(),
+            sp.GetRequiredService<ContentPolicyService>()));
         services.AddSingleton<IRequestInterceptor>(sp => sp.GetRequiredService<RequestInterceptor>());
         services.AddSingleton<INetworkLogger, NetworkLogger>();
 

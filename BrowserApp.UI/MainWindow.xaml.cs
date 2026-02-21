@@ -263,6 +263,7 @@ public partial class MainWindow : FluentWindow
                 var extensionService = _serviceProvider.GetRequiredService<ExtensionService>();
                 extensionService.SetProfile(tab.CoreWebView2.Profile);
                 await extensionService.LoadAllEnabledAsync();
+                await extensionService.EnsureBuiltInExtensionsAsync();
                 ErrorLogger.LogInfo("[MainWindow] Extension service wired to WebView2 profile");
             }
             catch (Exception ex)

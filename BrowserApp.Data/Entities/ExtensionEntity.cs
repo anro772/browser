@@ -10,5 +10,6 @@ public class ExtensionEntity
     public string Version { get; set; } = string.Empty;
     public string FolderPath { get; set; } = string.Empty;
     public bool IsEnabled { get; set; } = true;
+    public bool IsBuiltIn { get; set; }
     public DateTime InstalledAt { get; set; } = DateTime.UtcNow;
 }
