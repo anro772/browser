@@ -81,6 +81,36 @@ public class SettingsService
         }
     }
 
+    public string HomePage
+    {
+        get => _settings.HomePage;
+        set
+        {
+            _settings.HomePage = value;
+            SaveSettings();
+        }
+    }
+
+    public string DefaultDownloadPath
+    {
+        get => _settings.DefaultDownloadPath;
+        set
+        {
+            _settings.DefaultDownloadPath = value;
+            SaveSettings();
+        }
+    }
+
+    public StartupBehavior StartupBehavior
+    {
+        get => _settings.StartupBehavior;
+        set
+        {
+            _settings.StartupBehavior = value;
+            SaveSettings();
+        }
+    }
+
     public event EventHandler<PrivacyMode>? PrivacyModeChanged;
     public event EventHandler<string>? SearchEngineChanged;
 
@@ -130,4 +160,17 @@ public class UserSettings
     public string ServerUrl { get; set; } = "http://localhost:5000";
     public string SearchEngine { get; set; } = "Google";
     public string CustomSearchEngineUrl { get; set; } = string.Empty;
+    public string HomePage { get; set; } = string.Empty;
+    public string DefaultDownloadPath { get; set; } = string.Empty;
+    public StartupBehavior StartupBehavior { get; set; } = StartupBehavior.RestoreSession;
+}
+
+/// <summary>
+/// Defines what the browser does on startup.
+/// </summary>
+public enum StartupBehavior
+{
+    RestoreSession,
+    NewTab,
+    HomePage
 }

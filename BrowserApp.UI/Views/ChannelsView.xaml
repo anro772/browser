@@ -3,17 +3,11 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
         xmlns:viewmodels="clr-namespace:BrowserApp.UI.ViewModels"
-        xmlns:views="clr-namespace:BrowserApp.UI.Views"
         Title="Channels Manager"
         WindowStartupLocation="CenterOwner"
         Loaded="ChannelsView_Loaded"
         ExtendsContentIntoTitleBar="True"
         Style="{StaticResource ModernManagerWindowStyle}">
-
-    <ui:FluentWindow.Resources>
-        <views:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
-        <views:CountToVisibilityConverter x:Key="CountToVisibilityConverter"/>
-    </ui:FluentWindow.Resources>
 
     <Grid Margin="16" Style="{StaticResource FadeInOnLoadModern}">
         <Grid.RowDefinitions>
@@ -124,7 +118,7 @@
 
                     <!-- Empty state -->
                     <TextBlock Grid.Row="1" Text="No channels joined yet"
-                               Visibility="{Binding JoinedChannels.Count, Converter={StaticResource CountToVisibilityConverter}}"
+                               Visibility="{Binding JoinedChannels.Count, Converter={StaticResource CountToVisibility}}"
                                HorizontalAlignment="Center" VerticalAlignment="Center"
                                Foreground="{DynamicResource TextFillColorTertiaryBrush}"/>
                 </Grid>
@@ -193,7 +187,7 @@
 
                     <!-- Empty state -->
                     <TextBlock Grid.Row="1" Text="No channels available"
-                               Visibility="{Binding AvailableChannels.Count, Converter={StaticResource CountToVisibilityConverter}}"
+                               Visibility="{Binding AvailableChannels.Count, Converter={StaticResource CountToVisibility}}"
                                HorizontalAlignment="Center" VerticalAlignment="Center"
                                Foreground="{DynamicResource TextFillColorTertiaryBrush}"/>
                 </Grid>
@@ -208,7 +202,7 @@
                            Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                 <ui:ProgressRing IsIndeterminate="True" Width="16" Height="16"
                                  HorizontalAlignment="Right"
-                                 Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisibilityConverter}}"/>
+                                 Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisibility}}"/>
             </Grid>
         </Border>
     </Grid>

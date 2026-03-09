@@ -22,10 +22,11 @@
             <!-- Converters -->
             <BooleanToVisibilityConverter x:Key="BoolToVisibility"/>
             <converters:BoolToVisibilityInverseConverter x:Key="BoolToVisibilityInverse"/>
+            <converters:InverseBoolConverter x:Key="InverseBoolConverter"/>
             <converters:CountToVisibilityConverter x:Key="CountToVisibility"/>
             <converters:PercentToWidthConverter x:Key="PercentToWidth"/>
-            <converters:UriToSecurityIconConverter x:Key="UriToSecurityIcon"/>
-            <converters:UriToSecurityColorConverter x:Key="UriToSecurityColor"/>
+            <converters:CertificateStatusToIconConverter x:Key="CertStatusToIcon"/>
+            <converters:CertificateStatusToColorConverter x:Key="CertStatusToColor"/>
             <converters:StringToBrushConverter x:Key="StringToBrush"/>
             <converters:EnumToBooleanConverter x:Key="EnumToBooleanConverter"/>
             <converters:EnumToVisibilityConverter x:Key="EnumToVisibilityConverter"/>

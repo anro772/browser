@@ -3,6 +3,7 @@ using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Threading;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Web.WebView2.Core;
 using Wpf.Ui.Controls;
@@ -43,6 +44,7 @@ public partial class MainWindow : FluentWindow
     private readonly Dictionary<BrowserTabItem, EventHandler<NetworkRequest>> _requestCapturedHandlers = new();
     private readonly Dictionary<BrowserTabItem, CoreWebView2> _wiredWebViews = new();
     private bool _extensionProfileWired;
+    private DispatcherTimer? _sessionAutoSaveTimer;
 
     public MainWindow(
         MainViewModel viewModel,
@@ -168,18 +170,66 @@ public partial class MainWindow : FluentWindow
 
             ErrorLogger.LogInfo("[MainWindow] WebView2 environment created");
 
-            // Try to restore previous session
+            // Check for crash recovery (sentinel file exists = previous unclean shutdown)
             var scopeFactory = _serviceProvider.GetRequiredService<IServiceScopeFactory>();
-            bool restored = await _tabStrip.RestoreSessionAsync(scopeFactory);
+            string sessionLockPath = Path.Combine(Path.GetDirectoryName(profileService.GetDatabasePath())!, "session.lock");
+            bool crashDetected = File.Exists(sessionLockPath);
+            bool restored = false;
+
+            var settingsService = _serviceProvider.GetRequiredService<SettingsService>();
+            var startupBehavior = settingsService.Settings.StartupBehavior;
+
+            if (startupBehavior == StartupBehavior.RestoreSession)
+            {
+                // Always restore when setting is RestoreSession
+                restored = await _tabStrip.RestoreSessionAsync(scopeFactory);
+            }
+            else if (crashDetected)
+            {
+                // Previous crash detected - ask user
+                var result = System.Windows.MessageBox.Show(
+                    "It looks like the browser didn't shut down properly last time.\nWould you like to restore your previous session?",
+                    "Restore Session",
+                    System.Windows.MessageBoxButton.YesNo,
+                    System.Windows.MessageBoxImage.Question);
+
+                if (result == System.Windows.MessageBoxResult.Yes)
+                {
+                    restored = await _tabStrip.RestoreSessionAsync(scopeFactory);
+                }
+            }
+            else if (startupBehavior != StartupBehavior.NewTab)
+            {
+                // Default: try to restore previous session
+                restored = await _tabStrip.RestoreSessionAsync(scopeFactory);
+            }
 
             if (!restored)
             {
-                // No saved session — open first tab and navigate to home
-                var searchEngine = _serviceProvider.GetRequiredService<ISearchEngineService>();
-                await _tabStrip.NewTabAsync(searchEngine.GetHomePageUrl());
+                // No saved session or user declined — open first tab
+                string homeUrl = !string.IsNullOrWhiteSpace(settingsService.Settings.HomePage)
+                    ? settingsService.Settings.HomePage
+                    : _serviceProvider.GetRequiredService<ISearchEngineService>().GetHomePageUrl();
+                await _tabStrip.NewTabAsync(homeUrl);
             }
 
-            ErrorLogger.LogInfo($"[MainWindow] Tab system initialized ({_tabStrip.Tabs.Count} tabs)");
+            // Start session auto-save timer (every 30 seconds)
+            _sessionAutoSaveTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(30) };
+            _sessionAutoSaveTimer.Tick += async (s, args) =>
+            {
+                try
+                {
+                    var sf = _serviceProvider.GetRequiredService<IServiceScopeFactory>();
+                    await _tabStrip.SaveSessionAsync(sf);
+                }
+                catch (Exception ex)
+                {
+                    ErrorLogger.LogError("[MainWindow] Auto-save session failed", ex);
+                }
+            };
+            _sessionAutoSaveTimer.Start();
+
+            ErrorLogger.LogInfo($"[MainWindow] Tab system initialized ({_tabStrip.Tabs.Count} tabs), auto-save active");
         }
         catch (Exception ex)
         {

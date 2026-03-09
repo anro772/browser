@@ -2,13 +2,7 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
-             xmlns:views="clr-namespace:BrowserApp.UI.Views"
              Loaded="ChannelsWorkspaceView_Loaded">
-
-    <UserControl.Resources>
-        <views:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
-        <views:CountToVisibilityConverter x:Key="CountToVisibilityConverter"/>
-    </UserControl.Resources>
 
     <Grid Style="{StaticResource FadeInOnLoadModern}">
         <Grid.RowDefinitions>
@@ -121,7 +115,7 @@
                     </ListBox>
 
                     <TextBlock Grid.Row="1" Text="No channels joined yet"
-                               Visibility="{Binding JoinedChannels.Count, Converter={StaticResource CountToVisibilityConverter}}"
+                               Visibility="{Binding JoinedChannels.Count, Converter={StaticResource CountToVisibility}}"
                                HorizontalAlignment="Center" VerticalAlignment="Center"
                                Foreground="{DynamicResource TextFillColorTertiaryBrush}"/>
                 </Grid>
@@ -194,7 +188,7 @@
                     </ListBox>
 
                     <TextBlock Grid.Row="2" Text="No channels available"
-                               Visibility="{Binding AvailableChannels.Count, Converter={StaticResource CountToVisibilityConverter}}"
+                               Visibility="{Binding AvailableChannels.Count, Converter={StaticResource CountToVisibility}}"
                                HorizontalAlignment="Center" VerticalAlignment="Center"
                                Foreground="{DynamicResource TextFillColorTertiaryBrush}"/>
                 </Grid>
@@ -208,7 +202,7 @@
                            Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                 <ui:ProgressRing IsIndeterminate="True" Width="16" Height="16"
                                  HorizontalAlignment="Right"
-                                 Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisibilityConverter}}"/>
+                                 Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisibility}}"/>
             </Grid>
         </Border>
     </Grid>

@@ -31,6 +31,54 @@
                       VerticalScrollBarVisibility="Auto">
             <StackPanel>
 
+                <!-- Startup & Home Section -->
+                <Border Background="{StaticResource BgSurfaceBrush}"
+                        CornerRadius="8"
+                        BorderBrush="{StaticResource BorderSubtleBrush}"
+                        BorderThickness="1"
+                        Padding="16"
+                        Margin="0,0,0,12">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                            <ui:SymbolIcon Symbol="Home24" FontSize="20"
+                                           Foreground="{StaticResource AccentBrush}" Margin="0,0,8,0"/>
+                            <TextBlock Text="Startup &amp; Home" FontSize="14" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                        </StackPanel>
+
+                        <TextBlock Text="Choose what happens when the browser starts."
+                                   FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                   TextWrapping="Wrap" Margin="0,0,0,12"/>
+
+                        <TextBlock Text="On startup" FontSize="12" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                        <ComboBox ItemsSource="{Binding StartupBehaviors}"
+                                  SelectedValue="{Binding SelectedStartupBehavior}"
+                                  SelectedValuePath="Behavior"
+                                  HorizontalAlignment="Stretch"
+                                  Margin="0,0,0,12">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate>
+                                    <StackPanel Margin="4">
+                                        <TextBlock Text="{Binding Name}" FontWeight="SemiBold"/>
+                                        <TextBlock Text="{Binding Description}" FontSize="11"
+                                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" TextWrapping="Wrap"/>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+
+                        <TextBlock Text="Home page URL" FontSize="12" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                        <ui:TextBox PlaceholderText="https://example.com (leave empty for default)"
+                                    Text="{Binding HomePage, UpdateSourceTrigger=PropertyChanged}"
+                                    Icon="{ui:SymbolIcon Globe24}"
+                                    Margin="0,0,0,12"/>
+
+                        <TextBlock Text="Default download location" FontSize="12" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                        <ui:TextBox PlaceholderText="Leave empty for system default"
+                                    Text="{Binding DefaultDownloadPath, UpdateSourceTrigger=PropertyChanged}"
+                                    Icon="{ui:SymbolIcon Folder24}"/>
+                    </StackPanel>
+                </Border>
+
                 <!-- Account Section -->
                 <Border Background="{StaticResource BgSurfaceBrush}"
                         CornerRadius="8"

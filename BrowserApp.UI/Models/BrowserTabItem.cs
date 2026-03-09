@@ -391,6 +391,11 @@ public partial class BrowserTabItem : ObservableObject, IDisposable
         _coreWebView2?.Reload();
     }
 
+    public void Stop()
+    {
+        _coreWebView2?.Stop();
+    }
+
     public void SetZoom(double zoomFactor)
     {
         if (_webView != null)

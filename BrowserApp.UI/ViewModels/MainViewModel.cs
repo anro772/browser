@@ -367,6 +367,29 @@ public partial class MainViewModel : ObservableObject, IDisposable
     }
 
     [RelayCommand]
+    private void Stop()
+    {
+        _tabStrip.ActiveTab?.Stop();
+    }
+
+    [RelayCommand]
+    private async Task PrintAsync()
+    {
+        var tab = _tabStrip.ActiveTab;
+        if (tab?.CoreWebView2 != null)
+        {
+            try
+            {
+                await tab.CoreWebView2.ExecuteScriptAsync("window.print()");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[MainViewModel] Print failed: {ex.Message}");
+            }
+        }
+    }
+
+    [RelayCommand]
     private async Task HomeAsync()
     {
         var homeUrl = _searchEngineService.GetHomePageUrl();

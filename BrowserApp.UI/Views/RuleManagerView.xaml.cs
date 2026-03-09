@@ -1,6 +1,4 @@
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
 using BrowserApp.UI.ViewModels;
 
 namespace BrowserApp.UI.Views;
@@ -17,26 +15,5 @@ public partial class RuleManagerView : Wpf.Ui.Controls.FluentWindow
 
         // Load rules when window opens
         Loaded += async (s, e) => await viewModel.LoadRulesCommand.ExecuteAsync(null);
-    }
-
-}
-
-/// <summary>
-/// Converts boolean to inverse boolean.
-/// </summary>
-public class InverseBoolConverter : IValueConverter
-{
-    public object Convert(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
-    {
-        if (value is bool b)
-            return !b;
-        return value;
-    }
-
-    public object ConvertBack(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
-    {
-        if (value is bool b)
-            return !b;
-        return value;
     }
 }

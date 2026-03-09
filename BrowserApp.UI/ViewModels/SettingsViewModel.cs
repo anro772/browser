@@ -40,6 +40,15 @@ public partial class SettingsViewModel : ObservableObject
     [ObservableProperty]
     private string _username = "default_user";
 
+    [ObservableProperty]
+    private string _homePage = string.Empty;
+
+    [ObservableProperty]
+    private string _defaultDownloadPath = string.Empty;
+
+    [ObservableProperty]
+    private StartupBehavior _selectedStartupBehavior = StartupBehavior.RestoreSession;
+
     /// <summary>
     /// Available privacy modes for the dropdown.
     /// </summary>
@@ -51,6 +60,13 @@ public partial class SettingsViewModel : ObservableObject
     };
 
     public IReadOnlyList<string> SearchEngines { get; }
+
+    public IReadOnlyList<StartupBehaviorOption> StartupBehaviors { get; } = new List<StartupBehaviorOption>
+    {
+        new(StartupBehavior.RestoreSession, "Restore previous session", "Reopen all tabs from your last browsing session"),
+        new(StartupBehavior.NewTab, "Open new tab", "Start with a blank new tab page"),
+        new(StartupBehavior.HomePage, "Open home page", "Navigate to your configured home page")
+    };
 
     public SettingsViewModel(
         SettingsService settingsService,
@@ -69,6 +85,9 @@ public partial class SettingsViewModel : ObservableObject
         SelectedSearchEngine = _settingsService.SearchEngine;
         CustomSearchEngineUrl = _settingsService.CustomSearchEngineUrl;
         IsCustomEngineVisible = SelectedSearchEngine == "Custom";
+        HomePage = _settingsService.HomePage;
+        DefaultDownloadPath = _settingsService.DefaultDownloadPath;
+        SelectedStartupBehavior = _settingsService.StartupBehavior;
     }
 
     /// <summary>
@@ -197,9 +216,29 @@ public partial class SettingsViewModel : ObservableObject
             _searchEngineService.SetCustomSearchEngine(value);
         }
     }
+
+    partial void OnHomePageChanged(string value)
+    {
+        _settingsService.HomePage = value;
+    }
+
+    partial void OnDefaultDownloadPathChanged(string value)
+    {
+        _settingsService.DefaultDownloadPath = value;
+    }
+
+    partial void OnSelectedStartupBehaviorChanged(StartupBehavior value)
+    {
+        _settingsService.StartupBehavior = value;
+    }
 }
 
 /// <summary>
 /// Represents a privacy mode option for display in the UI.
 /// </summary>
 public record PrivacyModeOption(PrivacyMode Mode, string Name, string Description);
+
+/// <summary>
+/// Represents a startup behavior option for display in the UI.
+/// </summary>
+public record StartupBehaviorOption(StartupBehavior Behavior, string Name, string Description);

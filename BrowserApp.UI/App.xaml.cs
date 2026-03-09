@@ -23,6 +23,7 @@ public partial class App : Application
 {
     private IServiceProvider? _serviceProvider;
     private ProfileService? _profileService;
+    private string? _sessionLockPath;
 
     protected override async void OnStartup(StartupEventArgs e)
     {
@@ -74,6 +75,11 @@ public partial class App : Application
         SettingsService.SetSettingsPath(_profileService.GetSettingsPath());
 
         ErrorLogger.LogInfo($"[Profile] Active: {_profileService.ActiveProfile.Name} ({_profileService.ActiveProfile.Id})");
+
+        // Write crash-detection sentinel file
+        _sessionLockPath = Path.Combine(Path.GetDirectoryName(_profileService.GetDatabasePath())!, "session.lock");
+        File.WriteAllText(_sessionLockPath, DateTime.UtcNow.ToString("O"));
+        ErrorLogger.LogInfo($"[CrashRecovery] Sentinel written: {_sessionLockPath}");
 
         var services = new ServiceCollection();
         ConfigureServices(services);
@@ -369,6 +375,20 @@ public partial class App : Application
             // Dispose tab strip
             var strip = _serviceProvider.GetService<TabStripViewModel>();
             strip?.Dispose();
+        }
+
+        // Delete crash-detection sentinel on clean exit
+        if (_sessionLockPath != null && File.Exists(_sessionLockPath))
+        {
+            try
+            {
+                File.Delete(_sessionLockPath);
+                ErrorLogger.LogInfo("[CrashRecovery] Sentinel deleted on clean exit");
+            }
+            catch (Exception ex)
+            {
+                ErrorLogger.LogError("Failed to delete session lock", ex);
+            }
         }
 
         if (_serviceProvider is IDisposable disposable)

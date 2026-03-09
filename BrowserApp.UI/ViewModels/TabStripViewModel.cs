@@ -23,6 +23,7 @@ public partial class TabStripViewModel : ObservableObject, IDisposable
     private readonly IFilterListService? _filterListService;
     private CoreWebView2Environment? _environment;
     private bool _isDisposed;
+    private readonly Stack<(string Url, string Title)> _recentlyClosed = new();
 
     public ObservableCollection<BrowserTabItem> Tabs { get; } = new();
 
@@ -142,6 +143,22 @@ public partial class TabStripViewModel : ObservableObject, IDisposable
             }
         }
 
+        // Save URL for reopen before disposing
+        if (!string.IsNullOrEmpty(tab.Url))
+        {
+            _recentlyClosed.Push((tab.Url, tab.Title));
+            if (_recentlyClosed.Count > 10)
+            {
+                // Trim to max 10 entries
+                var items = _recentlyClosed.ToArray();
+                _recentlyClosed.Clear();
+                for (int j = Math.Min(9, items.Length - 1); j >= 0; j--)
+                {
+                    _recentlyClosed.Push(items[j]);
+                }
+            }
+        }
+
         Tabs.Remove(tab);
         TabRemoved?.Invoke(this, tab);
         tab.Dispose();
@@ -174,6 +191,17 @@ public partial class TabStripViewModel : ObservableObject, IDisposable
 
         ActiveTab = tab;
         ActiveTabChanged?.Invoke(this, tab);
+    }
+
+    /// <summary>
+    /// Reopens the last closed tab (Ctrl+Shift+T).
+    /// </summary>
+    [RelayCommand]
+    public async Task ReopenLastClosedTabAsync()
+    {
+        if (_recentlyClosed.Count == 0) return;
+        var (url, _) = _recentlyClosed.Pop();
+        await NewTabAsync(url);
     }
 
     /// <summary>

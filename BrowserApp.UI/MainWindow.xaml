@@ -5,9 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
         xmlns:controls="clr-namespace:BrowserApp.UI.Controls"
-        xmlns:converters="clr-namespace:BrowserApp.UI.Converters"
         xmlns:vm="clr-namespace:BrowserApp.UI.ViewModels"
-        xmlns:views="clr-namespace:BrowserApp.UI.Views"
         mc:Ignorable="d"
         Title="{Binding PageTitle}"
         Height="1000"
@@ -17,11 +15,6 @@
         WindowStartupLocation="CenterScreen"
         WindowState="Maximized"
         ExtendsContentIntoTitleBar="True">
-
-    <ui:FluentWindow.Resources>
-        <converters:CertificateStatusToIconConverter x:Key="CertStatusToIcon"/>
-        <converters:CertificateStatusToColorConverter x:Key="CertStatusToColor"/>
-    </ui:FluentWindow.Resources>
 
     <ui:FluentWindow.InputBindings>
         <!-- Tab management -->
@@ -34,15 +27,20 @@
         <KeyBinding Gesture="Ctrl+L" Command="{Binding FocusAddressBarCommand}"/>
         <KeyBinding Key="F5" Command="{Binding RefreshCommand}"/>
         <KeyBinding Gesture="Ctrl+R" Command="{Binding RefreshCommand}"/>
+        <KeyBinding Key="Escape" Command="{Binding StopCommand}"/>
         <KeyBinding Gesture="Alt+Left" Command="{Binding BackCommand}"/>
         <KeyBinding Gesture="Alt+Right" Command="{Binding ForwardCommand}"/>
 
         <!-- Page actions -->
+        <KeyBinding Gesture="Ctrl+P" Command="{Binding PrintCommand}"/>
         <KeyBinding Gesture="Ctrl+F" Command="{Binding FindInPageCommand}"/>
         <KeyBinding Gesture="Ctrl+OemPlus" Command="{Binding ZoomInCommand}"/>
         <KeyBinding Gesture="Ctrl+OemMinus" Command="{Binding ZoomOutCommand}"/>
         <KeyBinding Gesture="Ctrl+D0" Command="{Binding ZoomResetCommand}"/>
         <KeyBinding Key="F11" Command="{Binding ToggleFullScreenCommand}"/>
+
+        <!-- Tab recovery -->
+        <KeyBinding Gesture="Ctrl+Shift+T" Command="{Binding TabStrip.ReopenLastClosedTabCommand}"/>
 
         <!-- Bookmarks -->
         <KeyBinding Gesture="Ctrl+D" Command="{Binding BookmarkViewModel.ToggleBookmarkCommand}"/>
@@ -143,9 +141,17 @@
                     </ui:Button.Icon>
                 </ui:Button>
                 <ui:Button ToolTip="Refresh (F5)"
-                           Command="{Binding RefreshCommand}">
+                           Command="{Binding RefreshCommand}"
+                           Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisibilityInverse}}">
                     <ui:Button.Icon>
                         <ui:SymbolIcon Symbol="ArrowClockwise24"/>
+                    </ui:Button.Icon>
+                </ui:Button>
+                <ui:Button ToolTip="Stop (Esc)"
+                           Command="{Binding StopCommand}"
+                           Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisibility}}">
+                    <ui:Button.Icon>
+                        <ui:SymbolIcon Symbol="Dismiss24"/>
                     </ui:Button.Icon>
                 </ui:Button>
                 <ui:Button ToolTip="Home"
