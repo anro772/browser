@@ -58,20 +58,16 @@
         </Grid.RowDefinitions>
 
         <!-- Row 0: Tab Strip -->
-        <Grid Grid.Row="0"
+        <Grid x:Name="TabStripGrid"
+              Grid.Row="0"
               Background="{StaticResource BgElevatedBrush}"
-              MinHeight="36">
+              MinHeight="36"
+              PreviewMouseLeftButtonDown="TabStripArea_PreviewMouseLeftButtonDown">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="140"/>
             </Grid.ColumnDefinitions>
-
-            <!-- Drag region for custom title bar -->
-            <Border x:Name="TitlebarDragRegion"
-                    Grid.ColumnSpan="3"
-                    Background="Transparent"
-                    MouseLeftButtonDown="TitlebarDragRegion_MouseLeftButtonDown"/>
 
             <!-- Tab items (scrollable) -->
             <ScrollViewer Grid.Column="0"

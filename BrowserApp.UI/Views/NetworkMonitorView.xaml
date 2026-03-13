@@ -109,7 +109,7 @@
                                FontWeight="Bold"
                                HorizontalAlignment="Center"
                                Foreground="{StaticResource SuccessBrush}"/>
-                    <TextBlock Text="Saved"
+                    <TextBlock Text="Total Saved"
                                FontSize="11"
                                HorizontalAlignment="Center"
                                Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>

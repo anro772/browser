@@ -40,7 +40,7 @@ public class PrivacyDashboardViewModelTests
         // Privacy mode is loaded from SettingsService, so check it matches
         Assert.Equal(_settingsService.PrivacyMode, _viewModel.CurrentPrivacyMode);
         Assert.Equal("0 B", _viewModel.DataSaved);
-        Assert.Equal(0, _viewModel.BlockedToday);
+        Assert.Equal(0, _viewModel.BlockedThisSession);
         Assert.Equal(0, _viewModel.TotalBlocked);
         Assert.Empty(_viewModel.TopBlockedDomains);
         Assert.Empty(_viewModel.ResourceTypeBreakdown);
@@ -77,8 +77,6 @@ public class PrivacyDashboardViewModelTests
     public async Task RefreshStatsAsync_CallsRepositoryMethods()
     {
         // Setup repository mock responses
-        _repositoryMock.Setup(x => x.GetBlockedTodayCountAsync())
-            .ReturnsAsync(42);
         _repositoryMock.Setup(x => x.GetBlockedCountAsync())
             .ReturnsAsync(100);
         _repositoryMock.Setup(x => x.GetTotalSizeAsync())
@@ -92,7 +90,6 @@ public class PrivacyDashboardViewModelTests
 
         // Verify all repository methods were called
         // Note: UI updates via Dispatcher don't work in unit tests (no WPF context)
-        _repositoryMock.Verify(x => x.GetBlockedTodayCountAsync(), Times.Once);
         _repositoryMock.Verify(x => x.GetBlockedCountAsync(), Times.Once);
         _repositoryMock.Verify(x => x.GetTotalSizeAsync(), Times.Once);
         _repositoryMock.Verify(x => x.GetTopBlockedDomainsAsync(5), Times.Once);
@@ -110,7 +107,6 @@ public class PrivacyDashboardViewModelTests
         };
 
         // Setup repository to return empty data
-        _repositoryMock.Setup(x => x.GetBlockedTodayCountAsync()).ReturnsAsync(0);
         _repositoryMock.Setup(x => x.GetBlockedCountAsync()).ReturnsAsync(0);
         _repositoryMock.Setup(x => x.GetTotalSizeAsync()).ReturnsAsync(0L);
         _repositoryMock.Setup(x => x.GetTopBlockedDomainsAsync(5))
@@ -128,7 +124,6 @@ public class PrivacyDashboardViewModelTests
     [Fact]
     public async Task RefreshStatsAsync_HandlesEmptyData()
     {
-        _repositoryMock.Setup(x => x.GetBlockedTodayCountAsync()).ReturnsAsync(0);
         _repositoryMock.Setup(x => x.GetBlockedCountAsync()).ReturnsAsync(0);
         _repositoryMock.Setup(x => x.GetTotalSizeAsync()).ReturnsAsync(0L);
         _repositoryMock.Setup(x => x.GetTopBlockedDomainsAsync(5))
@@ -138,7 +133,7 @@ public class PrivacyDashboardViewModelTests
 
         await _viewModel.RefreshStatsCommand.ExecuteAsync(null);
 
-        Assert.Equal(0, _viewModel.BlockedToday);
+        Assert.Equal(0, _viewModel.BlockedThisSession);
         Assert.Empty(_viewModel.TopBlockedDomains);
         Assert.Empty(_viewModel.ResourceTypeBreakdown);
     }
@@ -146,7 +141,7 @@ public class PrivacyDashboardViewModelTests
     [Fact]
     public async Task RefreshStatsAsync_WhenRepositoryThrows_HandlesGracefully()
     {
-        _repositoryMock.Setup(x => x.GetBlockedTodayCountAsync())
+        _repositoryMock.Setup(x => x.GetBlockedCountAsync())
             .ThrowsAsync(new InvalidOperationException("DB error"));
 
         var ex = await Record.ExceptionAsync(() => _viewModel.RefreshStatsCommand.ExecuteAsync(null));

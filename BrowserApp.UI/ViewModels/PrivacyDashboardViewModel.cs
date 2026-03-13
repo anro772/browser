@@ -22,10 +22,13 @@ public partial class PrivacyDashboardViewModel : ObservableObject
     private PrivacyMode _currentPrivacyMode = PrivacyMode.Standard;
 
     [ObservableProperty]
-    private int _blockedToday;
+    private int _blockedThisSession;
 
     [ObservableProperty]
     private string _dataSaved = "0 B";
+
+    private int? _baselineBlocked;
+    private long? _baselineBytes;
 
     [ObservableProperty]
     private int _totalBlocked;
@@ -74,25 +77,27 @@ public partial class PrivacyDashboardViewModel : ObservableObject
             var networkLogRepository = scope.ServiceProvider.GetRequiredService<INetworkLogRepository>();
 
             // Get stats in parallel
-            var blockedTodayTask = networkLogRepository.GetBlockedTodayCountAsync();
             var totalBlockedTask = networkLogRepository.GetBlockedCountAsync();
             var dataSavedTask = networkLogRepository.GetTotalSizeAsync();
             var topDomainsTask = networkLogRepository.GetTopBlockedDomainsAsync(5);
             var resourceTypesTask = networkLogRepository.GetResourceTypeBreakdownAsync();
 
-            await Task.WhenAll(blockedTodayTask, totalBlockedTask, dataSavedTask, topDomainsTask, resourceTypesTask);
+            await Task.WhenAll(totalBlockedTask, dataSavedTask, topDomainsTask, resourceTypesTask);
 
-            var blockedToday = await blockedTodayTask;
             var totalBlocked = await totalBlockedTask;
-            var dataSaved = await dataSavedTask;
+            var totalBytes = await dataSavedTask;
             var topDomains = await topDomainsTask;
             var resourceTypes = await resourceTypesTask;
 
+            // Capture baseline on first load so we can show session-only deltas
+            _baselineBlocked ??= totalBlocked;
+            _baselineBytes ??= totalBytes;
+
             Application.Current?.Dispatcher.Invoke(() =>
             {
-                BlockedToday = blockedToday;
+                BlockedThisSession = totalBlocked - _baselineBlocked.Value;
                 TotalBlocked = totalBlocked;
-                DataSaved = FormatBytes(dataSaved);
+                DataSaved = FormatBytes(totalBytes - _baselineBytes.Value);
 
                 // Update top blocked domains
                 TopBlockedDomains.Clear();

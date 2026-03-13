@@ -28,7 +28,8 @@ public class ExtensionService
     }
 
     /// <summary>
-    /// Ensures built-in extensions are installed. Copies from embedded resources if needed.
+    /// Ensures built-in extensions are installed. Promotes user-imported adblock extensions
+    /// to built-in status, or installs from bundled resources if needed.
     /// </summary>
     public async Task EnsureBuiltInExtensionsAsync()
     {
@@ -36,25 +37,44 @@ public class ExtensionService
 
         try
         {
-            // Check if adblock-plus is already in the database as built-in
             using var scope = _scopeFactory.CreateScope();
             var repo = scope.ServiceProvider.GetRequiredService<IExtensionRepository>();
             var extensions = await repo.GetAllAsync();
-            var existingBuiltIn = extensions.FirstOrDefault(e => e.IsBuiltIn && e.Name.Contains("Adblock Plus", StringComparison.OrdinalIgnoreCase));
+
+            // Check if already marked as built-in
+            var existingBuiltIn = extensions.FirstOrDefault(e => e.IsBuiltIn &&
+                (e.Name.Contains("Adblock", StringComparison.OrdinalIgnoreCase) ||
+                 e.Name.Contains("adblock", StringComparison.OrdinalIgnoreCase) ||
+                 e.Name.Contains("uBlock", StringComparison.OrdinalIgnoreCase)));
 
             if (existingBuiltIn != null)
             {
-                ErrorLogger.LogInfo("[ExtensionService] Built-in Adblock Plus already installed");
+                ErrorLogger.LogInfo($"[ExtensionService] Built-in ad blocker already registered: {existingBuiltIn.Name}");
                 return;
             }
 
-            // Look for bundled extension in resources
+            // Check if user already imported an ad blocker extension (from .crx) — promote it to built-in
+            var importedAdblock = extensions.FirstOrDefault(e => !e.IsBuiltIn &&
+                (e.Name.Contains("Adblock", StringComparison.OrdinalIgnoreCase) ||
+                 e.Name.Contains("adblock", StringComparison.OrdinalIgnoreCase) ||
+                 e.Name.Contains("uBlock", StringComparison.OrdinalIgnoreCase)));
+
+            if (importedAdblock != null)
+            {
+                importedAdblock.IsBuiltIn = true;
+                importedAdblock.IsEnabled = true;
+                await repo.UpdateAsync(importedAdblock);
+                ErrorLogger.LogInfo($"[ExtensionService] Promoted imported ad blocker to built-in: {importedAdblock.Name}");
+                return;
+            }
+
+            // Fall back to bundled resources
             var basePath = AppDomain.CurrentDomain.BaseDirectory;
             var builtInSource = Path.Combine(basePath, "Resources", "BuiltInExtensions", "adblock-plus");
 
             if (!Directory.Exists(builtInSource))
             {
-                ErrorLogger.LogInfo("[ExtensionService] Built-in Adblock Plus source not found — skipping auto-install");
+                ErrorLogger.LogInfo("[ExtensionService] No ad blocker found — install one from Extensions to enable built-in ad blocking");
                 return;
             }
 
@@ -111,6 +131,32 @@ public class ExtensionService
         {
             ErrorLogger.LogError("[ExtensionService] Failed to ensure built-in extensions", ex);
         }
+    }
+
+    /// <summary>
+    /// Gets whether the built-in ad blocker extension is currently enabled.
+    /// </summary>
+    public async Task<bool> IsAdBlockerEnabledAsync()
+    {
+        using var scope = _scopeFactory.CreateScope();
+        var repo = scope.ServiceProvider.GetRequiredService<IExtensionRepository>();
+        var extensions = await repo.GetAllAsync();
+        var adblock = extensions.FirstOrDefault(e => e.IsBuiltIn);
+        return adblock?.IsEnabled ?? false;
+    }
+
+    /// <summary>
+    /// Toggles the built-in ad blocker extension on/off.
+    /// </summary>
+    public async Task SetAdBlockerEnabledAsync(bool enabled)
+    {
+        using var scope = _scopeFactory.CreateScope();
+        var repo = scope.ServiceProvider.GetRequiredService<IExtensionRepository>();
+        var extensions = await repo.GetAllAsync();
+        var adblock = extensions.FirstOrDefault(e => e.IsBuiltIn);
+        if (adblock == null) return;
+
+        await ToggleExtensionAsync(adblock.Id, enabled);
     }
 
     private static void CopyDirectory(string sourceDir, string destinationDir)

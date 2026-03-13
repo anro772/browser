@@ -17,6 +17,7 @@ public class SettingsViewModelTests
     private readonly Mock<IBrowsingHistoryRepository> _historyRepositoryMock;
     private readonly Mock<INetworkLogRepository> _networkLogRepositoryMock;
     private readonly Mock<ISearchEngineService> _searchEngineServiceMock;
+    private readonly ExtensionService _extensionService;
     private readonly SettingsService _settingsService;
     private readonly SettingsViewModel _viewModel;
 
@@ -29,6 +30,7 @@ public class SettingsViewModelTests
         _networkLogRepositoryMock = new Mock<INetworkLogRepository>();
         _searchEngineServiceMock = new Mock<ISearchEngineService>();
         _settingsService = new SettingsService();
+        _extensionService = new ExtensionService(_scopeFactoryMock.Object);
 
         // Setup the scope factory chain
         _scopeFactoryMock.Setup(x => x.CreateScope()).Returns(_scopeMock.Object);
@@ -40,7 +42,7 @@ public class SettingsViewModelTests
 
         _searchEngineServiceMock.Setup(x => x.AvailableEngines).Returns(new List<string> { "Google", "Bing", "Custom" });
 
-        _viewModel = new SettingsViewModel(_settingsService, _scopeFactoryMock.Object, _searchEngineServiceMock.Object);
+        _viewModel = new SettingsViewModel(_settingsService, _scopeFactoryMock.Object, _searchEngineServiceMock.Object, _extensionService);
     }
 
     [Fact]

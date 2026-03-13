@@ -1,11 +1,15 @@
 using System.IO;
+using System.Reflection;
+using System.Text.Json;
 using System.Windows;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using BrowserApp.Core.Interfaces;
+using BrowserApp.Core.Models;
 using BrowserApp.Core.Services;
 using BrowserApp.Data;
+using BrowserApp.Data.Entities;
 using BrowserApp.Data.Interfaces;
 using BrowserApp.Data.Repositories;
 using BrowserApp.UI.Services;
@@ -97,6 +101,9 @@ public partial class App : Application
         await blockingService.InitializeAsync();
 
         ErrorLogger.LogInfo("Blocking service initialized");
+
+        // Auto-enable best rule templates on first run (no rules in DB yet)
+        await AutoEnableDefaultTemplatesAsync(blockingService);
 
         // Initialize filter list service (downloads EasyList/EasyPrivacy if needed)
         try
@@ -284,6 +291,76 @@ public partial class App : Application
         // Phase 9: New Views
         services.AddSingleton<DownloadManagerView>();
         services.AddTransient<ExtensionManagerView>();
+    }
+
+    private async Task AutoEnableDefaultTemplatesAsync(IBlockingService blockingService)
+    {
+        try
+        {
+            using var scope = _serviceProvider!.CreateScope();
+            var ruleRepo = scope.ServiceProvider.GetRequiredService<IRuleRepository>();
+            var count = await ruleRepo.GetCountAsync();
+
+            if (count > 0)
+            {
+                ErrorLogger.LogInfo($"[AutoTemplates] Skipped — {count} rules already exist");
+                return;
+            }
+
+            var templateNames = new[] { "cookie-banners", "privacy-headers" };
+            var assembly = Assembly.GetExecutingAssembly();
+            var jsonOptions = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+
+            foreach (var templateName in templateNames)
+            {
+                string? json = null;
+                var resourceName = $"BrowserApp.UI.Resources.DefaultRules.{templateName}.json";
+
+                using var stream = assembly.GetManifestResourceStream(resourceName);
+                if (stream != null)
+                {
+                    using var reader = new StreamReader(stream);
+                    json = await reader.ReadToEndAsync();
+                }
+                else
+                {
+                    var filePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", "DefaultRules", $"{templateName}.json");
+                    if (File.Exists(filePath))
+                        json = await File.ReadAllTextAsync(filePath);
+                }
+
+                if (string.IsNullOrEmpty(json)) continue;
+
+                var rule = JsonSerializer.Deserialize<Rule>(json, jsonOptions);
+                if (rule == null) continue;
+
+                if (await ruleRepo.ExistsAsync(rule.Id)) continue;
+
+                var entity = new RuleEntity
+                {
+                    Id = rule.Id,
+                    Name = rule.Name,
+                    Description = rule.Description,
+                    Site = rule.Site,
+                    Enabled = true,
+                    Priority = rule.Priority,
+                    RulesJson = JsonSerializer.Serialize(rule.Rules, jsonOptions),
+                    Source = "template",
+                    IsEnforced = false
+                };
+
+                await ruleRepo.AddAsync(entity);
+                ErrorLogger.LogInfo($"[AutoTemplates] Loaded template: {rule.Name}");
+            }
+
+            // Reload rules so the blocking service picks them up
+            await blockingService.InitializeAsync();
+            ErrorLogger.LogInfo("[AutoTemplates] Default templates loaded and blocking service refreshed");
+        }
+        catch (Exception ex)
+        {
+            ErrorLogger.LogError("[AutoTemplates] Failed to auto-enable default templates (non-fatal)", ex);
+        }
     }
 
     private void EnsureDatabase()

@@ -4,7 +4,7 @@ A privacy-focused browser built with C# WPF, WebView2, and Entity Framework Core
 
 ## Status
 
-**Phase 10 Complete** | 364 tests passing
+**Phase 11 Complete** | 419 tests passing
 
 ## Features
 
@@ -25,7 +25,7 @@ A privacy-focused browser built with C# WPF, WebView2, and Entity Framework Core
 
 ### Privacy & Monitoring
 - Real-time network request capture with filtering and CSV export
-- Privacy dashboard with blocking stats
+- Privacy dashboard with session-scoped blocking stats
 - All data stored locally (no cloud sync)
 - Multi-profile support with isolated data directories
 
@@ -39,7 +39,8 @@ A privacy-focused browser built with C# WPF, WebView2, and Entity Framework Core
 ### UI / UX
 - Dark graphite/blue theme (dark mode only)
 - Single-window tools workspace for Rules, Extensions, Marketplace, Channels, Profiles, and Settings
-- Custom draggable titlebar with modern overlay transitions
+- Custom draggable titlebar with restore-on-drag from maximized, double-click maximize toggle
+- Session recovery with auto-save (30s interval) and crash detection
 
 ## Project Structure
 
@@ -62,7 +63,7 @@ BrowserApp/
 │   ├── Repositories/        # Data repositories
 │   └── Migrations/          # EF Core migrations
 ├── BrowserApp.Server/       # Marketplace API server
-└── BrowserApp.Tests/        # Unit tests (364 tests)
+└── BrowserApp.Tests/        # Unit tests (419 tests)
 ```
 
 ## Tech Stack
@@ -139,4 +140,4 @@ dotnet ef database update --project BrowserApp.Data --startup-project BrowserApp
 
 ---
 
-**Last Updated**: February 17, 2026 | **Build**: 364/364 tests passing
+**Last Updated**: March 14, 2026 | **Build**: 419/419 tests passing

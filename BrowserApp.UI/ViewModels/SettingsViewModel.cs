@@ -18,6 +18,10 @@ public partial class SettingsViewModel : ObservableObject
     private readonly SettingsService _settingsService;
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly ISearchEngineService _searchEngineService;
+    private readonly ExtensionService _extensionService;
+
+    [ObservableProperty]
+    private bool _isAdBlockerEnabled;
 
     [ObservableProperty]
     private PrivacyMode _selectedPrivacyMode;
@@ -71,11 +75,13 @@ public partial class SettingsViewModel : ObservableObject
     public SettingsViewModel(
         SettingsService settingsService,
         IServiceScopeFactory scopeFactory,
-        ISearchEngineService searchEngineService)
+        ISearchEngineService searchEngineService,
+        ExtensionService extensionService)
     {
         _settingsService = settingsService;
         _scopeFactory = scopeFactory;
         _searchEngineService = searchEngineService;
+        _extensionService = extensionService;
 
         SearchEngines = searchEngineService.AvailableEngines;
 
@@ -88,6 +94,33 @@ public partial class SettingsViewModel : ObservableObject
         HomePage = _settingsService.HomePage;
         DefaultDownloadPath = _settingsService.DefaultDownloadPath;
         SelectedStartupBehavior = _settingsService.StartupBehavior;
+
+        // Load ad blocker state asynchronously
+        _ = LoadAdBlockerStateAsync();
+    }
+
+    private async Task LoadAdBlockerStateAsync()
+    {
+        try
+        {
+            IsAdBlockerEnabled = await _extensionService.IsAdBlockerEnabledAsync();
+        }
+        catch (Exception ex)
+        {
+            ErrorLogger.LogError("[Settings] Failed to load ad blocker state", ex);
+        }
+    }
+
+    async partial void OnIsAdBlockerEnabledChanged(bool value)
+    {
+        try
+        {
+            await _extensionService.SetAdBlockerEnabledAsync(value);
+        }
+        catch (Exception ex)
+        {
+            ErrorLogger.LogError("[Settings] Failed to toggle ad blocker", ex);
+        }
     }
 
     /// <summary>

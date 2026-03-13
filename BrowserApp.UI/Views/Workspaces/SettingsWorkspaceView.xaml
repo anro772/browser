@@ -67,6 +67,30 @@
                     </StackPanel>
                 </Border>
 
+                <!-- Ad Blocker -->
+                <Border Background="{StaticResource BgSurfaceBrush}"
+                        CornerRadius="8"
+                        BorderBrush="{StaticResource BorderSubtleBrush}"
+                        BorderThickness="1"
+                        Padding="16"
+                        Margin="0,0,0,12">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                            <ui:SymbolIcon Symbol="ShieldCheckmark24" FontSize="20"
+                                           Foreground="{StaticResource AccentBrush}" Margin="0,0,8,0"/>
+                            <TextBlock Text="Ad Blocker" FontSize="14" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                        </StackPanel>
+                        <Separator Margin="0,0,0,10" Opacity="0.2"/>
+
+                        <TextBlock Text="Block ads and trackers using the built-in Adblock Plus extension."
+                                   FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                   TextWrapping="Wrap" Margin="0,0,0,12"/>
+
+                        <ui:ToggleSwitch IsChecked="{Binding IsAdBlockerEnabled}"
+                                         Content="Enable ad blocker"/>
+                    </StackPanel>
+                </Border>
+
                 <!-- Account -->
                 <Border Background="{StaticResource BgSurfaceBrush}"
                         CornerRadius="8"

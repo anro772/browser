@@ -106,10 +106,12 @@ public partial class TabStripViewModel : ObservableObject, IDisposable
 
         ActivateTab(tab);
 
-        if (!string.IsNullOrEmpty(url))
+        // Navigate to provided URL, or default to search engine home page
+        if (string.IsNullOrEmpty(url))
         {
-            tab.Navigate(url);
+            url = _searchEngineService.GetHomePageUrl();
         }
+        tab.Navigate(url);
     }
 
     /// <summary>

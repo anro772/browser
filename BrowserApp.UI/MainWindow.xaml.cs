@@ -3,6 +3,7 @@ using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media;
 using System.Windows.Threading;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Web.WebView2.Core;
@@ -605,11 +606,26 @@ public partial class MainWindow : FluentWindow
         OpenWorkspace(WorkspaceSection.Settings);
     }
 
-    private void TitlebarDragRegion_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    private void TabStripArea_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
         if (e.LeftButton != MouseButtonState.Pressed)
         {
             return;
+        }
+
+        // Walk up the visual tree from the hit element. If we find any interactive
+        // control (tab, button, title bar) the click belongs to that control — bail out.
+        DependencyObject? source = e.OriginalSource as DependencyObject;
+        while (source != null && source != TabStripGrid)
+        {
+            if (source is System.Windows.Controls.Button ||
+                source is Wpf.Ui.Controls.Button ||
+                source is TabItemControl ||
+                source is TitleBar)
+            {
+                return; // Let the child handle it
+            }
+            source = VisualTreeHelper.GetParent(source);
         }
 
         if (e.ClickCount == 2)
@@ -617,11 +633,25 @@ public partial class MainWindow : FluentWindow
             WindowState = WindowState == WindowState.Maximized
                 ? WindowState.Normal
                 : WindowState.Maximized;
+            e.Handled = true;
             return;
         }
 
         try
         {
+            // Standard Windows behavior: dragging a maximized window restores it first,
+            // positioning it so the cursor stays proportionally on the title bar.
+            if (WindowState == WindowState.Maximized)
+            {
+                var mouse = PointToScreen(e.GetPosition(this));
+                double proportionX = mouse.X / SystemParameters.PrimaryScreenWidth;
+
+                WindowState = WindowState.Normal;
+
+                Left = mouse.X - (Width * proportionX);
+                Top = 0;
+            }
+
             DragMove();
         }
         catch (Exception ex)

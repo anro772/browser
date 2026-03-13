@@ -9,8 +9,8 @@ public class MainWindowDragBehaviorTests
         string mainWindowPath = Path.Combine(repoRoot, "BrowserApp.UI", "MainWindow.xaml");
         string xaml = File.ReadAllText(mainWindowPath);
 
-        Assert.Contains("x:Name=\"TitlebarDragRegion\"", xaml, StringComparison.Ordinal);
-        Assert.Contains("MouseLeftButtonDown=\"TitlebarDragRegion_MouseLeftButtonDown\"", xaml, StringComparison.Ordinal);
+        Assert.Contains("x:Name=\"TabStripGrid\"", xaml, StringComparison.Ordinal);
+        Assert.Contains("PreviewMouseLeftButtonDown=\"TabStripArea_PreviewMouseLeftButtonDown\"", xaml, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -20,7 +20,7 @@ public class MainWindowDragBehaviorTests
         string codePath = Path.Combine(repoRoot, "BrowserApp.UI", "MainWindow.xaml.cs");
         string code = File.ReadAllText(codePath);
 
-        Assert.Contains("private void TitlebarDragRegion_MouseLeftButtonDown", code, StringComparison.Ordinal);
+        Assert.Contains("private void TabStripArea_PreviewMouseLeftButtonDown", code, StringComparison.Ordinal);
         Assert.Contains("DragMove();", code, StringComparison.Ordinal);
     }
 
