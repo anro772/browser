@@ -43,6 +43,16 @@ public interface IChannelApiClient
     Task<ChannelRuleListResponse?> GetChannelRulesAsync(Guid channelId, string username);
 
     /// <summary>
+    /// Adds a rule to a channel (requires ownership).
+    /// </summary>
+    Task<ChannelRuleResponse?> AddRuleToChannelAsync(Guid channelId, AddChannelRuleRequest request);
+
+    /// <summary>
+    /// Deletes a rule from a channel (requires ownership).
+    /// </summary>
+    Task<bool> DeleteChannelRuleAsync(Guid channelId, Guid ruleId, string username);
+
+    /// <summary>
     /// Checks if the server is available.
     /// </summary>
     Task<bool> CheckConnectionAsync();

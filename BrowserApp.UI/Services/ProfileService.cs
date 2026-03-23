@@ -118,6 +118,19 @@ public class ProfileService
     }
 
     /// <summary>
+    /// Updates the color of an existing profile.
+    /// </summary>
+    public bool UpdateProfileColor(Guid profileId, string color)
+    {
+        var profile = _profiles.FirstOrDefault(p => p.Id == profileId);
+        if (profile == null) return false;
+
+        profile.Color = color;
+        SaveProfiles();
+        return true;
+    }
+
+    /// <summary>
     /// Deletes a profile and its data. Cannot delete the default profile.
     /// </summary>
     public bool DeleteProfile(Guid profileId)

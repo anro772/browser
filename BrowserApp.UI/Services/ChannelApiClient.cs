@@ -137,6 +137,36 @@ public class ChannelApiClient : IChannelApiClient, IDisposable
         }
     }
 
+    public async Task<ChannelRuleResponse?> AddRuleToChannelAsync(Guid channelId, AddChannelRuleRequest request)
+    {
+        try
+        {
+            var response = await _httpClient.PostAsJsonAsync($"/api/channel/channels/{channelId}/rules", request);
+            response.EnsureSuccessStatusCode();
+            return await response.Content.ReadFromJsonAsync<ChannelRuleResponse>();
+        }
+        catch (Exception ex)
+        {
+            ErrorLogger.LogError($"Failed to add rule to channel {channelId}", ex);
+            return null;
+        }
+    }
+
+    public async Task<bool> DeleteChannelRuleAsync(Guid channelId, Guid ruleId, string username)
+    {
+        try
+        {
+            var response = await _httpClient.DeleteAsync(
+                $"/api/channel/channels/{channelId}/rules/{ruleId}?username={Uri.EscapeDataString(username)}");
+            return response.IsSuccessStatusCode;
+        }
+        catch (Exception ex)
+        {
+            ErrorLogger.LogError($"Failed to delete rule {ruleId} from channel {channelId}", ex);
+            return false;
+        }
+    }
+
     public async Task<bool> CheckConnectionAsync()
     {
         try

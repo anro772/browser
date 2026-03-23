@@ -3,44 +3,30 @@ using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using BrowserApp.Core.Models;
+using BrowserApp.Core.Interfaces;
 using BrowserApp.UI.Services;
+using BrowserApp.UI.Views;
 
 namespace BrowserApp.UI.ViewModels;
 
-/// <summary>
-/// ViewModel for the profile selector.
-/// Allows viewing, creating, switching, and deleting profiles.
-/// </summary>
 public partial class ProfileSelectorViewModel : ObservableObject
 {
     private readonly ProfileService _profileService;
+    private readonly IChannelSyncService _syncService;
 
     [ObservableProperty]
-    private string _newProfileName = string.Empty;
-
-    [ObservableProperty]
-    private string _selectedColor = "#0078D4";
+    private string _activeProfileChannelSummary = string.Empty;
 
     public ObservableCollection<BrowserProfile> Profiles { get; } = new();
 
     public BrowserProfile ActiveProfile => _profileService.ActiveProfile;
 
-    public string[] AvailableColors { get; } = new[]
-    {
-        "#0078D4", // Blue
-        "#107C10", // Green
-        "#E74856", // Red
-        "#FF8C00", // Orange
-        "#881798", // Purple
-        "#00B7C3", // Teal
-        "#767676", // Gray
-        "#FFB900"  // Yellow
-    };
-
-    public ProfileSelectorViewModel(ProfileService profileService)
+    public ProfileSelectorViewModel(ProfileService profileService, IChannelSyncService syncService)
     {
         _profileService = profileService;
+        _syncService = syncService;
         LoadProfiles();
+        _ = LoadChannelStatsAsync();
     }
 
     private void LoadProfiles()
@@ -55,11 +41,42 @@ public partial class ProfileSelectorViewModel : ObservableObject
     [RelayCommand]
     private void CreateProfile()
     {
-        if (string.IsNullOrWhiteSpace(NewProfileName)) return;
+        var dialog = new CreateProfileDialog
+        {
+            DialogTitle = "Create Profile",
+            DialogSubtitle = "Create a new browser profile with its own data.",
+            ShowNameField = true,
+            Owner = Application.Current.MainWindow
+        };
 
-        _profileService.CreateProfile(NewProfileName.Trim(), SelectedColor);
-        NewProfileName = string.Empty;
-        LoadProfiles();
+        if (dialog.ShowDialog() == true && !string.IsNullOrWhiteSpace(dialog.ProfileName))
+        {
+            _profileService.CreateProfile(dialog.ProfileName, dialog.SelectedColor);
+            LoadProfiles();
+        }
+    }
+
+    [RelayCommand]
+    private void ChangeProfileColor(BrowserProfile? profile)
+    {
+        if (profile == null) return;
+
+        var dialog = new CreateProfileDialog
+        {
+            DialogTitle = "Change Color",
+            DialogSubtitle = $"Pick a new color for \"{profile.Name}\".",
+            ShowNameField = false,
+            SelectedColor = profile.Color,
+            Owner = Application.Current.MainWindow
+        };
+        dialog.ConfirmButton.Content = "Save";
+
+        if (dialog.ShowDialog() == true)
+        {
+            _profileService.UpdateProfileColor(profile.Id, dialog.SelectedColor);
+            LoadProfiles();
+            OnPropertyChanged(nameof(ActiveProfile));
+        }
     }
 
     [RelayCommand]
@@ -95,6 +112,22 @@ public partial class ProfileSelectorViewModel : ObservableObject
         {
             _profileService.DeleteProfile(profile.Id);
             LoadProfiles();
+        }
+    }
+
+    private async Task LoadChannelStatsAsync()
+    {
+        try
+        {
+            var channels = (await _syncService.GetJoinedChannelsAsync()).ToList();
+            var ruleCount = channels.Sum(c => c.RuleCount);
+            ActiveProfileChannelSummary = channels.Count > 0
+                ? $"{channels.Count} channels, {ruleCount} channel rules"
+                : "No channels joined";
+        }
+        catch
+        {
+            ActiveProfileChannelSummary = "";
         }
     }
 

@@ -101,9 +101,10 @@ public class ChannelsViewModelTests
     private readonly Mock<IChannelApiClient> _apiClientMock = new();
     private readonly Mock<IChannelSyncService> _syncServiceMock = new();
     private readonly Mock<IServiceScopeFactory> _scopeFactoryMock = new();
+    private readonly Mock<IRuleEngine> _ruleEngineMock = new();
 
     private ChannelsViewModel CreateVm() =>
-        new(_apiClientMock.Object, _syncServiceMock.Object, _scopeFactoryMock.Object);
+        new(_apiClientMock.Object, _syncServiceMock.Object, _scopeFactoryMock.Object, _ruleEngineMock.Object);
 
     [Fact]
     public void InitialState_DefaultUsername()
@@ -139,5 +140,179 @@ public class ChannelsViewModelTests
     {
         var vm = CreateVm();
         Assert.Equal(string.Empty, vm.StatusMessage);
+    }
+
+    [Fact]
+    public void InitialState_UnifiedChannelsEmpty()
+    {
+        var vm = CreateVm();
+        Assert.Empty(vm.Channels);
+    }
+
+    [Fact]
+    public void InitialState_ShowJoinedOnlyFalse()
+    {
+        var vm = CreateVm();
+        Assert.False(vm.ShowJoinedOnly);
+    }
+
+    [Fact]
+    public void InitialState_CreatePanelHidden()
+    {
+        var vm = CreateVm();
+        Assert.False(vm.IsCreatePanelVisible);
+    }
+}
+
+public class UnifiedChannelViewModelTests
+{
+    private static ChannelResponse MakeResponse(int members = 5, int rules = 3)
+        => new ChannelResponse
+        {
+            Id = Guid.NewGuid(),
+            Name = "Privacy Rules",
+            Description = "Blocks trackers",
+            OwnerUsername = "alice",
+            IsPublic = true,
+            MemberCount = members,
+            RuleCount = rules,
+            CreatedAt = DateTime.UtcNow
+        };
+
+    private static ChannelMembershipDto MakeMembership(string channelId)
+        => new ChannelMembershipDto
+        {
+            Id = Guid.NewGuid().ToString(),
+            ChannelId = channelId,
+            ChannelName = "Privacy Rules",
+            ChannelDescription = "Blocks trackers",
+            Username = "bob",
+            IsActive = true,
+            JoinedAt = new DateTime(2025, 3, 1, 0, 0, 0, DateTimeKind.Utc),
+            LastSyncedAt = new DateTime(2025, 6, 15, 9, 30, 0, DateTimeKind.Utc),
+            RuleCount = 2
+        };
+
+    [Fact]
+    public void Properties_MappedFromResponse_WhenNotJoined()
+    {
+        var response = MakeResponse(5, 3);
+        var vm = new UnifiedChannelViewModel(response);
+
+        Assert.Equal(response.Id, vm.Id);
+        Assert.Equal("Privacy Rules", vm.Name);
+        Assert.Equal("Blocks trackers", vm.Description);
+        Assert.Equal("alice", vm.OwnerUsername);
+        Assert.Equal(5, vm.MemberCount);
+        Assert.Equal(3, vm.RuleCount);
+        Assert.False(vm.IsJoined);
+        Assert.Null(vm.LocalChannelId);
+    }
+
+    [Fact]
+    public void Properties_MappedFromResponse_WhenJoined()
+    {
+        var response = MakeResponse();
+        var membership = MakeMembership(response.Id.ToString());
+        var vm = new UnifiedChannelViewModel(response, membership);
+
+        Assert.True(vm.IsJoined);
+        Assert.Equal(response.Id.ToString(), vm.LocalChannelId);
+        Assert.Equal(2, vm.LocalRuleCount);
+        Assert.NotNull(vm.JoinedAt);
+        Assert.NotNull(vm.LastSyncedAt);
+    }
+
+    [Fact]
+    public void DisplayInfo_ShowsMemberAndRuleCount()
+    {
+        var vm = new UnifiedChannelViewModel(MakeResponse(10, 4));
+        Assert.Equal("10 members \u2022 4 rules", vm.DisplayInfo);
+    }
+
+    [Fact]
+    public void OwnerDisplay_ShowsOwner()
+    {
+        var vm = new UnifiedChannelViewModel(MakeResponse());
+        Assert.Equal("by alice", vm.OwnerDisplay);
+    }
+
+    [Fact]
+    public void JoinedInfo_EmptyWhenNotJoined()
+    {
+        var vm = new UnifiedChannelViewModel(MakeResponse());
+        Assert.Equal(string.Empty, vm.JoinedInfo);
+    }
+
+    [Fact]
+    public void JoinedInfo_ShowsSyncDateWhenJoined()
+    {
+        var response = MakeResponse();
+        var membership = MakeMembership(response.Id.ToString());
+        var vm = new UnifiedChannelViewModel(response, membership);
+        Assert.StartsWith("Last synced: ", vm.JoinedInfo);
+    }
+
+    [Fact]
+    public void IsExpanded_DefaultFalse()
+    {
+        var vm = new UnifiedChannelViewModel(MakeResponse());
+        Assert.False(vm.IsExpanded);
+        Assert.Empty(vm.RulePreview);
+    }
+}
+
+public class RulePreviewItemTests
+{
+    private static readonly Guid TestId = Guid.NewGuid();
+    private static readonly Guid TestChannelId = Guid.NewGuid();
+
+    [Fact]
+    public void RecordEquality_Works()
+    {
+        var a = new RulePreviewItem(TestId, TestChannelId, "Block Ads", "*.example.com", true);
+        var b = new RulePreviewItem(TestId, TestChannelId, "Block Ads", "*.example.com", true);
+        Assert.Equal(a, b);
+    }
+
+    [Fact]
+    public void Properties_SetCorrectly()
+    {
+        var item = new RulePreviewItem(TestId, TestChannelId, "Dark Mode", "*", false);
+        Assert.Equal(TestId, item.Id);
+        Assert.Equal(TestChannelId, item.ChannelId);
+        Assert.Equal("Dark Mode", item.Name);
+        Assert.Equal("*", item.Site);
+        Assert.False(item.IsEnforced);
+    }
+}
+
+public class UnifiedChannelViewModel_IsOwnerTests
+{
+    [Fact]
+    public void IsOwner_DefaultFalse()
+    {
+        var response = new ChannelResponse
+        {
+            Id = Guid.NewGuid(), Name = "Test", Description = "",
+            OwnerUsername = "alice", IsPublic = true, MemberCount = 1,
+            RuleCount = 0, CreatedAt = DateTime.UtcNow
+        };
+        var vm = new UnifiedChannelViewModel(response);
+        Assert.False(vm.IsOwner);
+    }
+
+    [Fact]
+    public void IsOwner_CanBeSet()
+    {
+        var response = new ChannelResponse
+        {
+            Id = Guid.NewGuid(), Name = "Test", Description = "",
+            OwnerUsername = "alice", IsPublic = true, MemberCount = 1,
+            RuleCount = 0, CreatedAt = DateTime.UtcNow
+        };
+        var vm = new UnifiedChannelViewModel(response);
+        vm.IsOwner = true;
+        Assert.True(vm.IsOwner);
     }
 }

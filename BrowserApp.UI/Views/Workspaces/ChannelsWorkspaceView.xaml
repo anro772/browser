@@ -7,11 +7,12 @@
     <Grid Style="{StaticResource FadeInOnLoadModern}">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <!-- Header -->
+        <!-- Row 0: Header -->
         <Grid Grid.Row="0" Margin="0,0,0,12">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
@@ -33,170 +34,223 @@
                            Icon="{ui:SymbolIcon ArrowSync24}"
                            Command="{Binding LoadChannelsCommand}"
                            Appearance="Secondary"/>
-                <ui:Button Content="Sync Now" Margin="0,0,8,0"
+                <ui:Button Content="Sync All" Margin="0,0,8,0"
                            Icon="{ui:SymbolIcon ArrowClockwise24}"
                            Command="{Binding SyncNowCommand}"
                            Appearance="Primary"/>
-                <ui:Button Content="New Channel"
+                <ui:Button Content="+ New Channel"
                            Icon="{ui:SymbolIcon Add24}"
-                           Command="{Binding CreateChannelCommand}"
+                           Command="{Binding ShowCreateDialogCommand}"
                            Appearance="Secondary"/>
             </StackPanel>
         </Grid>
 
-        <!-- Two-column layout -->
-        <Grid Grid.Row="1">
+        <!-- Row 1: Search bar + Joined only checkbox -->
+        <Grid Grid.Row="1" Margin="0,0,0,12">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="16"/>
-                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
+            <ui:TextBox Grid.Column="0"
+                        PlaceholderText="Search channels..."
+                        Icon="{ui:SymbolIcon Search24}"
+                        Text="{Binding SearchFilter, UpdateSourceTrigger=PropertyChanged}"
+                        Margin="0,0,12,0"/>
+            <CheckBox Grid.Column="1" Content="Joined only"
+                      IsChecked="{Binding ShowJoinedOnly}"
+                      VerticalAlignment="Center"
+                      Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+        </Grid>
 
-            <!-- Joined Channels -->
-            <Border Grid.Column="0" BorderBrush="{StaticResource BorderBrush}"
-                    BorderThickness="1" CornerRadius="8" Padding="8">
-                <Grid>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="*"/>
-                    </Grid.RowDefinitions>
+        <!-- Row 2: Channel list -->
+        <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
+            <ItemsControl ItemsSource="{Binding Channels}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Border Background="{StaticResource BgGlassHeaderBrush}"
+                                BorderBrush="{StaticResource BorderSubtleBrush}"
+                                BorderThickness="1" CornerRadius="10" Margin="0,0,0,8"
+                                Padding="0">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
 
-                    <TextBlock Grid.Row="0" Text="Joined Channels"
-                               FontWeight="SemiBold"
-                               Foreground="{DynamicResource TextFillColorPrimaryBrush}"
-                               Margin="8,8,8,8"/>
+                                <!-- Left accent for joined -->
+                                <Border Grid.Column="0" Width="3" CornerRadius="10,0,0,10"
+                                        Background="{DynamicResource SuccessBrush}"
+                                        Visibility="{Binding IsJoined, Converter={StaticResource BoolToVisibility}}"/>
 
-                    <ListBox Grid.Row="1" ItemsSource="{Binding JoinedChannels}"
-                             SelectedItem="{Binding SelectedChannel}"
-                             ItemContainerStyle="{StaticResource ThemedListBoxItem}"
-                             BorderThickness="0" Background="Transparent">
-                        <ListBox.ItemTemplate>
-                            <DataTemplate>
-                                <Border Padding="12,8" Margin="4" CornerRadius="6"
-                                        Background="{StaticResource BgGlassHeaderBrush}">
-                                    <Grid>
+                                <Grid Grid.Column="1" Margin="14,12">
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                    </Grid.RowDefinitions>
+
+                                    <!-- Row 0: Name + badge + buttons -->
+                                    <Grid Grid.Row="0">
                                         <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
                                             <ColumnDefinition Width="*"/>
                                             <ColumnDefinition Width="Auto"/>
                                         </Grid.ColumnDefinitions>
-                                        <Grid.RowDefinitions>
-                                            <RowDefinition Height="Auto"/>
-                                            <RowDefinition Height="Auto"/>
-                                            <RowDefinition Height="Auto"/>
-                                        </Grid.RowDefinitions>
 
-                                        <TextBlock Grid.Row="0" Text="{Binding ChannelName}"
-                                                   FontWeight="SemiBold" FontSize="14"
-                                                   Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
-                                        <TextBlock Grid.Row="1" Text="{Binding ChannelDescription}"
-                                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                                                   TextTrimming="CharacterEllipsis"/>
-                                        <TextBlock Grid.Row="2" Text="{Binding LastSyncedDisplay}"
-                                                   FontSize="11"
-                                                   Foreground="{DynamicResource TextFillColorTertiaryBrush}"/>
+                                        <Border Grid.Column="0" Width="32" Height="32" CornerRadius="16"
+                                                Background="{DynamicResource AccentBrush}"
+                                                Margin="0,0,10,0" VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding Name[0]}"
+                                                       Foreground="White" FontWeight="Bold" FontSize="14"
+                                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                        </Border>
 
-                                        <StackPanel Grid.Column="1" Grid.RowSpan="3"
-                                                    VerticalAlignment="Center" Margin="8,0,0,0">
-                                            <ui:Badge Appearance="Success">
-                                                <StackPanel Orientation="Horizontal">
-                                                    <ui:SymbolIcon Symbol="Shield24" FontSize="12"/>
-                                                    <TextBlock Text="{Binding RuleCount}" Margin="4,0,0,0"/>
-                                                </StackPanel>
-                                            </ui:Badge>
-                                            <ui:Button Content="Leave" Margin="0,8,0,0"
-                                                       Appearance="Danger"
+                                        <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding Name}" FontWeight="Bold" FontSize="14"
+                                                       Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                                                       VerticalAlignment="Center"/>
+                                            <Border CornerRadius="10" Padding="8,2" Margin="8,0,0,0"
+                                                    Background="{DynamicResource SuccessBrush}" Opacity="0.85"
+                                                    Visibility="{Binding IsJoined, Converter={StaticResource BoolToVisibility}}">
+                                                <TextBlock Text="Joined" FontSize="10" FontWeight="SemiBold"
+                                                           Foreground="White"/>
+                                            </Border>
+                                        </StackPanel>
+
+                                        <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                                            <ui:Button Content="Join" Appearance="Primary"
+                                                       Visibility="{Binding IsJoined, Converter={StaticResource BoolToVisibilityInverse}}"
+                                                       Command="{Binding DataContext.JoinChannelCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                       CommandParameter="{Binding}"/>
+                                            <ui:Button Content="Leave" Appearance="Danger" Margin="0,0,6,0"
+                                                       Visibility="{Binding IsJoined, Converter={StaticResource BoolToVisibility}}"
                                                        Command="{Binding DataContext.LeaveChannelCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                       CommandParameter="{Binding}"/>
+                                            <ui:Button Content="Sync" Appearance="Secondary"
+                                                       Visibility="{Binding IsJoined, Converter={StaticResource BoolToVisibility}}"
+                                                       Command="{Binding DataContext.SyncChannelCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                        CommandParameter="{Binding}"/>
                                         </StackPanel>
                                     </Grid>
-                                </Border>
-                            </DataTemplate>
-                        </ListBox.ItemTemplate>
-                    </ListBox>
 
-                    <TextBlock Grid.Row="1" Text="No channels joined yet"
-                               Visibility="{Binding JoinedChannels.Count, Converter={StaticResource CountToVisibility}}"
-                               HorizontalAlignment="Center" VerticalAlignment="Center"
-                               Foreground="{DynamicResource TextFillColorTertiaryBrush}"/>
-                </Grid>
-            </Border>
+                                    <!-- Row 1: Description -->
+                                    <TextBlock Grid.Row="1" Text="{Binding Description}"
+                                               Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                               TextTrimming="CharacterEllipsis" Margin="42,4,0,0"/>
 
-            <!-- Available Channels -->
-            <Border Grid.Column="2" BorderBrush="{StaticResource BorderBrush}"
-                    BorderThickness="1" CornerRadius="8" Padding="8">
-                <Grid>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="*"/>
-                    </Grid.RowDefinitions>
+                                    <!-- Row 2: Stats -->
+                                    <TextBlock Grid.Row="2" Margin="42,2,0,0" FontSize="11"
+                                               Foreground="{DynamicResource TextFillColorTertiaryBrush}">
+                                        <Run Text="{Binding DisplayInfo, Mode=OneWay}"/>
+                                        <Run Text=" &#x2022; "/>
+                                        <Run Text="{Binding OwnerDisplay, Mode=OneWay}"/>
+                                    </TextBlock>
 
-                    <TextBlock Grid.Row="0" Text="Available Channels"
-                               FontWeight="SemiBold"
-                               Foreground="{DynamicResource TextFillColorPrimaryBrush}"
-                               Margin="8,8,8,8"/>
+                                    <!-- Row 3: Sync info -->
+                                    <TextBlock Grid.Row="3" Text="{Binding JoinedInfo}"
+                                               FontSize="11" Margin="42,2,0,0"
+                                               Foreground="{DynamicResource TextFillColorTertiaryBrush}"
+                                               Visibility="{Binding IsJoined, Converter={StaticResource BoolToVisibility}}"/>
 
-                    <ui:TextBox Grid.Row="1"
-                                PlaceholderText="Search channels..."
-                                Icon="{ui:SymbolIcon Search24}"
-                                Text="{Binding SearchFilter, UpdateSourceTrigger=PropertyChanged}"
-                                Margin="4,0,4,8"/>
+                                    <!-- Row 4: Expand toggle -->
+                                    <Button Grid.Row="4" Margin="42,6,0,0" HorizontalAlignment="Left"
+                                            Background="Transparent" BorderThickness="0" Cursor="Hand" Padding="0"
+                                            Command="{Binding DataContext.ToggleExpandCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                            CommandParameter="{Binding}">
+                                        <TextBlock FontSize="11" Foreground="{DynamicResource AccentBrush}">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="Text" Value="Show rules &#x25BE;"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding IsExpanded}" Value="True">
+                                                            <Setter Property="Text" Value="Hide rules &#x25B4;"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+                                    </Button>
 
-                    <ListBox Grid.Row="2" ItemsSource="{Binding AvailableChannels}"
-                             ItemContainerStyle="{StaticResource ThemedListBoxItem}"
-                             BorderThickness="0" Background="Transparent">
-                        <ListBox.ItemTemplate>
-                            <DataTemplate>
-                                <Border Padding="12,8" Margin="4" CornerRadius="6"
-                                        Background="{StaticResource BgGlassHeaderBrush}">
-                                    <Grid>
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="Auto"/>
-                                        </Grid.ColumnDefinitions>
-                                        <Grid.RowDefinitions>
-                                            <RowDefinition Height="Auto"/>
-                                            <RowDefinition Height="Auto"/>
-                                            <RowDefinition Height="Auto"/>
-                                            <RowDefinition Height="Auto"/>
-                                        </Grid.RowDefinitions>
+                                    <!-- Row 5: Expandable rules -->
+                                    <Border Grid.Row="5" Margin="42,6,0,0" Padding="8"
+                                            Background="{StaticResource BgElevatedBrush}"
+                                            CornerRadius="8"
+                                            Visibility="{Binding IsExpanded, Converter={StaticResource BoolToVisibility}}">
+                                        <Grid>
+                                            <ui:ProgressRing IsIndeterminate="True" Width="16" Height="16"
+                                                             HorizontalAlignment="Center"
+                                                             Visibility="{Binding IsLoadingPreview, Converter={StaticResource BoolToVisibility}}"/>
 
-                                        <TextBlock Grid.Row="0" Text="{Binding Name}"
-                                                   FontWeight="SemiBold" FontSize="14"
-                                                   Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
-                                        <TextBlock Grid.Row="1" Text="{Binding Description}"
-                                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                                                   TextTrimming="CharacterEllipsis"/>
-                                        <TextBlock Grid.Row="2" Text="{Binding DisplayInfo}"
-                                                   FontSize="11"
-                                                   Foreground="{DynamicResource TextFillColorTertiaryBrush}"/>
-                                        <TextBlock Grid.Row="3"
-                                                   Text="{Binding OwnerUsername, StringFormat='by {0}'}"
-                                                   FontSize="10"
-                                                   Foreground="{DynamicResource TextFillColorTertiaryBrush}"/>
+                                            <StackPanel Visibility="{Binding IsJoined, Converter={StaticResource BoolToVisibility}}">
+                                                <ItemsControl ItemsSource="{Binding RulePreview}"
+                                                              Visibility="{Binding IsLoadingPreview, Converter={StaticResource BoolToVisibilityInverse}}">
+                                                    <ItemsControl.ItemTemplate>
+                                                        <DataTemplate>
+                                                            <Grid Margin="0,2">
+                                                                <Grid.ColumnDefinitions>
+                                                                    <ColumnDefinition Width="*"/>
+                                                                    <ColumnDefinition Width="Auto"/>
+                                                                </Grid.ColumnDefinitions>
+                                                                <StackPanel Grid.Column="0" Orientation="Horizontal">
+                                                                    <TextBlock Text="{Binding Name}" FontWeight="SemiBold"
+                                                                               Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                                                                               FontSize="12"/>
+                                                                    <TextBlock Text=" &#x2014; " FontSize="12"
+                                                                               Foreground="{DynamicResource TextFillColorTertiaryBrush}"/>
+                                                                    <TextBlock Text="{Binding Site}" FontSize="12"
+                                                                               Foreground="{DynamicResource AccentBrush}"/>
+                                                                    <Border CornerRadius="4" Padding="4,1" Margin="6,0,0,0"
+                                                                            Visibility="{Binding IsEnforced, Converter={StaticResource BoolToVisibility}}">
+                                                                        <Border.Background>
+                                                                            <SolidColorBrush Color="#FF8B5CF6" Opacity="0.2"/>
+                                                                        </Border.Background>
+                                                                        <TextBlock Text="enforced" FontSize="10"
+                                                                                   Foreground="#FF8B5CF6"/>
+                                                                    </Border>
+                                                                </StackPanel>
+                                                                <!-- Delete rule button (owner only) -->
+                                                                <Button Grid.Column="1" Content="&#xE711;"
+                                                                        FontFamily="Segoe MDL2 Assets" FontSize="10"
+                                                                        Padding="4,2" Background="Transparent"
+                                                                        BorderThickness="0" Cursor="Hand"
+                                                                        ToolTip="Remove rule"
+                                                                        Foreground="{DynamicResource TextFillColorTertiaryBrush}"
+                                                                        Command="{Binding DataContext.DeleteChannelRuleCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                                        CommandParameter="{Binding}"/>
+                                                            </Grid>
+                                                        </DataTemplate>
+                                                    </ItemsControl.ItemTemplate>
+                                                </ItemsControl>
 
-                                        <ui:Button Grid.Column="1" Grid.RowSpan="4"
-                                                   Content="Join"
-                                                   VerticalAlignment="Center"
-                                                   Appearance="Primary"
-                                                   Command="{Binding DataContext.JoinChannelCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                   CommandParameter="{Binding}"/>
-                                    </Grid>
-                                </Border>
-                            </DataTemplate>
-                        </ListBox.ItemTemplate>
-                    </ListBox>
+                                                <!-- Add Rule button (owner only) -->
+                                                <ui:Button Content="+ Add Rule" Appearance="Secondary"
+                                                           Margin="0,8,0,0" HorizontalAlignment="Left"
+                                                           Visibility="{Binding IsOwner, Converter={StaticResource BoolToVisibility}}"
+                                                           Command="{Binding DataContext.AddRuleToChannelCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                           CommandParameter="{Binding}"/>
+                                            </StackPanel>
 
-                    <TextBlock Grid.Row="2" Text="No channels available"
-                               Visibility="{Binding AvailableChannels.Count, Converter={StaticResource CountToVisibility}}"
-                               HorizontalAlignment="Center" VerticalAlignment="Center"
-                               Foreground="{DynamicResource TextFillColorTertiaryBrush}"/>
-                </Grid>
-            </Border>
-        </Grid>
+                                            <TextBlock Text="Join to see rule details"
+                                                       FontSize="12" FontStyle="Italic"
+                                                       Foreground="{DynamicResource TextFillColorTertiaryBrush}"
+                                                       HorizontalAlignment="Center"
+                                                       Visibility="{Binding IsJoined, Converter={StaticResource BoolToVisibilityInverse}}"/>
+                                        </Grid>
+                                    </Border>
+                                </Grid>
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ScrollViewer>
 
-        <!-- Status bar -->
-        <Border Grid.Row="2" Background="{StaticResource BgElevatedBrush}" Padding="16,8" Margin="0,12,0,0">
+        <!-- Row 3: Status bar -->
+        <Border Grid.Row="3" Background="{StaticResource BgElevatedBrush}" Padding="16,8" Margin="0,12,0,0"
+                CornerRadius="8">
             <Grid>
                 <TextBlock Text="{Binding StatusMessage}"
                            Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>

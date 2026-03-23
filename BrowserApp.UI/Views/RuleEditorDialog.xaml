@@ -84,7 +84,8 @@
                                       SpinButtonPlacementMode="Compact"/>
                     </StackPanel>
 
-                    <StackPanel Grid.Column="2" VerticalAlignment="Bottom">
+                    <StackPanel Grid.Column="2" VerticalAlignment="Bottom"
+                              Visibility="{Binding ShowEnabledToggle, Converter={StaticResource BoolToVisibility}}">
                         <ui:ToggleSwitch IsChecked="{Binding IsEnabled}" Content="Enabled"/>
                     </StackPanel>
                 </Grid>

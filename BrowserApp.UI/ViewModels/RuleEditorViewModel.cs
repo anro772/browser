@@ -3,6 +3,7 @@ using System.Text.Json;
 using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using BrowserApp.Core.DTOs;
 using BrowserApp.Core.Interfaces;
 using BrowserApp.Core.Models;
 using BrowserApp.Data.Entities;
@@ -46,7 +47,16 @@ public partial class RuleEditorViewModel : ObservableObject
     public bool WasSaved { get; private set; }
     public Action? CloseAction { get; set; }
 
-    public string DialogTitle => IsEditMode ? "Edit Rule" : "New Rule";
+    // Channel publish mode (optional — set before opening dialog)
+    public Guid? ChannelId { get; set; }
+    public IChannelApiClient? ChannelApiClient { get; set; }
+    public string? ChannelUsername { get; set; }
+
+    public bool ShowEnabledToggle => !ChannelId.HasValue;
+
+    public string DialogTitle => ChannelId.HasValue
+        ? "Add Rule to Channel"
+        : (IsEditMode ? "Edit Rule" : "New Rule");
 
     public RuleEditorViewModel(IServiceScopeFactory scopeFactory, IRuleEngine ruleEngine)
     {
@@ -108,41 +118,67 @@ public partial class RuleEditorViewModel : ObservableObject
             var ruleActions = Actions.Select(a => a.ToRuleAction()).ToList();
             var rulesJson = JsonSerializer.Serialize(ruleActions);
 
-            using var scope = _scopeFactory.CreateScope();
-            var repository = scope.ServiceProvider.GetRequiredService<IRuleRepository>();
-
-            if (IsEditMode && !string.IsNullOrEmpty(EditingRuleId))
+            if (ChannelId.HasValue && ChannelApiClient != null)
             {
-                var entity = await repository.GetByIdAsync(EditingRuleId);
-                if (entity != null)
+                // Channel mode: POST to server API
+                var request = new AddChannelRuleRequest
                 {
-                    entity.Name = RuleName;
-                    entity.Description = RuleDescription;
-                    entity.Site = SitePattern;
-                    entity.Priority = Priority;
-                    entity.Enabled = IsEnabled;
-                    entity.RulesJson = rulesJson;
-                    await repository.UpdateAsync(entity);
+                    Username = ChannelUsername ?? string.Empty,
+                    Name = RuleName,
+                    Description = RuleDescription,
+                    Site = SitePattern,
+                    Priority = Priority,
+                    RulesJson = rulesJson,
+                    IsEnforced = true
+                };
+
+                var result = await ChannelApiClient.AddRuleToChannelAsync(ChannelId.Value, request);
+                if (result == null)
+                {
+                    ValidationError = "Failed to add rule to channel. You may not be the owner.";
+                    return;
                 }
             }
             else
             {
-                var entity = new RuleEntity
+                // Local mode: save to database
+                using var scope = _scopeFactory.CreateScope();
+                var repository = scope.ServiceProvider.GetRequiredService<IRuleRepository>();
+
+                if (IsEditMode && !string.IsNullOrEmpty(EditingRuleId))
                 {
-                    Id = Guid.NewGuid().ToString(),
-                    Name = RuleName,
-                    Description = RuleDescription,
-                    Site = SitePattern,
-                    Enabled = IsEnabled,
-                    Priority = Priority,
-                    RulesJson = rulesJson,
-                    Source = "local",
-                    IsEnforced = false
-                };
-                await repository.AddAsync(entity);
+                    var entity = await repository.GetByIdAsync(EditingRuleId);
+                    if (entity != null)
+                    {
+                        entity.Name = RuleName;
+                        entity.Description = RuleDescription;
+                        entity.Site = SitePattern;
+                        entity.Priority = Priority;
+                        entity.Enabled = IsEnabled;
+                        entity.RulesJson = rulesJson;
+                        await repository.UpdateAsync(entity);
+                    }
+                }
+                else
+                {
+                    var entity = new RuleEntity
+                    {
+                        Id = Guid.NewGuid().ToString(),
+                        Name = RuleName,
+                        Description = RuleDescription,
+                        Site = SitePattern,
+                        Enabled = IsEnabled,
+                        Priority = Priority,
+                        RulesJson = rulesJson,
+                        Source = "local",
+                        IsEnforced = false
+                    };
+                    await repository.AddAsync(entity);
+                }
+
+                await _ruleEngine.ReloadRulesAsync();
             }
 
-            await _ruleEngine.ReloadRulesAsync();
             WasSaved = true;
             CloseAction?.Invoke();
         }
