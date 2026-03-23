@@ -3,7 +3,7 @@
                     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml">
 
     <!-- Tab strip background -->
-    <SolidColorBrush x:Key="TabStripBackgroundBrush" Color="#111522"/>
+    <SolidColorBrush x:Key="TabStripBackgroundBrush" Color="#121620"/>
 
     <!-- Tab item template -->
     <Style x:Key="BrowserTabItemStyle" TargetType="Border">

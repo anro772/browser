@@ -45,8 +45,6 @@ public class RuleEngine : IRuleEngine, IDisposable
 
     public async Task InitializeAsync()
     {
-        if (_isInitialized) return;
-
         await ReloadRulesAsync();
         _isInitialized = true;
     }

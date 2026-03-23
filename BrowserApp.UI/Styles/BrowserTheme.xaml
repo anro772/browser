@@ -3,157 +3,152 @@
                     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml">
 
     <!-- ═══════════════════════════════════════════════════════════════
-         OLED Black/Purple Theme — Core Palette
+         "Warm Obsidian" — Premium Dark Theme
+         Warmer undertones, high layer contrast, indigo-violet accent
          ═══════════════════════════════════════════════════════════════ -->
 
-    <!-- BACKGROUNDS -->
-    <Color x:Key="BgPrimary">#0B0E12</Color>
-    <Color x:Key="BgElevated">#11161D</Color>
-    <Color x:Key="BgSurface">#171D26</Color>
-    <Color x:Key="BgSurfaceHover">#1F2733</Color>
-    <Color x:Key="BgSurfaceActive">#283241</Color>
+    <!-- BACKGROUNDS — warm dark tones with clear separation -->
+    <Color x:Key="BgPrimary">#0E1017</Color>
+    <Color x:Key="BgElevated">#161A24</Color>
+    <Color x:Key="BgSurface">#1D2230</Color>
+    <Color x:Key="BgSurfaceHover">#262D3C</Color>
+    <Color x:Key="BgSurfaceActive">#303848</Color>
 
-    <SolidColorBrush x:Key="BgPrimaryBrush" Color="#0B0E12"/>
-    <SolidColorBrush x:Key="BgElevatedBrush" Color="#11161D"/>
-    <SolidColorBrush x:Key="BgSurfaceBrush" Color="#171D26"/>
-    <SolidColorBrush x:Key="BgSurfaceHoverBrush" Color="#1F2733"/>
-    <SolidColorBrush x:Key="BgSurfaceActiveBrush" Color="#283241"/>
-    <SolidColorBrush x:Key="BgGlassHeaderBrush" Color="#131A23"/>
+    <SolidColorBrush x:Key="BgPrimaryBrush" Color="#0E1017"/>
+    <SolidColorBrush x:Key="BgElevatedBrush" Color="#161A24"/>
+    <SolidColorBrush x:Key="BgSurfaceBrush" Color="#1D2230"/>
+    <SolidColorBrush x:Key="BgSurfaceHoverBrush" Color="#262D3C"/>
+    <SolidColorBrush x:Key="BgSurfaceActiveBrush" Color="#303848"/>
+    <SolidColorBrush x:Key="BgGlassHeaderBrush" Color="#181D28"/>
 
-    <!-- ACCENT (Purple) -->
-    <Color x:Key="Accent">#3B82F6</Color>
-    <Color x:Key="AccentLight">#60A5FA</Color>
-    <Color x:Key="AccentDark">#2563EB</Color>
+    <!-- ACCENT — Indigo-Violet (warm, premium, distinctive) -->
+    <Color x:Key="Accent">#7C6AEF</Color>
+    <Color x:Key="AccentLight">#9B8AFB</Color>
+    <Color x:Key="AccentDark">#6254CC</Color>
 
-    <SolidColorBrush x:Key="AccentBrush" Color="#3B82F6"/>
-    <SolidColorBrush x:Key="AccentLightBrush" Color="#60A5FA"/>
-    <SolidColorBrush x:Key="AccentDarkBrush" Color="#2563EB"/>
-    <SolidColorBrush x:Key="AccentSubtleBrush" Color="#143B82F6"/>
-    <SolidColorBrush x:Key="AccentGlowBrush" Color="#2E3B82F6"/>
-    <SolidColorBrush x:Key="AccentBorderBrush" Color="#4C3B82F6"/>
+    <SolidColorBrush x:Key="AccentBrush" Color="#7C6AEF"/>
+    <SolidColorBrush x:Key="AccentLightBrush" Color="#9B8AFB"/>
+    <SolidColorBrush x:Key="AccentDarkBrush" Color="#6254CC"/>
+    <SolidColorBrush x:Key="AccentSubtleBrush" Color="#187C6AEF"/>
+    <SolidColorBrush x:Key="AccentGlowBrush" Color="#307C6AEF"/>
+    <SolidColorBrush x:Key="AccentBorderBrush" Color="#4C7C6AEF"/>
 
-    <!-- TEXT -->
-    <Color x:Key="TextPrimary">#F3F6FA</Color>
-    <Color x:Key="TextSecondary">#A8B3C7</Color>
-    <Color x:Key="TextTertiary">#738099</Color>
+    <!-- TEXT — slightly warm whites, better secondary readability -->
+    <Color x:Key="TextPrimary">#F0F0F5</Color>
+    <Color x:Key="TextSecondary">#9CA3B8</Color>
+    <Color x:Key="TextTertiary">#6B7394</Color>
 
-    <SolidColorBrush x:Key="TextPrimaryBrush" Color="#F3F6FA"/>
-    <SolidColorBrush x:Key="TextSecondaryBrush" Color="#A8B3C7"/>
-    <SolidColorBrush x:Key="TextTertiaryBrush" Color="#738099"/>
+    <SolidColorBrush x:Key="TextPrimaryBrush" Color="#F0F0F5"/>
+    <SolidColorBrush x:Key="TextSecondaryBrush" Color="#9CA3B8"/>
+    <SolidColorBrush x:Key="TextTertiaryBrush" Color="#6B7394"/>
 
-    <!-- SEMANTIC -->
-    <Color x:Key="Success">#34D399</Color>
-    <Color x:Key="Error">#F87171</Color>
-    <Color x:Key="Warning">#FBBF24</Color>
-    <Color x:Key="Info">#60A5FA</Color>
+    <!-- SEMANTIC — softer, modern tones -->
+    <Color x:Key="Success">#6EE7B7</Color>
+    <Color x:Key="Error">#FCA5A5</Color>
+    <Color x:Key="Warning">#FCD34D</Color>
+    <Color x:Key="Info">#93C5FD</Color>
 
-    <SolidColorBrush x:Key="SuccessBrush" Color="#34D399"/>
-    <SolidColorBrush x:Key="ErrorBrush" Color="#F87171"/>
-    <SolidColorBrush x:Key="WarningBrush" Color="#FBBF24"/>
-    <SolidColorBrush x:Key="InfoBrush" Color="#60A5FA"/>
+    <SolidColorBrush x:Key="SuccessBrush" Color="#6EE7B7"/>
+    <SolidColorBrush x:Key="ErrorBrush" Color="#FCA5A5"/>
+    <SolidColorBrush x:Key="WarningBrush" Color="#FCD34D"/>
+    <SolidColorBrush x:Key="InfoBrush" Color="#93C5FD"/>
 
-    <SolidColorBrush x:Key="SuccessSubtleBrush" Color="#1534D399"/>
-    <SolidColorBrush x:Key="ErrorSubtleBrush" Color="#15F87171"/>
-    <SolidColorBrush x:Key="WarningSubtleBrush" Color="#15FBBF24"/>
-    <SolidColorBrush x:Key="InfoSubtleBrush" Color="#1560A5FA"/>
+    <SolidColorBrush x:Key="SuccessSubtleBrush" Color="#186EE7B7"/>
+    <SolidColorBrush x:Key="ErrorSubtleBrush" Color="#18FCA5A5"/>
+    <SolidColorBrush x:Key="WarningSubtleBrush" Color="#18FCD34D"/>
+    <SolidColorBrush x:Key="InfoSubtleBrush" Color="#1893C5FD"/>
 
-    <!-- BORDERS -->
-    <Color x:Key="Border">#364255</Color>
-    <Color x:Key="BorderSubtle">#283243</Color>
+    <!-- BORDERS — warmer, more visible -->
+    <Color x:Key="Border">#333B4F</Color>
+    <Color x:Key="BorderSubtle">#252C3C</Color>
 
-    <SolidColorBrush x:Key="BorderBrush" Color="#364255"/>
-    <SolidColorBrush x:Key="BorderSubtleBrush" Color="#283243"/>
+    <SolidColorBrush x:Key="BorderBrush" Color="#333B4F"/>
+    <SolidColorBrush x:Key="BorderSubtleBrush" Color="#252C3C"/>
 
     <!-- ═══════════════════════════════════════════════════════════════
          WPF-UI Theme Overrides
          ═══════════════════════════════════════════════════════════════ -->
 
-    <!-- Application background -->
-    <SolidColorBrush x:Key="ApplicationBackgroundBrush" Color="#0B0E12"/>
+    <SolidColorBrush x:Key="ApplicationBackgroundBrush" Color="#0E1017"/>
 
     <!-- Control fills -->
-    <SolidColorBrush x:Key="ControlFillColorDefaultBrush" Color="#171D26"/>
-    <SolidColorBrush x:Key="ControlFillColorSecondaryBrush" Color="#1F2733"/>
-    <SolidColorBrush x:Key="ControlFillColorTertiaryBrush" Color="#283241"/>
-    <SolidColorBrush x:Key="ControlFillColorDisabledBrush" Color="#11161D"/>
+    <SolidColorBrush x:Key="ControlFillColorDefaultBrush" Color="#1D2230"/>
+    <SolidColorBrush x:Key="ControlFillColorSecondaryBrush" Color="#262D3C"/>
+    <SolidColorBrush x:Key="ControlFillColorTertiaryBrush" Color="#303848"/>
+    <SolidColorBrush x:Key="ControlFillColorDisabledBrush" Color="#161A24"/>
 
     <!-- Control strokes -->
-    <SolidColorBrush x:Key="ControlStrokeColorDefaultBrush" Color="#364255"/>
-    <SolidColorBrush x:Key="ControlStrokeColorSecondaryBrush" Color="#283243"/>
-    <SolidColorBrush x:Key="ControlElevationBorderBrush" Color="#364255"/>
+    <SolidColorBrush x:Key="ControlStrokeColorDefaultBrush" Color="#333B4F"/>
+    <SolidColorBrush x:Key="ControlStrokeColorSecondaryBrush" Color="#252C3C"/>
+    <SolidColorBrush x:Key="ControlElevationBorderBrush" Color="#333B4F"/>
 
     <!-- Text fills -->
-    <SolidColorBrush x:Key="TextFillColorPrimaryBrush" Color="#F3F6FA"/>
-    <SolidColorBrush x:Key="TextFillColorSecondaryBrush" Color="#A8B3C7"/>
-    <SolidColorBrush x:Key="TextFillColorTertiaryBrush" Color="#738099"/>
-    <SolidColorBrush x:Key="TextFillColorDisabledBrush" Color="#738099"/>
+    <SolidColorBrush x:Key="TextFillColorPrimaryBrush" Color="#F0F0F5"/>
+    <SolidColorBrush x:Key="TextFillColorSecondaryBrush" Color="#9CA3B8"/>
+    <SolidColorBrush x:Key="TextFillColorTertiaryBrush" Color="#6B7394"/>
+    <SolidColorBrush x:Key="TextFillColorDisabledBrush" Color="#6B7394"/>
 
     <!-- Accent overrides -->
-    <SolidColorBrush x:Key="SystemAccentColorPrimaryBrush" Color="#3B82F6"/>
-    <SolidColorBrush x:Key="SystemAccentColorSecondaryBrush" Color="#60A5FA"/>
-    <SolidColorBrush x:Key="SystemAccentColorTertiaryBrush" Color="#2563EB"/>
-    <Color x:Key="SystemAccentColorPrimary">#3B82F6</Color>
-    <Color x:Key="SystemAccentColorSecondary">#60A5FA</Color>
-    <Color x:Key="SystemAccentColorTertiary">#2563EB</Color>
+    <SolidColorBrush x:Key="SystemAccentColorPrimaryBrush" Color="#7C6AEF"/>
+    <SolidColorBrush x:Key="SystemAccentColorSecondaryBrush" Color="#9B8AFB"/>
+    <SolidColorBrush x:Key="SystemAccentColorTertiaryBrush" Color="#6254CC"/>
+    <Color x:Key="SystemAccentColorPrimary">#7C6AEF</Color>
+    <Color x:Key="SystemAccentColorSecondary">#9B8AFB</Color>
+    <Color x:Key="SystemAccentColorTertiary">#6254CC</Color>
 
-    <!-- Button icon foreground overrides for dark theme -->
-    <SolidColorBrush x:Key="ButtonForeground" Color="#F3F6FA"/>
-    <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="#F3F6FA"/>
-    <SolidColorBrush x:Key="ButtonForegroundPressed" Color="#60A5FA"/>
-    <SolidColorBrush x:Key="ButtonForegroundDisabled" Color="#738099"/>
+    <!-- Button foreground overrides -->
+    <SolidColorBrush x:Key="ButtonForeground" Color="#F0F0F5"/>
+    <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="#F0F0F5"/>
+    <SolidColorBrush x:Key="ButtonForegroundPressed" Color="#9B8AFB"/>
+    <SolidColorBrush x:Key="ButtonForegroundDisabled" Color="#6B7394"/>
 
     <!-- Subtle/secondary button overrides -->
-    <SolidColorBrush x:Key="SubtleButtonForeground" Color="#A8B3C7"/>
-    <SolidColorBrush x:Key="SubtleButtonForegroundPointerOver" Color="#F3F6FA"/>
-    <SolidColorBrush x:Key="SubtleButtonForegroundPressed" Color="#60A5FA"/>
-    <SolidColorBrush x:Key="SubtleButtonForegroundDisabled" Color="#738099"/>
+    <SolidColorBrush x:Key="SubtleButtonForeground" Color="#9CA3B8"/>
+    <SolidColorBrush x:Key="SubtleButtonForegroundPointerOver" Color="#F0F0F5"/>
+    <SolidColorBrush x:Key="SubtleButtonForegroundPressed" Color="#9B8AFB"/>
+    <SolidColorBrush x:Key="SubtleButtonForegroundDisabled" Color="#6B7394"/>
     <SolidColorBrush x:Key="SubtleButtonBackground" Color="Transparent"/>
-    <SolidColorBrush x:Key="SubtleButtonBackgroundPointerOver" Color="#1F2733"/>
-    <SolidColorBrush x:Key="SubtleButtonBackgroundPressed" Color="#283241"/>
+    <SolidColorBrush x:Key="SubtleButtonBackgroundPointerOver" Color="#262D3C"/>
+    <SolidColorBrush x:Key="SubtleButtonBackgroundPressed" Color="#303848"/>
 
-    <!-- ToggleButton icon overrides -->
-    <SolidColorBrush x:Key="ToggleButtonForeground" Color="#A8B3C7"/>
-    <SolidColorBrush x:Key="ToggleButtonForegroundPointerOver" Color="#F3F6FA"/>
-    <SolidColorBrush x:Key="ToggleButtonForegroundChecked" Color="#60A5FA"/>
+    <!-- ToggleButton overrides -->
+    <SolidColorBrush x:Key="ToggleButtonForeground" Color="#9CA3B8"/>
+    <SolidColorBrush x:Key="ToggleButtonForegroundPointerOver" Color="#F0F0F5"/>
+    <SolidColorBrush x:Key="ToggleButtonForegroundChecked" Color="#9B8AFB"/>
 
     <!-- ═══════════════════════════════════════════════════════════════
          Common Styles
          ═══════════════════════════════════════════════════════════════ -->
 
-    <!-- Themed Card: surface bg, 8px radius, subtle border, padding -->
     <Style x:Key="ThemedCard" TargetType="Border">
         <Setter Property="Background" Value="{StaticResource BgSurfaceBrush}"/>
-        <Setter Property="CornerRadius" Value="8"/>
+        <Setter Property="CornerRadius" Value="12"/>
         <Setter Property="BorderBrush" Value="{StaticResource BorderSubtleBrush}"/>
         <Setter Property="BorderThickness" Value="1"/>
         <Setter Property="Padding" Value="16"/>
         <Setter Property="Margin" Value="8"/>
     </Style>
 
-    <!-- Stat Card: for dashboard/network stats -->
     <Style x:Key="StatCard" TargetType="Border">
         <Setter Property="Background" Value="{StaticResource BgSurfaceBrush}"/>
-        <Setter Property="CornerRadius" Value="8"/>
+        <Setter Property="CornerRadius" Value="12"/>
         <Setter Property="BorderBrush" Value="{StaticResource BorderSubtleBrush}"/>
         <Setter Property="BorderThickness" Value="1"/>
-        <Setter Property="Padding" Value="12"/>
+        <Setter Property="Padding" Value="14"/>
     </Style>
 
-    <!-- Section Header: 16px SemiBold with primary text -->
     <Style x:Key="SectionHeader" TargetType="TextBlock">
         <Setter Property="FontSize" Value="16"/>
         <Setter Property="FontWeight" Value="SemiBold"/>
         <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
     </Style>
 
-    <!-- Page Title: larger -->
     <Style x:Key="PageTitle" TargetType="TextBlock">
         <Setter Property="FontSize" Value="24"/>
         <Setter Property="FontWeight" Value="SemiBold"/>
         <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
     </Style>
 
-    <!-- Subtitle -->
     <Style x:Key="SubtitleText" TargetType="TextBlock">
         <Setter Property="FontSize" Value="12"/>
         <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}"/>
@@ -167,11 +162,11 @@
         <Setter Property="Background" Value="Transparent"/>
         <Setter Property="BorderThickness" Value="0"/>
         <Setter Property="GridLinesVisibility" Value="None"/>
-        <Setter Property="RowHeight" Value="36"/>
-        <Setter Property="FontSize" Value="12"/>
+        <Setter Property="RowHeight" Value="38"/>
+        <Setter Property="FontSize" Value="12.5"/>
         <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
         <Setter Property="RowBackground" Value="Transparent"/>
-        <Setter Property="AlternatingRowBackground" Value="#083B82F6"/>
+        <Setter Property="AlternatingRowBackground" Value="#087C6AEF"/>
         <Setter Property="HeadersVisibility" Value="Column"/>
         <Setter Property="IsReadOnly" Value="True"/>
         <Setter Property="CanUserAddRows" Value="False"/>
@@ -200,14 +195,14 @@
         <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}"/>
         <Setter Property="FontSize" Value="11"/>
         <Setter Property="FontWeight" Value="SemiBold"/>
-        <Setter Property="Padding" Value="8,6"/>
+        <Setter Property="Padding" Value="10,7"/>
         <Setter Property="BorderBrush" Value="{StaticResource BorderSubtleBrush}"/>
         <Setter Property="BorderThickness" Value="0,0,0,1"/>
     </Style>
 
     <Style x:Key="ThemedDataGridCell" TargetType="DataGridCell">
         <Setter Property="BorderThickness" Value="0"/>
-        <Setter Property="Padding" Value="8,4"/>
+        <Setter Property="Padding" Value="10,5"/>
         <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
         <Setter Property="Template">
             <Setter.Value>
@@ -236,15 +231,15 @@
     <Style x:Key="ThemedListViewItem" TargetType="ListViewItem">
         <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
         <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
-        <Setter Property="Padding" Value="4"/>
-        <Setter Property="Margin" Value="2,1"/>
+        <Setter Property="Padding" Value="6"/>
+        <Setter Property="Margin" Value="2,2"/>
         <Setter Property="Background" Value="Transparent"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="ListViewItem">
                     <Border x:Name="ItemBorder"
                             Background="{TemplateBinding Background}"
-                            CornerRadius="6"
+                            CornerRadius="10"
                             Padding="{TemplateBinding Padding}"
                             Margin="{TemplateBinding Margin}">
                         <ContentPresenter/>
@@ -265,15 +260,15 @@
     <Style x:Key="ThemedListBoxItem" TargetType="ListBoxItem">
         <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
         <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
-        <Setter Property="Padding" Value="4"/>
-        <Setter Property="Margin" Value="2,1"/>
+        <Setter Property="Padding" Value="6"/>
+        <Setter Property="Margin" Value="2,2"/>
         <Setter Property="Background" Value="Transparent"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="ListBoxItem">
                     <Border x:Name="ItemBorder"
                             Background="{TemplateBinding Background}"
-                            CornerRadius="6"
+                            CornerRadius="10"
                             Padding="{TemplateBinding Padding}"
                             Margin="{TemplateBinding Margin}">
                         <ContentPresenter/>
@@ -292,7 +287,7 @@
     </Style>
 
     <!-- ═══════════════════════════════════════════════════════════════
-         ScrollBar Styling (thin, accent-colored)
+         ScrollBar — thin, accent-tinted thumb
          ═══════════════════════════════════════════════════════════════ -->
 
     <Style x:Key="ThemedScrollBarThumb" TargetType="Thumb">
@@ -308,4 +303,3 @@
     </Style>
 
 </ResourceDictionary>
-

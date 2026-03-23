@@ -34,10 +34,10 @@
             <converters:StatusCodeToColorConverter x:Key="StatusCodeToColor"/>
             <converters:SourceTypeToColorConverter x:Key="SourceTypeToColor"/>
 
-            <!-- Typography override: sharper Win11 font -->
+            <!-- Typography override: Outfit font with premium rendering -->
             <Style x:Key="{x:Type TextBlock}" TargetType="TextBlock">
-                <Setter Property="FontFamily" Value="Segoe UI Variable Text"/>
-                <Setter Property="TextOptions.TextFormattingMode" Value="Display"/>
+                <Setter Property="FontFamily" Value="Outfit,Segoe UI Variable Text,Segoe UI"/>
+                <Setter Property="TextOptions.TextFormattingMode" Value="Ideal"/>
                 <Setter Property="TextOptions.TextRenderingMode" Value="ClearType"/>
             </Style>
         </ResourceDictionary>

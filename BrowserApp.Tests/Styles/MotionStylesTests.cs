@@ -35,7 +35,6 @@ public class MotionStylesTests
 
         Match styleMatch = styleRegex.Match(xaml);
         Assert.True(styleMatch.Success, "WorkspaceOverlayAnimatedStyle was not found.");
-        Assert.Contains("Duration=\"0:0:0.2\"", styleMatch.Value, StringComparison.Ordinal);
         Assert.Contains("PremiumEaseOut", styleMatch.Value, StringComparison.Ordinal);
         Assert.Contains("(ScaleTransform.ScaleX)", styleMatch.Value, StringComparison.Ordinal);
         Assert.Contains("(ScaleTransform.ScaleY)", styleMatch.Value, StringComparison.Ordinal);

@@ -1,3 +1,4 @@
+using BrowserApp.Core.Interfaces;
 using BrowserApp.Core.Models;
 using BrowserApp.Data.Interfaces;
 using BrowserApp.UI.Services;
@@ -14,6 +15,7 @@ public class PrivacyDashboardViewModelTests
     private readonly Mock<IServiceScope> _scopeMock;
     private readonly Mock<IServiceProvider> _serviceProviderMock;
     private readonly Mock<INetworkLogRepository> _repositoryMock;
+    private readonly Mock<IBlockingService> _blockingServiceMock;
     private readonly SettingsService _settingsService;
     private readonly PrivacyDashboardViewModel _viewModel;
 
@@ -23,6 +25,7 @@ public class PrivacyDashboardViewModelTests
         _scopeMock = new Mock<IServiceScope>();
         _serviceProviderMock = new Mock<IServiceProvider>();
         _repositoryMock = new Mock<INetworkLogRepository>();
+        _blockingServiceMock = new Mock<IBlockingService>();
         _settingsService = new SettingsService();
 
         // Setup the scope factory chain
@@ -31,7 +34,7 @@ public class PrivacyDashboardViewModelTests
         _serviceProviderMock.Setup(x => x.GetService(typeof(INetworkLogRepository)))
             .Returns(_repositoryMock.Object);
 
-        _viewModel = new PrivacyDashboardViewModel(_scopeFactoryMock.Object, _settingsService);
+        _viewModel = new PrivacyDashboardViewModel(_scopeFactoryMock.Object, _settingsService, _blockingServiceMock.Object);
     }
 
     [Fact]

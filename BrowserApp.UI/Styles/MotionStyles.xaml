@@ -1,14 +1,14 @@
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
-    <CubicEase x:Key="PremiumEaseOut" EasingMode="EaseOut"/>
-    <CubicEase x:Key="PremiumEaseInOut" EasingMode="EaseInOut"/>
+    <BackEase x:Key="PremiumEaseOut" EasingMode="EaseOut" Amplitude="0.35"/>
+    <BackEase x:Key="PremiumEaseInOut" EasingMode="EaseInOut" Amplitude="0.25"/>
 
     <Style x:Key="SidebarPanelAnimatedStyle" TargetType="Border">
         <Setter Property="Opacity" Value="0"/>
         <Setter Property="RenderTransform">
             <Setter.Value>
-                <TranslateTransform X="18"/>
+                <TranslateTransform X="24"/>
             </Setter.Value>
         </Setter>
         <Style.Triggers>
@@ -18,11 +18,11 @@
                         <Storyboard>
                             <DoubleAnimation Storyboard.TargetProperty="Opacity"
                                              To="1"
-                                             Duration="0:0:0.2"
+                                             Duration="0:0:0.28"
                                              EasingFunction="{StaticResource PremiumEaseOut}"/>
                             <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.X)"
                                              To="0"
-                                             Duration="0:0:0.22"
+                                             Duration="0:0:0.32"
                                              EasingFunction="{StaticResource PremiumEaseOut}"/>
                         </Storyboard>
                     </BeginStoryboard>
@@ -32,7 +32,7 @@
                 <Setter Property="Opacity" Value="0"/>
                 <Setter Property="RenderTransform">
                     <Setter.Value>
-                        <TranslateTransform X="18"/>
+                        <TranslateTransform X="24"/>
                     </Setter.Value>
                 </Setter>
             </Trigger>
@@ -43,7 +43,7 @@
         <Setter Property="Opacity" Value="0"/>
         <Setter Property="RenderTransform">
             <Setter.Value>
-                <TranslateTransform X="10"/>
+                <TranslateTransform X="14"/>
             </Setter.Value>
         </Setter>
         <Style.Triggers>
@@ -53,11 +53,11 @@
                         <Storyboard>
                             <DoubleAnimation Storyboard.TargetProperty="Opacity"
                                              To="1"
-                                             Duration="0:0:0.18"
+                                             Duration="0:0:0.24"
                                              EasingFunction="{StaticResource PremiumEaseOut}"/>
                             <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.X)"
                                              To="0"
-                                             Duration="0:0:0.2"
+                                             Duration="0:0:0.28"
                                              EasingFunction="{StaticResource PremiumEaseOut}"/>
                         </Storyboard>
                     </BeginStoryboard>
@@ -67,7 +67,7 @@
                 <Setter Property="Opacity" Value="0"/>
                 <Setter Property="RenderTransform">
                     <Setter.Value>
-                        <TranslateTransform X="10"/>
+                        <TranslateTransform X="14"/>
                     </Setter.Value>
                 </Setter>
             </Trigger>
@@ -82,7 +82,7 @@
                     <Storyboard>
                         <DoubleAnimation Storyboard.TargetProperty="Opacity"
                                          From="0" To="1"
-                                         Duration="0:0:0.2"
+                                         Duration="0:0:0.3"
                                          EasingFunction="{StaticResource PremiumEaseOut}"/>
                     </Storyboard>
                 </BeginStoryboard>
@@ -96,8 +96,8 @@
         <Setter Property="RenderTransform">
             <Setter.Value>
                 <TransformGroup>
-                    <ScaleTransform ScaleX="0.986" ScaleY="0.986"/>
-                    <TranslateTransform Y="-8"/>
+                    <ScaleTransform ScaleX="0.98" ScaleY="0.98"/>
+                    <TranslateTransform Y="-10"/>
                 </TransformGroup>
             </Setter.Value>
         </Setter>
@@ -108,19 +108,19 @@
                         <Storyboard>
                             <DoubleAnimation Storyboard.TargetProperty="Opacity"
                                              To="1"
-                                             Duration="0:0:0.2"
+                                             Duration="0:0:0.28"
                                              EasingFunction="{StaticResource PremiumEaseOut}"/>
                             <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[0].(ScaleTransform.ScaleX)"
                                              To="1"
-                                             Duration="0:0:0.2"
+                                             Duration="0:0:0.32"
                                              EasingFunction="{StaticResource PremiumEaseOut}"/>
                             <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[0].(ScaleTransform.ScaleY)"
                                              To="1"
-                                             Duration="0:0:0.2"
+                                             Duration="0:0:0.32"
                                              EasingFunction="{StaticResource PremiumEaseOut}"/>
                             <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[1].(TranslateTransform.Y)"
                                              To="0"
-                                             Duration="0:0:0.22"
+                                             Duration="0:0:0.3"
                                              EasingFunction="{StaticResource PremiumEaseOut}"/>
                         </Storyboard>
                     </BeginStoryboard>
@@ -131,8 +131,8 @@
                 <Setter Property="RenderTransform">
                     <Setter.Value>
                         <TransformGroup>
-                            <ScaleTransform ScaleX="0.986" ScaleY="0.986"/>
-                            <TranslateTransform Y="-8"/>
+                            <ScaleTransform ScaleX="0.98" ScaleY="0.98"/>
+                            <TranslateTransform Y="-10"/>
                         </TransformGroup>
                     </Setter.Value>
                 </Setter>

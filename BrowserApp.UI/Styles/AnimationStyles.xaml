@@ -2,94 +2,95 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
     <!-- ═══════════════════════════════════════════════════════════════
-         Easing Functions
+         Easing Functions — bouncy, fluid spring-like motion
          ═══════════════════════════════════════════════════════════════ -->
 
-    <CubicEase x:Key="EaseOut" EasingMode="EaseOut"/>
-    <CubicEase x:Key="EaseInOut" EasingMode="EaseInOut"/>
-    <QuadraticEase x:Key="EaseOutQuad" EasingMode="EaseOut"/>
+    <BackEase x:Key="EaseOut" EasingMode="EaseOut" Amplitude="0.3"/>
+    <BackEase x:Key="EaseInOut" EasingMode="EaseInOut" Amplitude="0.25"/>
+    <CubicEase x:Key="EaseOutQuad" EasingMode="EaseOut"/>
+    <BackEase x:Key="EaseOutBouncy" EasingMode="EaseOut" Amplitude="0.5"/>
 
     <!-- ═══════════════════════════════════════════════════════════════
-         Fade-In Storyboard (0 → 1 opacity, 200ms)
+         Fade-In Storyboard (0 → 1 opacity, 280ms with spring)
          ═══════════════════════════════════════════════════════════════ -->
 
     <Storyboard x:Key="FadeInStoryboard">
         <DoubleAnimation Storyboard.TargetProperty="Opacity"
                          From="0" To="1"
-                         Duration="0:0:0.2"
+                         Duration="0:0:0.28"
                          EasingFunction="{StaticResource EaseOut}"/>
     </Storyboard>
 
     <Storyboard x:Key="FadeOutStoryboard">
         <DoubleAnimation Storyboard.TargetProperty="Opacity"
                          From="1" To="0"
-                         Duration="0:0:0.15"
-                         EasingFunction="{StaticResource EaseOut}"/>
+                         Duration="0:0:0.18"
+                         EasingFunction="{StaticResource EaseOutQuad}"/>
     </Storyboard>
 
     <!-- ═══════════════════════════════════════════════════════════════
-         Slide-In From Right (for sidebar, 250ms, CubicEaseOut)
+         Slide-In From Right (for sidebar, 320ms, BackEase spring)
          Applied via RenderTransform.TranslateTransform
          ═══════════════════════════════════════════════════════════════ -->
 
     <Storyboard x:Key="SlideInFromRightStoryboard">
         <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.X)"
                          From="400" To="0"
-                         Duration="0:0:0.25"
-                         EasingFunction="{StaticResource EaseOut}"/>
+                         Duration="0:0:0.32"
+                         EasingFunction="{StaticResource EaseOutBouncy}"/>
         <DoubleAnimation Storyboard.TargetProperty="Opacity"
                          From="0" To="1"
-                         Duration="0:0:0.2"
+                         Duration="0:0:0.24"
                          EasingFunction="{StaticResource EaseOut}"/>
     </Storyboard>
 
     <Storyboard x:Key="SlideOutToRightStoryboard">
         <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.X)"
                          From="0" To="400"
-                         Duration="0:0:0.2"
-                         EasingFunction="{StaticResource EaseOut}"/>
+                         Duration="0:0:0.24"
+                         EasingFunction="{StaticResource EaseOutQuad}"/>
         <DoubleAnimation Storyboard.TargetProperty="Opacity"
                          From="1" To="0"
-                         Duration="0:0:0.15"
-                         EasingFunction="{StaticResource EaseOut}"/>
+                         Duration="0:0:0.18"
+                         EasingFunction="{StaticResource EaseOutQuad}"/>
     </Storyboard>
 
     <!-- ═══════════════════════════════════════════════════════════════
-         Chat Message Entrance (slide up + fade, 150ms)
+         Chat Message Entrance (slide up + fade, 220ms with spring)
          Applied via RenderTransform.TranslateTransform
          ═══════════════════════════════════════════════════════════════ -->
 
     <Storyboard x:Key="ChatMessageEntranceStoryboard">
         <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)"
-                         From="12" To="0"
-                         Duration="0:0:0.15"
+                         From="16" To="0"
+                         Duration="0:0:0.22"
                          EasingFunction="{StaticResource EaseOut}"/>
         <DoubleAnimation Storyboard.TargetProperty="Opacity"
                          From="0" To="1"
-                         Duration="0:0:0.15"
+                         Duration="0:0:0.2"
                          EasingFunction="{StaticResource EaseOut}"/>
     </Storyboard>
 
     <!-- ═══════════════════════════════════════════════════════════════
-         Scale-on-Press (0.97 scale, 100ms)
+         Scale-on-Press (0.96 scale, 120ms — satisfying press)
          ═══════════════════════════════════════════════════════════════ -->
 
     <Storyboard x:Key="ScaleDownStoryboard">
         <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
-                         To="0.97" Duration="0:0:0.1"
+                         To="0.96" Duration="0:0:0.12"
                          EasingFunction="{StaticResource EaseOut}"/>
         <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
-                         To="0.97" Duration="0:0:0.1"
+                         To="0.96" Duration="0:0:0.12"
                          EasingFunction="{StaticResource EaseOut}"/>
     </Storyboard>
 
     <Storyboard x:Key="ScaleUpStoryboard">
         <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
-                         To="1.0" Duration="0:0:0.1"
-                         EasingFunction="{StaticResource EaseOut}"/>
+                         To="1.0" Duration="0:0:0.2"
+                         EasingFunction="{StaticResource EaseOutBouncy}"/>
         <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
-                         To="1.0" Duration="0:0:0.1"
-                         EasingFunction="{StaticResource EaseOut}"/>
+                         To="1.0" Duration="0:0:0.2"
+                         EasingFunction="{StaticResource EaseOutBouncy}"/>
     </Storyboard>
 
     <!-- ═══════════════════════════════════════════════════════════════
@@ -98,32 +99,32 @@
 
     <Storyboard x:Key="HoverScaleUpStoryboard">
         <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
-                         To="1.03" Duration="0:0:0.15"
+                         To="1.03" Duration="0:0:0.2"
                          EasingFunction="{StaticResource EaseOut}"/>
         <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
-                         To="1.03" Duration="0:0:0.15"
+                         To="1.03" Duration="0:0:0.2"
                          EasingFunction="{StaticResource EaseOut}"/>
     </Storyboard>
 
     <Storyboard x:Key="HoverScaleDownStoryboard">
         <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
-                         To="1.0" Duration="0:0:0.15"
+                         To="1.0" Duration="0:0:0.2"
                          EasingFunction="{StaticResource EaseOut}"/>
         <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
-                         To="1.0" Duration="0:0:0.15"
+                         To="1.0" Duration="0:0:0.2"
                          EasingFunction="{StaticResource EaseOut}"/>
     </Storyboard>
 
     <!-- ═══════════════════════════════════════════════════════════════
          Loaded Event Trigger Style (for chat messages)
-         Applies fade+slide entrance on Loaded
+         Applies fade+slide entrance on Loaded with spring
          ═══════════════════════════════════════════════════════════════ -->
 
     <Style x:Key="AnimatedChatMessage" TargetType="ContentPresenter">
         <Setter Property="Opacity" Value="0"/>
         <Setter Property="RenderTransform">
             <Setter.Value>
-                <TranslateTransform Y="12"/>
+                <TranslateTransform Y="16"/>
             </Setter.Value>
         </Setter>
         <Style.Triggers>
@@ -131,12 +132,12 @@
                 <BeginStoryboard>
                     <Storyboard>
                         <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)"
-                                         From="12" To="0"
-                                         Duration="0:0:0.15"
+                                         From="16" To="0"
+                                         Duration="0:0:0.26"
                                          EasingFunction="{StaticResource EaseOut}"/>
                         <DoubleAnimation Storyboard.TargetProperty="Opacity"
                                          From="0" To="1"
-                                         Duration="0:0:0.15"
+                                         Duration="0:0:0.22"
                                          EasingFunction="{StaticResource EaseOut}"/>
                     </Storyboard>
                 </BeginStoryboard>
@@ -153,7 +154,7 @@
                     <Storyboard>
                         <DoubleAnimation Storyboard.TargetProperty="Opacity"
                                          From="0" To="1"
-                                         Duration="0:0:0.2"
+                                         Duration="0:0:0.28"
                                          EasingFunction="{StaticResource EaseOut}"/>
                     </Storyboard>
                 </BeginStoryboard>

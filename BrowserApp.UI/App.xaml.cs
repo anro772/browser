@@ -299,15 +299,7 @@ public partial class App : Application
         {
             using var scope = _serviceProvider!.CreateScope();
             var ruleRepo = scope.ServiceProvider.GetRequiredService<IRuleRepository>();
-            var count = await ruleRepo.GetCountAsync();
-
-            if (count > 0)
-            {
-                ErrorLogger.LogInfo($"[AutoTemplates] Skipped — {count} rules already exist");
-                return;
-            }
-
-            var templateNames = new[] { "cookie-banners", "privacy-headers" };
+            var templateNames = new[] { "cookie-banners", "privacy-headers", "block-trackers" };
             var assembly = Assembly.GetExecutingAssembly();
             var jsonOptions = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
 

@@ -3,6 +3,7 @@ using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.DependencyInjection;
+using BrowserApp.Core.Interfaces;
 using BrowserApp.Core.Models;
 using BrowserApp.Data.Interfaces;
 using BrowserApp.UI.Services;
@@ -17,6 +18,7 @@ public partial class PrivacyDashboardViewModel : ObservableObject
 {
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly SettingsService _settingsService;
+    private readonly IBlockingService _blockingService;
 
     [ObservableProperty]
     private PrivacyMode _currentPrivacyMode = PrivacyMode.Standard;
@@ -26,9 +28,6 @@ public partial class PrivacyDashboardViewModel : ObservableObject
 
     [ObservableProperty]
     private string _dataSaved = "0 B";
-
-    private int? _baselineBlocked;
-    private long? _baselineBytes;
 
     [ObservableProperty]
     private int _totalBlocked;
@@ -42,10 +41,11 @@ public partial class PrivacyDashboardViewModel : ObservableObject
     [ObservableProperty]
     private bool _isLoading;
 
-    public PrivacyDashboardViewModel(IServiceScopeFactory scopeFactory, SettingsService settingsService)
+    public PrivacyDashboardViewModel(IServiceScopeFactory scopeFactory, SettingsService settingsService, IBlockingService blockingService)
     {
         _scopeFactory = scopeFactory;
         _settingsService = settingsService;
+        _blockingService = blockingService;
 
         // Load current privacy mode from settings
         CurrentPrivacyMode = _settingsService.PrivacyMode;
@@ -89,15 +89,15 @@ public partial class PrivacyDashboardViewModel : ObservableObject
             var topDomains = await topDomainsTask;
             var resourceTypes = await resourceTypesTask;
 
-            // Capture baseline on first load so we can show session-only deltas
-            _baselineBlocked ??= totalBlocked;
-            _baselineBytes ??= totalBytes;
+            // Use BlockingService in-memory counters for accurate session stats
+            var sessionBlocked = _blockingService.GetBlockedCount();
+            var sessionBytes = _blockingService.GetBytesSaved();
 
             Application.Current?.Dispatcher.Invoke(() =>
             {
-                BlockedThisSession = totalBlocked - _baselineBlocked.Value;
+                BlockedThisSession = sessionBlocked;
                 TotalBlocked = totalBlocked;
-                DataSaved = FormatBytes(totalBytes - _baselineBytes.Value);
+                DataSaved = FormatBytes(sessionBytes);
 
                 // Update top blocked domains
                 TopBlockedDomains.Clear();
