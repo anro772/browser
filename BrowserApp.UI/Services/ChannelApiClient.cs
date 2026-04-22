@@ -92,18 +92,18 @@ public class ChannelApiClient : IChannelApiClient, IDisposable
         }
     }
 
-    public async Task<bool> LeaveChannelAsync(Guid channelId, string username)
+    public async Task<(bool Success, int StatusCode)> LeaveChannelAsync(Guid channelId, string username)
     {
         try
         {
             var request = new LeaveChannelRequest { Username = username };
             var response = await _httpClient.PostAsJsonAsync($"/api/channel/channels/{channelId}/leave", request);
-            return response.IsSuccessStatusCode;
+            return (response.IsSuccessStatusCode, (int)response.StatusCode);
         }
         catch (Exception ex)
         {
             ErrorLogger.LogError($"Failed to leave channel {channelId}", ex);
-            return false;
+            return (false, 0);
         }
     }
 

@@ -30,7 +30,7 @@ public interface IChannelApiClient
     /// <summary>
     /// Leaves a channel.
     /// </summary>
-    Task<bool> LeaveChannelAsync(Guid channelId, string username);
+    Task<(bool Success, int StatusCode)> LeaveChannelAsync(Guid channelId, string username);
 
     /// <summary>
     /// Gets channels the user has joined.

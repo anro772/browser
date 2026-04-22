@@ -110,14 +110,28 @@
                                        VerticalAlignment="Center"/>
                         </StackPanel>
                         <Separator Margin="0,0,0,10" Opacity="0.2"/>
-                        <TextBlock Text="Your username is used when joining or creating channels."
+                        <TextBlock Text="Your display name is shown as username#tag when joining or creating channels."
                                    FontSize="12"
                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                                    TextWrapping="Wrap"
                                    Margin="0,0,0,12"/>
-                        <ui:TextBox PlaceholderText="Username"
-                                    Text="{Binding Username, UpdateSourceTrigger=PropertyChanged}"
-                                    Icon="{ui:SymbolIcon Person24}"/>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <ui:TextBox Grid.Column="0"
+                                        PlaceholderText="Username"
+                                        Text="{Binding Username, UpdateSourceTrigger=PropertyChanged}"
+                                        Icon="{ui:SymbolIcon Person24}"/>
+                            <TextBlock Grid.Column="1"
+                                       Text="{Binding UserTagDisplay}"
+                                       FontSize="16"
+                                       FontWeight="SemiBold"
+                                       Foreground="{StaticResource AccentBrush}"
+                                       VerticalAlignment="Center"
+                                       Margin="8,0,0,0"/>
+                        </Grid>
                     </StackPanel>
                 </Border>
 

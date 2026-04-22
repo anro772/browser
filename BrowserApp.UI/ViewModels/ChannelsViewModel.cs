@@ -20,6 +20,7 @@ public partial class ChannelsViewModel : ObservableObject
     private readonly IChannelSyncService _syncService;
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly IRuleEngine _ruleEngine;
+    private readonly SettingsService _settingsService;
 
     private List<ChannelItemViewModel> _allAvailableChannels = new();
     private List<UnifiedChannelViewModel> _allChannels = new();
@@ -58,12 +59,15 @@ public partial class ChannelsViewModel : ObservableObject
         IChannelApiClient apiClient,
         IChannelSyncService syncService,
         IServiceScopeFactory scopeFactory,
-        IRuleEngine ruleEngine)
+        IRuleEngine ruleEngine,
+        SettingsService settingsService)
     {
         _apiClient = apiClient;
         _syncService = syncService;
         _scopeFactory = scopeFactory;
         _ruleEngine = ruleEngine;
+        _settingsService = settingsService;
+        Username = _settingsService.ApiUsername;
     }
 
     [RelayCommand]

@@ -1,5 +1,6 @@
 using BrowserApp.Core.DTOs;
 using BrowserApp.Core.Interfaces;
+using BrowserApp.UI.Services;
 using BrowserApp.UI.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
@@ -102,14 +103,16 @@ public class ChannelsViewModelTests
     private readonly Mock<IChannelSyncService> _syncServiceMock = new();
     private readonly Mock<IServiceScopeFactory> _scopeFactoryMock = new();
     private readonly Mock<IRuleEngine> _ruleEngineMock = new();
+    private readonly SettingsService _settingsService = new();
 
     private ChannelsViewModel CreateVm() =>
-        new(_apiClientMock.Object, _syncServiceMock.Object, _scopeFactoryMock.Object, _ruleEngineMock.Object);
+        new(_apiClientMock.Object, _syncServiceMock.Object, _scopeFactoryMock.Object, _ruleEngineMock.Object, _settingsService);
 
     [Fact]
     public void InitialState_DefaultUsername()
     {
         var vm = CreateVm();
+        // Username comes from SettingsService.ApiUsername which defaults to "default_user" when empty
         Assert.Equal("default_user", vm.Username);
     }
 

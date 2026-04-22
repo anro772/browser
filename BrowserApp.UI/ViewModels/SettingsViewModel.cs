@@ -42,7 +42,10 @@ public partial class SettingsViewModel : ObservableObject
     private bool _isSaving;
 
     [ObservableProperty]
-    private string _username = "default_user";
+    private string _username = string.Empty;
+
+    [ObservableProperty]
+    private string _userTagDisplay = string.Empty;
 
     [ObservableProperty]
     private string _homePage = string.Empty;
@@ -94,6 +97,10 @@ public partial class SettingsViewModel : ObservableObject
         HomePage = _settingsService.HomePage;
         DefaultDownloadPath = _settingsService.DefaultDownloadPath;
         SelectedStartupBehavior = _settingsService.StartupBehavior;
+
+        // Load username and tag
+        Username = _settingsService.Username;
+        UserTagDisplay = $"#{_settingsService.UserTag}";
 
         // Load ad blocker state asynchronously
         _ = LoadAdBlockerStateAsync();
@@ -263,6 +270,11 @@ public partial class SettingsViewModel : ObservableObject
     partial void OnSelectedStartupBehaviorChanged(StartupBehavior value)
     {
         _settingsService.StartupBehavior = value;
+    }
+
+    partial void OnUsernameChanged(string value)
+    {
+        _settingsService.Username = value;
     }
 }
 

@@ -111,8 +111,59 @@ public class SettingsService
         }
     }
 
+    public string Username
+    {
+        get => _settings.Username;
+        set
+        {
+            _settings.Username = value;
+            SaveSettings();
+            UsernameChanged?.Invoke(this, value);
+        }
+    }
+
+    public string UserTag
+    {
+        get => _settings.UserTag;
+        set
+        {
+            _settings.UserTag = value;
+            SaveSettings();
+        }
+    }
+
+    /// <summary>
+    /// Display name with Discord-style tag, e.g. "username#1234".
+    /// </summary>
+    public string DisplayUsername => string.IsNullOrEmpty(Username)
+        ? "user"
+        : $"{Username}#{UserTag}";
+
+    /// <summary>
+    /// Just the username string for API calls.
+    /// </summary>
+    public string ApiUsername => string.IsNullOrEmpty(Username) ? "default_user" : Username;
+
+    /// <summary>
+    /// Initializes username and tag on first launch if not already set.
+    /// </summary>
+    public void InitializeUsernameIfNeeded(string profileName)
+    {
+        if (!string.IsNullOrEmpty(_settings.Username) && !string.IsNullOrEmpty(_settings.UserTag))
+            return;
+
+        if (string.IsNullOrEmpty(_settings.Username))
+            _settings.Username = profileName;
+
+        if (string.IsNullOrEmpty(_settings.UserTag))
+            _settings.UserTag = Random.Shared.Next(1000, 10000).ToString();
+
+        SaveSettings();
+    }
+
     public event EventHandler<PrivacyMode>? PrivacyModeChanged;
     public event EventHandler<string>? SearchEngineChanged;
+    public event EventHandler<string>? UsernameChanged;
 
     private void LoadSettings()
     {
@@ -163,6 +214,8 @@ public class UserSettings
     public string HomePage { get; set; } = string.Empty;
     public string DefaultDownloadPath { get; set; } = string.Empty;
     public StartupBehavior StartupBehavior { get; set; } = StartupBehavior.RestoreSession;
+    public string Username { get; set; } = string.Empty;
+    public string UserTag { get; set; } = string.Empty;
 }
 
 /// <summary>

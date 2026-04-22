@@ -74,12 +74,20 @@ public class ChannelSyncService : IChannelSyncService
     {
         try
         {
-            // Leave on server — don't touch local data if server call fails
             var channelGuid = Guid.Parse(channelId);
-            var success = await _apiClient.LeaveChannelAsync(channelGuid, username);
-            if (!success) return false;
+            var (success, statusCode) = await _apiClient.LeaveChannelAsync(channelGuid, username);
 
-            // Delete local rules from this channel
+            // Clean up local data if:
+            // - Server confirmed leave (204)
+            // - Server says user/channel not found (404) — already effectively gone
+            // - Server says forbidden (403) — membership doesn't exist
+            if (!success && statusCode != 404 && statusCode != 403)
+            {
+                ErrorLogger.LogInfo($"Leave channel {channelId} failed with status {statusCode}");
+                return false;
+            }
+
+            // Delete local rules and membership
             using var scope = _scopeFactory.CreateScope();
             var ruleRepo = scope.ServiceProvider.GetRequiredService<IRuleRepository>();
             var membershipRepo = scope.ServiceProvider.GetRequiredService<IChannelMembershipRepository>();

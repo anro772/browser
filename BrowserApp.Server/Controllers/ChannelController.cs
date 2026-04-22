@@ -195,7 +195,8 @@ public class ChannelController : ControllerBase
         var result = await _channelService.GetChannelRulesAsync(id, username);
         if (result == null)
         {
-            return Forbid();
+            return StatusCode(StatusCodes.Status403Forbidden,
+                new ErrorResponse("Access denied or channel not found"));
         }
 
         // Update sync time
@@ -222,7 +223,8 @@ public class ChannelController : ControllerBase
         var result = await _channelService.AddChannelRuleAsync(id, request);
         if (result == null)
         {
-            return Forbid();
+            return StatusCode(StatusCodes.Status403Forbidden,
+                new ErrorResponse("Access denied or channel not found"));
         }
 
         return CreatedAtAction(

@@ -173,7 +173,7 @@ public class ChannelSyncServiceTests
 
         _mockApiClient
             .Setup(c => c.LeaveChannelAsync(_testChannelId, TestUsername))
-            .ReturnsAsync(true);
+            .ReturnsAsync((true, 204));
 
         _mockRuleRepository
             .Setup(r => r.DeleteByChannelIdAsync(channelIdStr))
@@ -205,7 +205,7 @@ public class ChannelSyncServiceTests
 
         _mockApiClient
             .Setup(c => c.LeaveChannelAsync(_testChannelId, TestUsername))
-            .ReturnsAsync(false);
+            .ReturnsAsync((false, 400));
 
         // Act
         var result = await _sut.LeaveChannelAsync(channelIdStr, TestUsername);

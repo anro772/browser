@@ -45,8 +45,11 @@
                 </ui:DropDownButton>
                 <ui:Button Content="Refresh" Icon="{ui:SymbolIcon ArrowSync24}" Command="{Binding LoadRulesCommand}"
                            Margin="0,0,8,0"/>
-                <ui:Button Content="New Rule" Icon="{ui:SymbolIcon Add24}"
+                <ui:Button Content="Advanced" Icon="{ui:SymbolIcon Code24}"
                            Command="{Binding CreateRuleCommand}"
+                           Margin="0,0,8,0"/>
+                <ui:Button Content="Quick Add" Icon="{ui:SymbolIcon Add24}"
+                           Command="{Binding QuickAddRuleCommand}"
                            Appearance="Primary"/>
             </StackPanel>
         </Grid>
@@ -129,8 +132,6 @@
                             </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>
 
-                        <DataGridTextColumn Header="Priority" Binding="{Binding Priority}" Width="60"/>
-
                         <DataGridTemplateColumn Header="Source" Width="80">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
@@ -153,6 +154,22 @@
                                                CommandParameter="{Binding}">
                                         <ui:Button.Icon>
                                             <ui:SymbolIcon Symbol="Edit24" Foreground="{StaticResource AccentLightBrush}"/>
+                                        </ui:Button.Icon>
+                                    </ui:Button>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+
+                        <DataGridTemplateColumn Header="" Width="45">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <ui:Button ToolTip="Publish to marketplace"
+                                               Padding="4"
+                                               Visibility="{Binding CanPublish, Converter={StaticResource BoolToVisibility}}"
+                                               Command="{Binding DataContext.PublishRuleCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                               CommandParameter="{Binding}">
+                                        <ui:Button.Icon>
+                                            <ui:SymbolIcon Symbol="ArrowUpload24" Foreground="{StaticResource AccentBrush}"/>
                                         </ui:Button.Icon>
                                     </ui:Button>
                                 </DataTemplate>

@@ -137,6 +137,8 @@ public partial class App : Application
 
         // Initialize search engine from saved settings
         var settingsService = _serviceProvider.GetRequiredService<SettingsService>();
+        settingsService.InitializeUsernameIfNeeded(_profileService.ActiveProfile.Name);
+
         var searchEngine = _serviceProvider.GetRequiredService<ISearchEngineService>();
         if (settingsService.SearchEngine == "Custom" && !string.IsNullOrWhiteSpace(settingsService.CustomSearchEngineUrl))
         {

@@ -187,7 +187,7 @@ Replace SITE_HERE with the actual domain pattern. Add MORE site-specific block d
         return new List<string>();
     }
 
-    private static List<RuleAction> GetStandardBlockActions()
+    internal static List<RuleAction> GetStandardBlockActions()
     {
         var adDomains = new[]
         {
@@ -208,7 +208,7 @@ Replace SITE_HERE with the actual domain pattern. Add MORE site-specific block d
         }).ToList();
     }
 
-    private static string GetStandardAdHidingCss()
+    internal static string GetStandardAdHidingCss()
     {
         return string.Join(", ", new[]
         {
@@ -223,7 +223,7 @@ Replace SITE_HERE with the actual domain pattern. Add MORE site-specific block d
         }) + " { display: none !important; }";
     }
 
-    private static string GetStandardPopupRemovalJs()
+    internal static string GetStandardPopupRemovalJs()
     {
         return @"(function(){
             document.body.style.overflow='auto';

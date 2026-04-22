@@ -108,6 +108,12 @@ public partial class BrowserTabItem : ObservableObject, IDisposable
     public event EventHandler<CertificateErrorEventArgs>? CertificateErrorDetected;
 
     /// <summary>
+    /// Fired when a new window is requested (e.g. target="_blank" links).
+    /// The string arg is the URI to open.
+    /// </summary>
+    public event EventHandler<string>? NewWindowRequested;
+
+    /// <summary>
     /// Phase 1: Creates the WebView2 control (must be added to visual tree before Phase 2).
     /// </summary>
     public void CreateWebView()
@@ -222,6 +228,7 @@ public partial class BrowserTabItem : ObservableObject, IDisposable
         _coreWebView2.DocumentTitleChanged += OnDocumentTitleChanged;
         _coreWebView2.StatusBarTextChanged += OnStatusBarTextChanged;
         _coreWebView2.FaviconChanged += OnFaviconChanged;
+        _coreWebView2.NewWindowRequested += OnNewWindowRequested;
     }
 
     private void OnNavigationStarting(object? sender, CoreWebView2NavigationStartingEventArgs e)
@@ -279,6 +286,26 @@ public partial class BrowserTabItem : ObservableObject, IDisposable
     {
         var text = _coreWebView2?.StatusBarText ?? string.Empty;
         StatusBarTextChanged?.Invoke(this, text);
+    }
+
+    private void OnNewWindowRequested(object? sender, CoreWebView2NewWindowRequestedEventArgs e)
+    {
+        // Prevent opening a new OS window — handle it within the app
+        e.Handled = true;
+
+        var uri = e.Uri;
+        if (string.IsNullOrEmpty(uri)) return;
+
+        // Fire event so the tab system can open it in a new tab
+        if (NewWindowRequested != null)
+        {
+            NewWindowRequested.Invoke(this, uri);
+        }
+        else
+        {
+            // Fallback: navigate this tab
+            Navigate(uri);
+        }
     }
 
     private async void OnFaviconChanged(object? sender, object e)
@@ -419,6 +446,7 @@ public partial class BrowserTabItem : ObservableObject, IDisposable
             _coreWebView2.DocumentTitleChanged -= OnDocumentTitleChanged;
             _coreWebView2.StatusBarTextChanged -= OnStatusBarTextChanged;
             _coreWebView2.FaviconChanged -= OnFaviconChanged;
+            _coreWebView2.NewWindowRequested -= OnNewWindowRequested;
             _coreWebView2.ServerCertificateErrorDetected -= OnServerCertificateErrorDetected;
         }
 

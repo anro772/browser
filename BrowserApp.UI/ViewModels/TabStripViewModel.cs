@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.EntityFrameworkCore;
@@ -100,6 +101,15 @@ public partial class TabStripViewModel : ObservableObject, IDisposable
 
         // Phase 2: Initialize CoreWebView2 (now that WebView2 has an HWND)
         await tab.InitializeCoreAsync(_environment, _blockingService, _ruleEngine, _filterListService);
+
+        // Handle new window requests (target="_blank" links) — open in a new tab
+        tab.NewWindowRequested += async (sender, uri) =>
+        {
+            await Application.Current.Dispatcher.InvokeAsync(async () =>
+            {
+                await NewTabAsync(uri);
+            });
+        };
 
         // Signal that the tab is fully ready (interceptor, CoreWebView2 available)
         TabReady?.Invoke(this, tab);

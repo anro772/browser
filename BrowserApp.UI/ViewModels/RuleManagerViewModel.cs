@@ -9,8 +9,10 @@ using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.DependencyInjection;
 using BrowserApp.Core.Interfaces;
 using BrowserApp.Core.Models;
+using BrowserApp.Core.DTOs;
 using BrowserApp.Data.Entities;
 using BrowserApp.Data.Interfaces;
+using BrowserApp.UI.Services;
 using BrowserApp.UI.Views;
 
 namespace BrowserApp.UI.ViewModels;
@@ -23,6 +25,8 @@ public partial class RuleManagerViewModel : ObservableObject
 {
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly IRuleEngine _ruleEngine;
+    private readonly IMarketplaceApiClient _marketplaceApiClient;
+    private readonly SettingsService _settingsService;
 
     private List<RuleItemViewModel> _allRules = new();
 
@@ -46,10 +50,16 @@ public partial class RuleManagerViewModel : ObservableObject
 
     partial void OnSearchFilterChanged(string value) => FilterRules();
 
-    public RuleManagerViewModel(IServiceScopeFactory scopeFactory, IRuleEngine ruleEngine)
+    public RuleManagerViewModel(
+        IServiceScopeFactory scopeFactory,
+        IRuleEngine ruleEngine,
+        IMarketplaceApiClient marketplaceApiClient,
+        SettingsService settingsService)
     {
         _scopeFactory = scopeFactory;
         _ruleEngine = ruleEngine;
+        _marketplaceApiClient = marketplaceApiClient;
+        _settingsService = settingsService;
     }
 
     [RelayCommand]
@@ -255,6 +265,27 @@ public partial class RuleManagerViewModel : ObservableObject
     }
 
     [RelayCommand]
+    private void QuickAddRule()
+    {
+        var wizardVm = new QuickRuleWizardViewModel(_scopeFactory, _ruleEngine);
+        var dialog = new QuickRuleWizardDialog(wizardVm);
+        dialog.Owner = Application.Current.MainWindow;
+
+        if (dialog.ShowDialog() == true)
+        {
+            if (dialog.OpenAdvancedEditor)
+            {
+                // Fall through to full editor
+                CreateRule();
+            }
+            else if (dialog.WasSaved)
+            {
+                LoadRulesCommand.Execute(null);
+            }
+        }
+    }
+
+    [RelayCommand]
     private async Task EditRuleAsync(RuleItemViewModel? rule)
     {
         if (rule == null) return;
@@ -287,6 +318,52 @@ public partial class RuleManagerViewModel : ObservableObject
         {
             Debug.WriteLine($"[RuleManager] Error editing rule: {ex.Message}");
             MessageBox.Show($"Error editing rule: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    [RelayCommand]
+    private async Task PublishRuleAsync(RuleItemViewModel? rule)
+    {
+        if (rule == null) return;
+
+        var dialog = new PublishRuleDialog
+        {
+            RuleName = rule.Name,
+            Description = rule.Description,
+            Owner = Application.Current.MainWindow
+        };
+
+        if (dialog.ShowDialog() != true) return;
+
+        try
+        {
+            var request = new RuleUploadRequest
+            {
+                Name = rule.Name,
+                Description = dialog.Description,
+                Site = rule.Site,
+                Priority = rule.Priority,
+                RulesJson = rule.RulesJson,
+                AuthorUsername = _settingsService.DisplayUsername,
+                Tags = dialog.Tags
+            };
+
+            var result = await _marketplaceApiClient.UploadRuleAsync(request);
+            if (result != null)
+            {
+                MessageBox.Show($"Rule '{rule.Name}' published to the marketplace!",
+                    "Published", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            else
+            {
+                MessageBox.Show("Failed to publish rule. The server may be unavailable.",
+                    "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[RuleManager] Error publishing rule: {ex.Message}");
+            MessageBox.Show($"Error publishing rule: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
 
@@ -324,6 +401,8 @@ public partial class RuleItemViewModel : ObservableObject
     public int Priority { get; }
     public string Source { get; }
     public bool IsEnforced { get; }
+    public string RulesJson { get; }
+    public bool CanPublish { get; }
     public int ActionCount { get; }
     public int BlockActionCount { get; }
     public int CssActionCount { get; }
@@ -345,6 +424,8 @@ public partial class RuleItemViewModel : ObservableObject
         Source = entity.Source;
         IsEnforced = entity.IsEnforced;
         IsEnabled = entity.Enabled;
+        RulesJson = entity.RulesJson;
+        CanPublish = Source is "local" or "template" or "ai";
 
         // Parse and count actions by type
         try

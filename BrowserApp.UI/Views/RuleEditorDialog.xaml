@@ -71,24 +71,9 @@
                             PlaceholderText="What this rule does..."
                             Margin="0,0,0,8"/>
 
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="24"/>
-                        <ColumnDefinition Width="Auto"/>
-                    </Grid.ColumnDefinitions>
-
-                    <StackPanel Grid.Column="0">
-                        <TextBlock Text="Priority" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,4"/>
-                        <ui:NumberBox Value="{Binding Priority}" Minimum="1" Maximum="100" Width="120"
-                                      SpinButtonPlacementMode="Compact"/>
-                    </StackPanel>
-
-                    <StackPanel Grid.Column="2" VerticalAlignment="Bottom"
-                              Visibility="{Binding ShowEnabledToggle, Converter={StaticResource BoolToVisibility}}">
-                        <ui:ToggleSwitch IsChecked="{Binding IsEnabled}" Content="Enabled"/>
-                    </StackPanel>
-                </Grid>
+                <StackPanel Visibility="{Binding ShowEnabledToggle, Converter={StaticResource BoolToVisibility}}">
+                    <ui:ToggleSwitch IsChecked="{Binding IsEnabled}" Content="Enabled"/>
+                </StackPanel>
             </StackPanel>
         </Border>
 
