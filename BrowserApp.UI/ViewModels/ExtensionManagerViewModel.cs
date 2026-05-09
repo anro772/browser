@@ -137,7 +137,13 @@ public partial class ExtensionManagerViewModel : ObservableObject
     {
         try
         {
-            await _extensionService.ToggleExtensionAsync(ext.Id, !ext.IsEnabled);
+            // ToggleSwitch IsChecked TwoWay binding has already written the new value
+            // onto ext.IsEnabled by the time this command fires, so we persist that value
+            // directly. (Inverting it would flip the toggle back, which is why the
+            // adblocker appeared "disabled on every restart" — it was being saved as
+            // the opposite of what the user clicked.)
+            await _extensionService.ToggleExtensionAsync(ext.Id, ext.IsEnabled);
+            ErrorLogger.LogInfo($"[Extensions] Toggled '{ext.Name}' → {(ext.IsEnabled ? "enabled" : "disabled")}");
             await LoadExtensionsAsync();
         }
         catch (Exception ex)

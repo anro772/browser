@@ -175,7 +175,8 @@ public partial class App : Application
         // Phase 3: Rule System Services
         services.AddSingleton<IRuleEngine>(sp => new RuleEngine(
             sp.GetRequiredService<IServiceScopeFactory>(),
-            sp.GetRequiredService<ContentPolicyService>()));
+            sp.GetRequiredService<ContentPolicyService>(),
+            sp.GetRequiredService<SettingsService>()));
         services.AddSingleton<IBlockingService, BlockingService>();
         services.AddSingleton<CSSInjector>();
         services.AddSingleton<ICSSInjector>(sp => sp.GetRequiredService<CSSInjector>());
@@ -282,7 +283,6 @@ public partial class App : Application
         services.AddTransient<SettingsView>();
         services.AddTransient<ProfileSelectorView>();
         services.AddTransient<NewTabPageView>();
-        services.AddSingleton<BookmarksPanel>();
         services.AddSingleton<WorkspaceHostView>();
         services.AddTransient<RulesWorkspaceView>();
         services.AddTransient<ExtensionsWorkspaceView>();

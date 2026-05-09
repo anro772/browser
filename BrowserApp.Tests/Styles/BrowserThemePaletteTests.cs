@@ -21,9 +21,9 @@ public class BrowserThemePaletteTests
         string themePath = Path.Combine(repoRoot, "BrowserApp.UI", "Styles", "BrowserTheme.xaml");
         string xaml = File.ReadAllText(themePath);
 
-        Assert.Contains("Color x:Key=\"BgPrimary\">#0E1017</Color>", xaml, StringComparison.Ordinal);
-        Assert.Contains("Color x:Key=\"BgSurface\">#1D2230</Color>", xaml, StringComparison.Ordinal);
-        Assert.Contains("Color x:Key=\"BgSurfaceHover\">#262D3C</Color>", xaml, StringComparison.Ordinal);
+        Assert.Contains("Color x:Key=\"BgPrimary\">#1A1E2A</Color>", xaml, StringComparison.Ordinal);
+        Assert.Contains("Color x:Key=\"BgSurface\">#2A3040</Color>", xaml, StringComparison.Ordinal);
+        Assert.Contains("Color x:Key=\"BgSurfaceHover\">#343B4D</Color>", xaml, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -34,7 +34,7 @@ public class BrowserThemePaletteTests
         string xaml = File.ReadAllText(themePath);
 
         Assert.Contains("Color x:Key=\"TextPrimary\">#F0F0F5</Color>", xaml, StringComparison.Ordinal);
-        Assert.Contains("Color x:Key=\"TextSecondary\">#9CA3B8</Color>", xaml, StringComparison.Ordinal);
+        Assert.Contains("Color x:Key=\"TextSecondary\">#B0B7CC</Color>", xaml, StringComparison.Ordinal);
     }
 
     private static string FindRepoRoot()

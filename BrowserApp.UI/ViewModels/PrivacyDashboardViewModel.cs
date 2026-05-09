@@ -31,6 +31,14 @@ public partial class PrivacyDashboardViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private int _blockedThisSession;
 
+    /// <summary>
+    /// Total requests evaluated this session (blocked + allowed). Sourced from
+    /// <see cref="IBlockingService.GetDetectedCount"/> so it matches what the network
+    /// monitor sees — a discrepancy here indicates a logging/event-routing bug.
+    /// </summary>
+    [ObservableProperty]
+    private int _detectedThisSession;
+
     [ObservableProperty]
     private string _dataSaved = "0 B";
 
@@ -78,6 +86,14 @@ public partial class PrivacyDashboardViewModel : ObservableObject, IDisposable
 
         _settingsService.PrivacyModeChanged += _privacyModeChangedHandler;
         _blockingService.RequestBlocked += _requestBlockedHandler;
+
+        // Populate DB-backed all-time stats immediately so the dashboard isn't blank
+        // before the first RequestBlocked event of this session fires. Guarded the same
+        // way as the timer so unit tests (no WPF Application) skip this.
+        if (Application.Current != null)
+        {
+            _ = RefreshStatsAsync();
+        }
     }
 
     private void OnRefreshTimerTick(object? sender, EventArgs e)
@@ -145,11 +161,13 @@ public partial class PrivacyDashboardViewModel : ObservableObject, IDisposable
 
             // Use BlockingService in-memory counters for accurate session stats
             var sessionBlocked = _blockingService.GetBlockedCount();
+            var sessionDetected = _blockingService.GetDetectedCount();
             var sessionBytes = _blockingService.GetBytesSaved();
 
             Application.Current?.Dispatcher.Invoke(() =>
             {
                 BlockedThisSession = sessionBlocked;
+                DetectedThisSession = sessionDetected;
                 TotalBlocked = totalBlocked;
                 DataSaved = FormatBytes(sessionBytes);
 
@@ -206,9 +224,9 @@ public partial class PrivacyDashboardViewModel : ObservableObject, IDisposable
     /// </summary>
     public string PrivacyModeDescription => CurrentPrivacyMode switch
     {
-        PrivacyMode.Relaxed => "Minimal blocking - sites work best",
-        PrivacyMode.Standard => "Balanced - recommended",
-        PrivacyMode.Strict => "Maximum blocking - may break sites",
+        PrivacyMode.Relaxed => "User rules only — templates and channels skipped",
+        PrivacyMode.Standard => "All enabled rules apply",
+        PrivacyMode.Strict => "All rules + built-in tracker blocklist",
         _ => "Balanced blocking"
     };
 

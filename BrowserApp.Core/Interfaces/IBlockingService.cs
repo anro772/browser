@@ -31,6 +31,12 @@ public interface IBlockingService
     int GetBlockedCount();
 
     /// <summary>
+    /// Gets the total number of requests evaluated this session (blocked + allowed).
+    /// Useful for the dashboard to display the blocked-vs-detected ratio.
+    /// </summary>
+    int GetDetectedCount();
+
+    /// <summary>
     /// Gets the total bytes saved by blocking requests.
     /// </summary>
     long GetBytesSaved();

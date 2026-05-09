@@ -12,6 +12,7 @@ public class BlockingService : IBlockingService
 {
     private readonly IRuleEngine _ruleEngine;
     private int _blockedCount;
+    private int _detectedCount;
     private long _bytesSaved;
     private readonly object _statsLock = new();
 
@@ -34,6 +35,11 @@ public class BlockingService : IBlockingService
         try
         {
             var result = _ruleEngine.Evaluate(request, currentPageUrl);
+
+            lock (_statsLock)
+            {
+                _detectedCount++;
+            }
 
             if (result.ShouldBlock)
             {
@@ -76,6 +82,14 @@ public class BlockingService : IBlockingService
         }
     }
 
+    public int GetDetectedCount()
+    {
+        lock (_statsLock)
+        {
+            return _detectedCount;
+        }
+    }
+
     public long GetBytesSaved()
     {
         lock (_statsLock)
@@ -89,6 +103,7 @@ public class BlockingService : IBlockingService
         lock (_statsLock)
         {
             _blockedCount = 0;
+            _detectedCount = 0;
             _bytesSaved = 0;
         }
     }

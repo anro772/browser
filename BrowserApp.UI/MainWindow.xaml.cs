@@ -54,7 +54,6 @@ public partial class MainWindow : FluentWindow
         LogViewerView logViewerView,
         PrivacyDashboardView dashboardView,
         HistoryView historyView,
-        BookmarksPanel bookmarksPanel,
         DownloadManagerView downloadManagerView,
         DownloadManagerViewModel downloadManagerViewModel,
         CopilotSidebarView copilotSidebarView,
@@ -82,7 +81,6 @@ public partial class MainWindow : FluentWindow
         // Set the sidebar tab contents
         CopilotContent.Content = _copilotSidebarView;
         DashboardContent.Content = _dashboardView;
-        BookmarksContent.Content = bookmarksPanel;
         DownloadsContent.Content = _downloadManagerView;
         NetworkMonitorContent.Content = _networkMonitorView;
         HistoryContent.Content = _historyView;
@@ -552,6 +550,15 @@ public partial class MainWindow : FluentWindow
     private async void NewTabButton_Click(object sender, RoutedEventArgs e)
     {
         await _tabStrip.NewTabAsync();
+    }
+
+    /// <summary>
+    /// Click outside the workspace dialog dismisses it (standard modal behavior).
+    /// </summary>
+    private void WorkspaceScrim_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        _viewModel.CloseWorkspaceCommand.Execute(null);
+        e.Handled = true;
     }
 
     /// <summary>

@@ -18,35 +18,83 @@ public class RuleEngine : IRuleEngine, IDisposable
 {
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly ContentPolicyService? _contentPolicyService;
+    private readonly SettingsService? _settingsService;
     private readonly MemoryCache _evaluationCache;
     private List<Rule> _cachedRules = new();
     private readonly object _cacheLock = new();
-    private bool _isInitialized;
     private int _ruleVersion = 0;
     private bool _isDisposed;
+    private readonly EventHandler<PrivacyMode>? _privacyModeChangedHandler;
 
     // Cache metrics
     private long _cacheHits = 0;
     private long _cacheMisses = 0;
 
+    // Privacy-mode metrics — let users observe whether the mode actually changed behavior.
+    private long _modeFilteredOut = 0;
+    private long _modeStrictExtraBlocks = 0;
+    private long _modeEvaluations = 0;
+
+    /// <summary>
+    /// Substrings matched against request hostnames in Strict mode. A hit always blocks,
+    /// even when no user rule matches. Kept short and well-known to avoid surprises.
+    /// </summary>
+    private static readonly string[] StrictModeTrackerHosts =
+    {
+        "google-analytics.com",
+        "googletagmanager.com",
+        "googletagservices.com",
+        "doubleclick.net",
+        "facebook.net",
+        "scorecardresearch.com",
+        "hotjar.com",
+        "mixpanel.com",
+        "segment.io",
+        "segment.com",
+        "amplitude.com",
+        "fullstory.com",
+        "matomo.cloud",
+        "quantserve.com",
+        "adsystem.com",
+    };
+
     public event EventHandler? RulesReloaded;
 
-    public RuleEngine(IServiceScopeFactory scopeFactory, ContentPolicyService? contentPolicyService = null)
+    public RuleEngine(
+        IServiceScopeFactory scopeFactory,
+        ContentPolicyService? contentPolicyService = null,
+        SettingsService? settingsService = null)
     {
         _scopeFactory = scopeFactory;
         _contentPolicyService = contentPolicyService;
+        _settingsService = settingsService;
 
         // Initialize evaluation cache with 100MB size limit
         _evaluationCache = new MemoryCache(new MemoryCacheOptions
         {
             SizeLimit = 100 * 1024 * 1024 // 100MB max cache size
         });
+
+        // PrivacyMode affects which rules participate in evaluation, so cached results
+        // need to be invalidated whenever the user toggles modes.
+        if (_settingsService != null)
+        {
+            _privacyModeChangedHandler = (_, mode) =>
+            {
+                _evaluationCache.Clear();
+                Interlocked.Increment(ref _ruleVersion);
+                ErrorLogger.LogInfo($"[PrivacyMode] Switched to {mode}. Eval cache cleared, rule version bumped.");
+            };
+            _settingsService.PrivacyModeChanged += _privacyModeChangedHandler;
+        }
     }
+
+    private PrivacyMode CurrentPrivacyMode =>
+        _settingsService?.PrivacyMode ?? PrivacyMode.Standard;
 
     public async Task InitializeAsync()
     {
         await ReloadRulesAsync();
-        _isInitialized = true;
     }
 
     public async Task ReloadRulesAsync()
@@ -80,8 +128,10 @@ public class RuleEngine : IRuleEngine, IDisposable
 
     public RuleEvaluationResult Evaluate(NetworkRequest request, string? currentPageUrl)
     {
-        // Create cache key from URL, page URL, and rule version
-        var cacheKey = $"{request.Url}|{currentPageUrl ?? ""}|{_ruleVersion}";
+        // Cache key includes privacy mode so toggling modes doesn't return stale results
+        // (the mode-change handler also bumps _ruleVersion, so this is belt-and-suspenders).
+        var mode = CurrentPrivacyMode;
+        var cacheKey = $"{request.Url}|{currentPageUrl ?? ""}|{_ruleVersion}|{mode}";
 
         // Try to get cached result
         if (_evaluationCache.TryGetValue(cacheKey, out RuleEvaluationResult? cachedResult))
@@ -92,7 +142,7 @@ public class RuleEngine : IRuleEngine, IDisposable
 
         // Cache miss - perform evaluation
         Interlocked.Increment(ref _cacheMisses);
-        var result = EvaluateInternal(request, currentPageUrl);
+        var result = EvaluateInternal(request, currentPageUrl, mode);
 
         // Cache the result with 5-minute expiration
         var cacheOptions = new MemoryCacheEntryOptions
@@ -117,7 +167,7 @@ public class RuleEngine : IRuleEngine, IDisposable
     /// <summary>
     /// Internal evaluation logic without caching.
     /// </summary>
-    private RuleEvaluationResult EvaluateInternal(NetworkRequest request, string? currentPageUrl)
+    private RuleEvaluationResult EvaluateInternal(NetworkRequest request, string? currentPageUrl, PrivacyMode mode)
     {
         List<Rule> rulesToEvaluate;
         lock (_cacheLock)
@@ -125,10 +175,32 @@ public class RuleEngine : IRuleEngine, IDisposable
             rulesToEvaluate = _cachedRules.ToList();
         }
 
-        // Sort by priority (higher first)
+        // Privacy-mode rule filter:
+        //   Relaxed  → only user-created (local) and channel-enforced rules participate.
+        //   Standard → all enabled rules participate (current default behavior).
+        //   Strict   → all enabled rules + extra hardcoded tracker hostname check below.
+        var preFilterCount = rulesToEvaluate.Count;
         rulesToEvaluate = rulesToEvaluate
+            .Where(r => RuleAllowedByPrivacyMode(r, mode))
             .OrderByDescending(r => r.Priority)
             .ToList();
+        var droppedByMode = preFilterCount - rulesToEvaluate.Count;
+        if (droppedByMode > 0)
+        {
+            Interlocked.Add(ref _modeFilteredOut, droppedByMode);
+        }
+        Interlocked.Increment(ref _modeEvaluations);
+
+        // Periodic mode-effect summary (every 500 evaluations) so a user can confirm in the
+        // log viewer that their mode choice is taking effect. Standard always shows 0 dropped.
+        var evalsSoFar = Interlocked.Read(ref _modeEvaluations);
+        if (evalsSoFar % 500 == 0)
+        {
+            ErrorLogger.LogInfo(
+                $"[PrivacyMode] {mode}: {evalsSoFar} evals · " +
+                $"{Interlocked.Read(ref _modeFilteredOut)} rules dropped by mode · " +
+                $"{Interlocked.Read(ref _modeStrictExtraBlocks)} strict-list blocks");
+        }
 
         var injections = new List<RuleAction>();
         var headerMods = new List<HeaderModification>();
@@ -179,6 +251,14 @@ public class RuleEngine : IRuleEngine, IDisposable
             }
         }
 
+        // Strict mode: catch known tracker hostnames that no user rule covered.
+        if (mode == PrivacyMode.Strict && IsKnownTrackerHost(request.Url))
+        {
+            Interlocked.Increment(ref _modeStrictExtraBlocks);
+            ErrorLogger.LogInfo($"[PrivacyMode] Strict tracker-list block: {request.Url}");
+            return RuleEvaluationResult.Block(string.Empty, "Strict mode tracker block");
+        }
+
         // No blocking, but may have injections and/or header modifications
         return new RuleEvaluationResult
         {
@@ -186,6 +266,31 @@ public class RuleEngine : IRuleEngine, IDisposable
             InjectionsToApply = injections,
             HeaderModifications = headerMods
         };
+    }
+
+    private static bool RuleAllowedByPrivacyMode(Rule rule, PrivacyMode mode)
+    {
+        // Channel-enforced rules cannot be opted out of, regardless of mode.
+        if (rule.IsEnforced) return true;
+
+        return mode switch
+        {
+            PrivacyMode.Relaxed => string.Equals(rule.Source, "local", StringComparison.OrdinalIgnoreCase),
+            _ => true,
+        };
+    }
+
+    private static bool IsKnownTrackerHost(string url)
+    {
+        if (string.IsNullOrEmpty(url)) return false;
+        if (!Uri.TryCreate(url, UriKind.Absolute, out var uri)) return false;
+        var host = uri.Host;
+        foreach (var needle in StrictModeTrackerHosts)
+        {
+            if (host.EndsWith(needle, StringComparison.OrdinalIgnoreCase))
+                return true;
+        }
+        return false;
     }
 
     public IEnumerable<RuleAction> GetInjectionsForPage(string pageUrl)
@@ -306,6 +411,11 @@ public class RuleEngine : IRuleEngine, IDisposable
         if (_isDisposed) return;
 
         _isDisposed = true;
+
+        if (_settingsService != null && _privacyModeChangedHandler != null)
+        {
+            _settingsService.PrivacyModeChanged -= _privacyModeChangedHandler;
+        }
 
         // Log final cache statistics
         var totalEvals = _cacheHits + _cacheMisses;

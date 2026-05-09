@@ -393,12 +393,6 @@
                                          IsChecked="{Binding SelectedSidebarSection, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Dashboard, Mode=TwoWay}">
                                 <ui:SymbolIcon Symbol="Shield24" FontSize="18" Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=RadioButton}}"/>
                             </RadioButton>
-                            <RadioButton x:Name="SidebarTabBookmarks"
-                                         Style="{StaticResource SidebarIconButton}"
-                                         ToolTip="Bookmarks"
-                                         IsChecked="{Binding SelectedSidebarSection, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Bookmarks, Mode=TwoWay}">
-                                <ui:SymbolIcon Symbol="Star24" FontSize="18" Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=RadioButton}}"/>
-                            </RadioButton>
                             <RadioButton x:Name="SidebarTabDownloads"
                                          Style="{StaticResource SidebarIconButton}"
                                          ToolTip="Downloads"
@@ -434,9 +428,6 @@
                         <ContentControl x:Name="DashboardContent"
                                         Style="{StaticResource SidebarSectionAnimatedStyle}"
                                         Visibility="{Binding SelectedSidebarSection, Converter={StaticResource EnumToVisibilityConverter}, ConverterParameter=Dashboard}"/>
-                        <ContentControl x:Name="BookmarksContent"
-                                        Style="{StaticResource SidebarSectionAnimatedStyle}"
-                                        Visibility="{Binding SelectedSidebarSection, Converter={StaticResource EnumToVisibilityConverter}, ConverterParameter=Bookmarks}"/>
                         <ContentControl x:Name="DownloadsContent"
                                         Style="{StaticResource SidebarSectionAnimatedStyle}"
                                         Visibility="{Binding SelectedSidebarSection, Converter={StaticResource EnumToVisibilityConverter}, ConverterParameter=Downloads}"/>
@@ -453,10 +444,24 @@
                 </Grid>
             </Border>
 
-            <!-- In-window tools workspace overlay -->
+            <!-- Modal scrim: dims the page, intercepts clicks behind the dialog,
+                 and dismisses the dialog when clicked. -->
+            <Border x:Name="WorkspaceScrim"
+                    Grid.ColumnSpan="2"
+                    Background="#80000000"
+                    Panel.ZIndex="29"
+                    MouseLeftButtonDown="WorkspaceScrim_MouseLeftButtonDown"
+                    Visibility="{Binding IsWorkspaceOpen, Converter={StaticResource BoolToVisibility}}"/>
+
+            <!-- In-window tools workspace overlay (centered dialog).
+                 Explicit Width/Height (not Max) so the dialog stays the same size across
+                 all six workspace views regardless of content density. -->
             <Border x:Name="WorkspaceOverlay"
                     Grid.ColumnSpan="2"
-                    Margin="16"
+                    Width="1280"
+                    Height="820"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
                     Panel.ZIndex="30"
                     Style="{StaticResource WorkspaceOverlayAnimatedStyle}"
                     Visibility="{Binding IsWorkspaceOpen, Converter={StaticResource BoolToVisibility}}">

@@ -177,13 +177,13 @@ public class PrivacyDashboardViewModelTests
     public void PrivacyModeDescription_ReturnsCorrectDescription()
     {
         _viewModel.CurrentPrivacyMode = PrivacyMode.Relaxed;
-        Assert.Equal("Minimal blocking - sites work best", _viewModel.PrivacyModeDescription);
+        Assert.Equal("User rules only — templates and channels skipped", _viewModel.PrivacyModeDescription);
 
         _viewModel.CurrentPrivacyMode = PrivacyMode.Standard;
-        Assert.Equal("Balanced - recommended", _viewModel.PrivacyModeDescription);
+        Assert.Equal("All enabled rules apply", _viewModel.PrivacyModeDescription);
 
         _viewModel.CurrentPrivacyMode = PrivacyMode.Strict;
-        Assert.Equal("Maximum blocking - may break sites", _viewModel.PrivacyModeDescription);
+        Assert.Equal("All rules + built-in tracker blocklist", _viewModel.PrivacyModeDescription);
     }
 }
 

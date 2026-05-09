@@ -1,10 +1,13 @@
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Windows;
+using System.Windows.Data;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.DependencyInjection;
 using BrowserApp.Data.Entities;
 using BrowserApp.Data.Interfaces;
+using BrowserApp.UI.Models;
 
 namespace BrowserApp.UI.ViewModels;
 
@@ -18,7 +21,7 @@ public partial class HistoryViewModel : ObservableObject
     private readonly TabStripViewModel _tabStrip;
 
     [ObservableProperty]
-    private ObservableCollection<BrowsingHistoryEntity> _historyEntries = new();
+    private ObservableCollection<HistoryEntryDisplay> _historyEntries = new();
 
     [ObservableProperty]
     private string _searchQuery = string.Empty;
@@ -27,7 +30,13 @@ public partial class HistoryViewModel : ObservableObject
     private bool _isLoading;
 
     [ObservableProperty]
-    private BrowsingHistoryEntity? _selectedEntry;
+    private HistoryEntryDisplay? _selectedEntry;
+
+    /// <summary>
+    /// Grouped/sorted view bound to the ListView so the XAML can render day section headers
+    /// without us materializing nested collections by hand.
+    /// </summary>
+    public ICollectionView GroupedHistory { get; }
 
     private const int MaxDisplayedEntries = 200;
 
@@ -37,6 +46,25 @@ public partial class HistoryViewModel : ObservableObject
     {
         _scopeFactory = scopeFactory;
         _tabStrip = tabStrip;
+
+        GroupedHistory = CollectionViewSource.GetDefaultView(HistoryEntries);
+        GroupedHistory.GroupDescriptions.Add(new PropertyGroupDescription(nameof(HistoryEntryDisplay.GroupLabel)));
+    }
+
+    /// <summary>
+    /// Materializes display wrappers from raw entities, deduping consecutive identical URLs
+    /// so the sidebar doesn't show a wall of repeats when a page reload bumps the history.
+    /// </summary>
+    private static IEnumerable<HistoryEntryDisplay> Project(IEnumerable<BrowsingHistoryEntity> source)
+    {
+        string? lastUrl = null;
+        foreach (var entity in source.OrderByDescending(e => e.VisitedAt))
+        {
+            if (string.Equals(entity.Url, lastUrl, StringComparison.OrdinalIgnoreCase))
+                continue;
+            lastUrl = entity.Url;
+            yield return new HistoryEntryDisplay(entity);
+        }
     }
 
     /// <summary>
@@ -56,7 +84,7 @@ public partial class HistoryViewModel : ObservableObject
             Application.Current?.Dispatcher.Invoke(() =>
             {
                 HistoryEntries.Clear();
-                foreach (var entry in entries)
+                foreach (var entry in Project(entries))
                 {
                     HistoryEntries.Add(entry);
                 }
@@ -99,7 +127,7 @@ public partial class HistoryViewModel : ObservableObject
             Application.Current?.Dispatcher.Invoke(() =>
             {
                 HistoryEntries.Clear();
-                foreach (var entry in entries)
+                foreach (var entry in Project(entries))
                 {
                     HistoryEntries.Add(entry);
                 }
@@ -119,7 +147,7 @@ public partial class HistoryViewModel : ObservableObject
     /// Navigates to the selected history entry in the active tab.
     /// </summary>
     [RelayCommand]
-    private Task NavigateToEntryAsync(BrowsingHistoryEntity? entry)
+    private Task NavigateToEntryAsync(HistoryEntryDisplay? entry)
     {
         if (entry == null) return Task.CompletedTask;
 

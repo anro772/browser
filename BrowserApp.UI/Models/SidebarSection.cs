@@ -7,7 +7,6 @@ public enum SidebarSection
 {
     Copilot,
     Dashboard,
-    Bookmarks,
     Downloads,
     Network,
     History,
