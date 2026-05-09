@@ -44,6 +44,7 @@
 
         <!-- Bookmarks -->
         <KeyBinding Gesture="Ctrl+D" Command="{Binding BookmarkViewModel.ToggleBookmarkCommand}"/>
+        <KeyBinding Gesture="Ctrl+Shift+B" Command="{Binding ToggleBookmarksBarCommand}"/>
 
         <!-- Tools -->
         <KeyBinding Gesture="Ctrl+Shift+N" Command="{Binding ToggleSidebarCommand}"/>
@@ -53,51 +54,75 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <!-- Row 0: Tab Strip -->
+        <!-- Row 0: Tab Strip
+             Layout (Chrome/Brave-style):
+               Column 0: ScrollViewer hosting tabs + an inline "+" button glued to the last tab.
+                         MaxWidth is capped via WidthSubtractConverter so the caption buttons
+                         and sticky "+" stay visible when many tabs are open.
+               Column 1: Sticky "+" — only visible when the tab list overflows.
+               Column 2: Drag spacer (fills remaining horizontal space).
+               Column 3: Window caption buttons (min/max/close).
+        -->
         <Grid x:Name="TabStripGrid"
               Grid.Row="0"
               Background="{StaticResource BgElevatedBrush}"
               MinHeight="36"
               PreviewMouseLeftButtonDown="TabStripArea_PreviewMouseLeftButtonDown">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="140"/>
             </Grid.ColumnDefinitions>
 
-            <!-- Tab items (scrollable) -->
+            <!-- Tab items + inline "+" (scrollable) -->
             <ScrollViewer Grid.Column="0"
-                          HorizontalScrollBarVisibility="Auto"
+                          x:Name="TabScrollViewer"
+                          HorizontalScrollBarVisibility="Hidden"
                           VerticalScrollBarVisibility="Disabled"
-                          Margin="8,0,0,0">
-                <ItemsControl x:Name="TabItemsControl"
-                              ItemsSource="{Binding TabStrip.Tabs}">
-                    <ItemsControl.ItemsPanel>
-                        <ItemsPanelTemplate>
-                            <StackPanel Orientation="Horizontal"/>
-                        </ItemsPanelTemplate>
-                    </ItemsControl.ItemsPanel>
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate>
-                            <controls:TabItemControl
-                                TabActivated="TabItem_Activated"
-                                TabCloseRequested="TabItem_CloseRequested"/>
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
+                          Margin="8,0,0,0"
+                          MaxWidth="{Binding ActualWidth, ElementName=TabStripGrid, Converter={StaticResource WidthSubtract}, ConverterParameter=200}"
+                          PreviewMouseWheel="TabScrollViewer_PreviewMouseWheel"
+                          ScrollChanged="TabScrollViewer_ScrollChanged"
+                          SizeChanged="TabScrollViewer_SizeChanged">
+                <StackPanel Orientation="Horizontal">
+                    <ItemsControl x:Name="TabItemsControl"
+                                  ItemsSource="{Binding TabStrip.Tabs}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <StackPanel Orientation="Horizontal"/>
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <controls:TabItemControl
+                                    TabActivated="TabItem_Activated"
+                                    TabCloseRequested="TabItem_CloseRequested"/>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <!-- Inline "+" — sits flush against the last tab when there's room. -->
+                    <Button x:Name="InlineNewTabButton"
+                            Style="{StaticResource NewTabButtonStyle}"
+                            Click="NewTabButton_Click"/>
+                </StackPanel>
             </ScrollViewer>
 
-            <!-- New tab button -->
+            <!-- Sticky "+" — visible only when tabs overflow the viewport. -->
             <Button Grid.Column="1"
-                    Style="{StaticResource NewTabButtonStyle}"
-                    Click="NewTabButton_Click"/>
+                    x:Name="StickyNewTabButton"
+                    Style="{StaticResource StickyNewTabButtonStyle}"
+                    Click="NewTabButton_Click"
+                    Visibility="{Binding TabStrip.IsTabStripOverflowing, Converter={StaticResource BoolToVisibility}}"/>
 
             <!-- Window caption buttons area (space for min/max/close) -->
-            <ui:TitleBar Grid.Column="2"
+            <ui:TitleBar Grid.Column="3"
                          ShowMinimize="True"
                          ShowMaximize="True"
                          ShowClose="True"/>
@@ -294,8 +319,14 @@
         </Grid>
         </Border>
 
-        <!-- Row 2: Main Content Area -->
-        <Grid Grid.Row="2">
+        <!-- Row 2: Bookmarks Bar (toggleable, Ctrl+Shift+B) -->
+        <controls:BookmarksBar Grid.Row="2"
+                               x:Name="BookmarksBarControl"
+                               DataContext="{Binding BookmarkViewModel}"
+                               Visibility="{Binding DataContext.IsBookmarksBarVisible, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BoolToVisibility}}"/>
+
+        <!-- Row 3: Main Content Area -->
+        <Grid Grid.Row="3">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
@@ -435,8 +466,8 @@
             </Border>
         </Grid>
 
-        <!-- Row 3: Status Bar -->
-        <Border Grid.Row="3"
+        <!-- Row 4: Status Bar -->
+        <Border Grid.Row="4"
                 Background="{StaticResource BgElevatedBrush}"
                 Padding="8,4">
             <TextBlock Text="{Binding StatusBarText}"

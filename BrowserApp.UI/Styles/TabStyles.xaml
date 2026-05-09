@@ -3,7 +3,7 @@
                     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml">
 
     <!-- Tab strip background -->
-    <SolidColorBrush x:Key="TabStripBackgroundBrush" Color="#121620"/>
+    <SolidColorBrush x:Key="TabStripBackgroundBrush" Color="#1E2230"/>
 
     <!-- Tab item template -->
     <Style x:Key="BrowserTabItemStyle" TargetType="Border">
@@ -61,7 +61,7 @@
         </Setter>
     </Style>
 
-    <!-- New tab button style -->
+    <!-- New tab button style — inline variant, hugs the last tab. -->
     <Style x:Key="NewTabButtonStyle" TargetType="Button">
         <Setter Property="Width" Value="30"/>
         <Setter Property="Height" Value="30"/>
@@ -70,7 +70,7 @@
         <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}"/>
         <Setter Property="Cursor" Value="Hand"/>
         <Setter Property="VerticalAlignment" Value="Center"/>
-        <Setter Property="Margin" Value="4,4,8,0"/>
+        <Setter Property="Margin" Value="2,4,2,0"/>
         <Setter Property="ToolTip" Value="New Tab (Ctrl+T)"/>
         <Setter Property="Template">
             <Setter.Value>
@@ -93,6 +93,12 @@
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
+    </Style>
+
+    <!-- Sticky "+" — appears at the right of the tab strip when tabs overflow. -->
+    <Style x:Key="StickyNewTabButtonStyle" TargetType="Button" BasedOn="{StaticResource NewTabButtonStyle}">
+        <Setter Property="Margin" Value="6,4,6,0"/>
+        <Setter Property="ToolTip" Value="New Tab (Ctrl+T)"/>
     </Style>
 
 </ResourceDictionary>

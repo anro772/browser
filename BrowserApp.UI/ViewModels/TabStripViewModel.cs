@@ -32,6 +32,13 @@ public partial class TabStripViewModel : ObservableObject, IDisposable
     private BrowserTabItem? _activeTab;
 
     /// <summary>
+    /// True when the tab strip has more tabs than fit in the visible area.
+    /// Bound to the visibility of the sticky "+" button in MainWindow.
+    /// </summary>
+    [ObservableProperty]
+    private bool _isTabStripOverflowing;
+
+    /// <summary>
     /// Fired when the active tab changes. MainWindow uses this to swap visible WebView2.
     /// </summary>
     public event EventHandler<BrowserTabItem?>? ActiveTabChanged;

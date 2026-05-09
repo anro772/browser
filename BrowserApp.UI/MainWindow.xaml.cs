@@ -101,6 +101,13 @@ public partial class MainWindow : FluentWindow
         _dashboardView.MarketplaceRequested += (s, e) => MarketplaceButton_Click(this, new RoutedEventArgs());
         _dashboardView.ChannelsRequested += (s, e) => ChannelsButton_Click(this, new RoutedEventArgs());
 
+        // Bookmarks bar: open-in-new-tab routes here since the new-tab plumbing lives on MainWindow.
+        BookmarksBarControl.OpenInNewTabRequested += async (s, bookmark) =>
+        {
+            try { await _tabStrip.NewTabAsync(bookmark.Url); }
+            catch (Exception ex) { ErrorLogger.LogError("Open bookmark in new tab failed", ex); }
+        };
+
         // Wire up tab management events
         _tabStrip.TabAdded += OnTabAdded;
         _tabStrip.TabReady += OnTabReady;
@@ -231,6 +238,10 @@ public partial class MainWindow : FluentWindow
             _sessionAutoSaveTimer.Start();
 
             ErrorLogger.LogInfo($"[MainWindow] Tab system initialized ({_tabStrip.Tabs.Count} tabs), auto-save active");
+
+            // Populate the bookmarks bar on startup so it has data even before the sidebar panel is opened.
+            try { await _viewModel.BookmarkViewModel.LoadBookmarksCommand.ExecuteAsync(null); }
+            catch (Exception bookEx) { ErrorLogger.LogError("[MainWindow] Initial bookmark load failed", bookEx); }
         }
         catch (Exception ex)
         {
@@ -541,6 +552,39 @@ public partial class MainWindow : FluentWindow
     private async void NewTabButton_Click(object sender, RoutedEventArgs e)
     {
         await _tabStrip.NewTabAsync();
+    }
+
+    /// <summary>
+    /// Translates vertical mouse-wheel input into horizontal scrolling so the tab strip
+    /// behaves like Chrome/Brave (no sideways scroll bar, wheel pans through tabs).
+    /// </summary>
+    private void TabScrollViewer_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
+    {
+        if (sender is not ScrollViewer sv) return;
+        sv.ScrollToHorizontalOffset(sv.HorizontalOffset - e.Delta);
+        e.Handled = true;
+    }
+
+    private void TabScrollViewer_ScrollChanged(object sender, ScrollChangedEventArgs e)
+    {
+        UpdateTabStripOverflow();
+    }
+
+    private void TabScrollViewer_SizeChanged(object sender, SizeChangedEventArgs e)
+    {
+        UpdateTabStripOverflow();
+    }
+
+    /// <summary>
+    /// Toggles the sticky "+" button based on whether the tab strip currently overflows.
+    /// Runs at background priority so layout has settled before we read ScrollableWidth.
+    /// </summary>
+    private void UpdateTabStripOverflow()
+    {
+        Dispatcher.InvokeAsync(() =>
+        {
+            _tabStrip.IsTabStripOverflowing = TabScrollViewer.ScrollableWidth > 0.5;
+        }, DispatcherPriority.Background);
     }
 
     private void ToggleFullScreen()

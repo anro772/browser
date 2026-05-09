@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using System.Windows;
+using System.Windows.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.DependencyInjection;
@@ -14,11 +15,15 @@ namespace BrowserApp.UI.ViewModels;
 /// ViewModel for the privacy dashboard panel.
 /// Displays privacy stats, top blocked domains, and resource type breakdown.
 /// </summary>
-public partial class PrivacyDashboardViewModel : ObservableObject
+public partial class PrivacyDashboardViewModel : ObservableObject, IDisposable
 {
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly SettingsService _settingsService;
     private readonly IBlockingService _blockingService;
+    private readonly DispatcherTimer? _refreshTimer;
+    private readonly EventHandler<PrivacyMode> _privacyModeChangedHandler;
+    private readonly EventHandler<NetworkRequest> _requestBlockedHandler;
+    private bool _disposed;
 
     [ObservableProperty]
     private PrivacyMode _currentPrivacyMode = PrivacyMode.Standard;
@@ -50,8 +55,15 @@ public partial class PrivacyDashboardViewModel : ObservableObject
         // Load current privacy mode from settings
         CurrentPrivacyMode = _settingsService.PrivacyMode;
 
-        // Subscribe to privacy mode changes
-        _settingsService.PrivacyModeChanged += (s, mode) =>
+        // Debounced refresh: collapses bursts of blocking events into one DB query 500ms after the last block.
+        // Only created when an Application is alive (skip in unit tests where there's no WPF dispatcher).
+        if (Application.Current != null)
+        {
+            _refreshTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(500) };
+            _refreshTimer.Tick += OnRefreshTimerTick;
+        }
+
+        _privacyModeChangedHandler = (_, mode) =>
         {
             Application.Current?.Dispatcher.Invoke(() =>
             {
@@ -60,7 +72,49 @@ public partial class PrivacyDashboardViewModel : ObservableObject
                 OnPropertyChanged(nameof(PrivacyModeDescription));
                 OnPropertyChanged(nameof(PrivacyModeColor));
             });
+            ScheduleRefresh();
         };
+        _requestBlockedHandler = (_, _) => ScheduleRefresh();
+
+        _settingsService.PrivacyModeChanged += _privacyModeChangedHandler;
+        _blockingService.RequestBlocked += _requestBlockedHandler;
+    }
+
+    private void OnRefreshTimerTick(object? sender, EventArgs e)
+    {
+        _refreshTimer?.Stop();
+        _ = RefreshStatsAsync();
+    }
+
+    /// <summary>
+    /// Restarts the debounced refresh timer. Called whenever a blocking event arrives;
+    /// repeated calls within the interval window collapse to a single refresh.
+    /// </summary>
+    private void ScheduleRefresh()
+    {
+        if (_refreshTimer == null) return;
+        Application.Current?.Dispatcher.InvokeAsync(() =>
+        {
+            _refreshTimer.Stop();
+            _refreshTimer.Start();
+        }, DispatcherPriority.Background);
+    }
+
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _disposed = true;
+
+        _settingsService.PrivacyModeChanged -= _privacyModeChangedHandler;
+        _blockingService.RequestBlocked -= _requestBlockedHandler;
+
+        if (_refreshTimer != null)
+        {
+            _refreshTimer.Stop();
+            _refreshTimer.Tick -= OnRefreshTimerTick;
+        }
+
+        GC.SuppressFinalize(this);
     }
 
     /// <summary>

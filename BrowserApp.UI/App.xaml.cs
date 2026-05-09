@@ -244,6 +244,9 @@ public partial class App : Application
         // Settings Service
         services.AddSingleton<SettingsService>();
 
+        // Tails on-disk log files for the debug console.
+        services.AddSingleton<LogTailService>();
+
         // Profile Service (already initialized before DI)
         services.AddSingleton(_profileService!);
         services.AddSingleton<ProfileSelectorViewModel>();

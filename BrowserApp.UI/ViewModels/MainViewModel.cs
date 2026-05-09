@@ -7,6 +7,7 @@ using BrowserApp.Core.Interfaces;
 using BrowserApp.Data.Entities;
 using BrowserApp.Data.Interfaces;
 using BrowserApp.UI.Models;
+using BrowserApp.UI.Services;
 
 namespace BrowserApp.UI.ViewModels;
 
@@ -21,6 +22,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly TabStripViewModel _tabStrip;
     private readonly BookmarkViewModel _bookmarkViewModel;
+    private readonly SettingsService? _settingsService;
     private bool _isDisposed;
     private DispatcherTimer? _debounceTimer;
     private CancellationTokenSource? _autocompleteCts;
@@ -52,6 +54,9 @@ public partial class MainViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private bool _isWorkspaceOpen;
 
+    [ObservableProperty]
+    private bool _isBookmarksBarVisible;
+
     // Autocomplete
     [ObservableProperty]
     private ObservableCollection<AutocompleteSuggestion> _suggestions = new();
@@ -80,13 +85,15 @@ public partial class MainViewModel : ObservableObject, IDisposable
         IBrowsingHistoryRepository historyRepository,
         IServiceScopeFactory scopeFactory,
         TabStripViewModel tabStrip,
-        BookmarkViewModel bookmarkViewModel)
+        BookmarkViewModel bookmarkViewModel,
+        SettingsService? settingsService = null)
     {
         _searchEngineService = searchEngineService;
         _historyRepository = historyRepository;
         _scopeFactory = scopeFactory;
         _tabStrip = tabStrip;
         _bookmarkViewModel = bookmarkViewModel;
+        _settingsService = settingsService;
 
         // Subscribe to active tab changes
         _tabStrip.ActiveTabChanged += OnActiveTabChanged;
@@ -94,6 +101,35 @@ public partial class MainViewModel : ObservableObject, IDisposable
         // Setup debounce timer for autocomplete (Bug 10: named handler for proper cleanup)
         _debounceTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(200) };
         _debounceTimer.Tick += OnDebounceTimerTick;
+
+        // Restore the bookmarks-bar visibility from persisted settings.
+        if (_settingsService != null)
+        {
+            _isBookmarksBarVisible = _settingsService.ShowBookmarksBar;
+            _settingsService.ShowBookmarksBarChanged += OnShowBookmarksBarChanged;
+        }
+    }
+
+    private void OnShowBookmarksBarChanged(object? sender, bool value)
+    {
+        // Sync property without re-triggering the setter chain (setting only fires SaveSettings if changed).
+        if (IsBookmarksBarVisible != value)
+        {
+            IsBookmarksBarVisible = value;
+        }
+    }
+
+    /// <summary>
+    /// Toggles the bookmarks bar (Ctrl+Shift+B). Persists across restarts.
+    /// </summary>
+    [RelayCommand]
+    private void ToggleBookmarksBar()
+    {
+        IsBookmarksBarVisible = !IsBookmarksBarVisible;
+        if (_settingsService != null)
+        {
+            _settingsService.ShowBookmarksBar = IsBookmarksBarVisible;
+        }
     }
 
     private async void OnDebounceTimerTick(object? sender, EventArgs e)
@@ -520,6 +556,11 @@ public partial class MainViewModel : ObservableObject, IDisposable
         _autocompleteCts = null;
 
         _tabStrip.ActiveTabChanged -= OnActiveTabChanged;
+
+        if (_settingsService != null)
+        {
+            _settingsService.ShowBookmarksBarChanged -= OnShowBookmarksBarChanged;
+        }
 
         if (_subscribedTab != null)
         {

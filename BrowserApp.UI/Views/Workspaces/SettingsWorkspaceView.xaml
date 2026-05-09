@@ -91,6 +91,37 @@
                     </StackPanel>
                 </Border>
 
+                <!-- Appearance: bookmarks bar toggle -->
+                <Border Background="{StaticResource BgSurfaceBrush}"
+                        CornerRadius="8"
+                        BorderBrush="{StaticResource BorderSubtleBrush}"
+                        BorderThickness="1"
+                        Padding="16"
+                        Margin="0,0,0,12">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                            <ui:SymbolIcon Symbol="Star24"
+                                           FontSize="20"
+                                           Foreground="{StaticResource AccentBrush}"
+                                           Margin="0,0,8,0"/>
+                            <TextBlock Text="Appearance"
+                                       FontSize="14"
+                                       FontWeight="SemiBold"
+                                       VerticalAlignment="Center"/>
+                        </StackPanel>
+                        <Separator Margin="0,0,0,10" Opacity="0.2"/>
+
+                        <TextBlock Text="Toggle the bookmarks bar shown under the address bar (Ctrl+Shift+B)."
+                                   FontSize="12"
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                   TextWrapping="Wrap"
+                                   Margin="0,0,0,12"/>
+
+                        <ui:ToggleSwitch IsChecked="{Binding ShowBookmarksBar}"
+                                         Content="Show bookmarks bar"/>
+                    </StackPanel>
+                </Border>
+
                 <!-- Account -->
                 <Border Background="{StaticResource BgSurfaceBrush}"
                         CornerRadius="8"
