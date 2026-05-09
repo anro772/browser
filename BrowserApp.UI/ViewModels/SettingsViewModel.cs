@@ -56,6 +56,9 @@ public partial class SettingsViewModel : ObservableObject
     [ObservableProperty]
     private StartupBehavior _selectedStartupBehavior = StartupBehavior.RestoreSession;
 
+    [ObservableProperty]
+    private bool _showBookmarksBar;
+
     /// <summary>
     /// Available privacy modes for the dropdown.
     /// </summary>
@@ -97,6 +100,7 @@ public partial class SettingsViewModel : ObservableObject
         HomePage = _settingsService.HomePage;
         DefaultDownloadPath = _settingsService.DefaultDownloadPath;
         SelectedStartupBehavior = _settingsService.StartupBehavior;
+        ShowBookmarksBar = _settingsService.ShowBookmarksBar;
 
         // Load username and tag
         Username = _settingsService.Username;
@@ -270,6 +274,11 @@ public partial class SettingsViewModel : ObservableObject
     partial void OnSelectedStartupBehaviorChanged(StartupBehavior value)
     {
         _settingsService.StartupBehavior = value;
+    }
+
+    partial void OnShowBookmarksBarChanged(bool value)
+    {
+        _settingsService.ShowBookmarksBar = value;
     }
 
     partial void OnUsernameChanged(string value)

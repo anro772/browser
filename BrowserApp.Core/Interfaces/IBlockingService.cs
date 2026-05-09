@@ -8,6 +8,11 @@ namespace BrowserApp.Core.Interfaces;
 public interface IBlockingService
 {
     /// <summary>
+    /// Raised whenever a request is blocked. Used by the privacy dashboard to refresh stats.
+    /// </summary>
+    event EventHandler<NetworkRequest>? RequestBlocked;
+
+    /// <summary>
     /// Initializes the blocking service.
     /// </summary>
     Task InitializeAsync();

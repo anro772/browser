@@ -8,18 +8,18 @@
          ═══════════════════════════════════════════════════════════════ -->
 
     <!-- BACKGROUNDS — warm dark tones with clear separation -->
-    <Color x:Key="BgPrimary">#0E1017</Color>
-    <Color x:Key="BgElevated">#161A24</Color>
-    <Color x:Key="BgSurface">#1D2230</Color>
-    <Color x:Key="BgSurfaceHover">#262D3C</Color>
-    <Color x:Key="BgSurfaceActive">#303848</Color>
+    <Color x:Key="BgPrimary">#1A1E2A</Color>
+    <Color x:Key="BgElevated">#222736</Color>
+    <Color x:Key="BgSurface">#2A3040</Color>
+    <Color x:Key="BgSurfaceHover">#343B4D</Color>
+    <Color x:Key="BgSurfaceActive">#3E465A</Color>
 
-    <SolidColorBrush x:Key="BgPrimaryBrush" Color="#0E1017"/>
-    <SolidColorBrush x:Key="BgElevatedBrush" Color="#161A24"/>
-    <SolidColorBrush x:Key="BgSurfaceBrush" Color="#1D2230"/>
-    <SolidColorBrush x:Key="BgSurfaceHoverBrush" Color="#262D3C"/>
-    <SolidColorBrush x:Key="BgSurfaceActiveBrush" Color="#303848"/>
-    <SolidColorBrush x:Key="BgGlassHeaderBrush" Color="#181D28"/>
+    <SolidColorBrush x:Key="BgPrimaryBrush" Color="#1A1E2A"/>
+    <SolidColorBrush x:Key="BgElevatedBrush" Color="#222736"/>
+    <SolidColorBrush x:Key="BgSurfaceBrush" Color="#2A3040"/>
+    <SolidColorBrush x:Key="BgSurfaceHoverBrush" Color="#343B4D"/>
+    <SolidColorBrush x:Key="BgSurfaceActiveBrush" Color="#3E465A"/>
+    <SolidColorBrush x:Key="BgGlassHeaderBrush" Color="#252B3A"/>
 
     <!-- ACCENT — Indigo-Violet (warm, premium, distinctive) -->
     <Color x:Key="Accent">#7C6AEF</Color>
@@ -35,11 +35,11 @@
 
     <!-- TEXT — slightly warm whites, better secondary readability -->
     <Color x:Key="TextPrimary">#F0F0F5</Color>
-    <Color x:Key="TextSecondary">#9CA3B8</Color>
+    <Color x:Key="TextSecondary">#B0B7CC</Color>
     <Color x:Key="TextTertiary">#6B7394</Color>
 
     <SolidColorBrush x:Key="TextPrimaryBrush" Color="#F0F0F5"/>
-    <SolidColorBrush x:Key="TextSecondaryBrush" Color="#9CA3B8"/>
+    <SolidColorBrush x:Key="TextSecondaryBrush" Color="#B0B7CC"/>
     <SolidColorBrush x:Key="TextTertiaryBrush" Color="#6B7394"/>
 
     <!-- SEMANTIC — softer, modern tones -->
@@ -59,32 +59,32 @@
     <SolidColorBrush x:Key="InfoSubtleBrush" Color="#1893C5FD"/>
 
     <!-- BORDERS — warmer, more visible -->
-    <Color x:Key="Border">#333B4F</Color>
-    <Color x:Key="BorderSubtle">#252C3C</Color>
+    <Color x:Key="Border">#404960</Color>
+    <Color x:Key="BorderSubtle">#323849</Color>
 
-    <SolidColorBrush x:Key="BorderBrush" Color="#333B4F"/>
-    <SolidColorBrush x:Key="BorderSubtleBrush" Color="#252C3C"/>
+    <SolidColorBrush x:Key="BorderBrush" Color="#404960"/>
+    <SolidColorBrush x:Key="BorderSubtleBrush" Color="#323849"/>
 
     <!-- ═══════════════════════════════════════════════════════════════
          WPF-UI Theme Overrides
          ═══════════════════════════════════════════════════════════════ -->
 
-    <SolidColorBrush x:Key="ApplicationBackgroundBrush" Color="#0E1017"/>
+    <SolidColorBrush x:Key="ApplicationBackgroundBrush" Color="#1A1E2A"/>
 
     <!-- Control fills -->
-    <SolidColorBrush x:Key="ControlFillColorDefaultBrush" Color="#1D2230"/>
-    <SolidColorBrush x:Key="ControlFillColorSecondaryBrush" Color="#262D3C"/>
-    <SolidColorBrush x:Key="ControlFillColorTertiaryBrush" Color="#303848"/>
-    <SolidColorBrush x:Key="ControlFillColorDisabledBrush" Color="#161A24"/>
+    <SolidColorBrush x:Key="ControlFillColorDefaultBrush" Color="#2A3040"/>
+    <SolidColorBrush x:Key="ControlFillColorSecondaryBrush" Color="#343B4D"/>
+    <SolidColorBrush x:Key="ControlFillColorTertiaryBrush" Color="#3E465A"/>
+    <SolidColorBrush x:Key="ControlFillColorDisabledBrush" Color="#222736"/>
 
     <!-- Control strokes -->
-    <SolidColorBrush x:Key="ControlStrokeColorDefaultBrush" Color="#333B4F"/>
-    <SolidColorBrush x:Key="ControlStrokeColorSecondaryBrush" Color="#252C3C"/>
-    <SolidColorBrush x:Key="ControlElevationBorderBrush" Color="#333B4F"/>
+    <SolidColorBrush x:Key="ControlStrokeColorDefaultBrush" Color="#404960"/>
+    <SolidColorBrush x:Key="ControlStrokeColorSecondaryBrush" Color="#323849"/>
+    <SolidColorBrush x:Key="ControlElevationBorderBrush" Color="#404960"/>
 
     <!-- Text fills -->
     <SolidColorBrush x:Key="TextFillColorPrimaryBrush" Color="#F0F0F5"/>
-    <SolidColorBrush x:Key="TextFillColorSecondaryBrush" Color="#9CA3B8"/>
+    <SolidColorBrush x:Key="TextFillColorSecondaryBrush" Color="#B0B7CC"/>
     <SolidColorBrush x:Key="TextFillColorTertiaryBrush" Color="#6B7394"/>
     <SolidColorBrush x:Key="TextFillColorDisabledBrush" Color="#6B7394"/>
 
@@ -103,16 +103,16 @@
     <SolidColorBrush x:Key="ButtonForegroundDisabled" Color="#6B7394"/>
 
     <!-- Subtle/secondary button overrides -->
-    <SolidColorBrush x:Key="SubtleButtonForeground" Color="#9CA3B8"/>
+    <SolidColorBrush x:Key="SubtleButtonForeground" Color="#B0B7CC"/>
     <SolidColorBrush x:Key="SubtleButtonForegroundPointerOver" Color="#F0F0F5"/>
     <SolidColorBrush x:Key="SubtleButtonForegroundPressed" Color="#9B8AFB"/>
     <SolidColorBrush x:Key="SubtleButtonForegroundDisabled" Color="#6B7394"/>
     <SolidColorBrush x:Key="SubtleButtonBackground" Color="Transparent"/>
-    <SolidColorBrush x:Key="SubtleButtonBackgroundPointerOver" Color="#262D3C"/>
-    <SolidColorBrush x:Key="SubtleButtonBackgroundPressed" Color="#303848"/>
+    <SolidColorBrush x:Key="SubtleButtonBackgroundPointerOver" Color="#343B4D"/>
+    <SolidColorBrush x:Key="SubtleButtonBackgroundPressed" Color="#3E465A"/>
 
     <!-- ToggleButton overrides -->
-    <SolidColorBrush x:Key="ToggleButtonForeground" Color="#9CA3B8"/>
+    <SolidColorBrush x:Key="ToggleButtonForeground" Color="#B0B7CC"/>
     <SolidColorBrush x:Key="ToggleButtonForegroundPointerOver" Color="#F0F0F5"/>
     <SolidColorBrush x:Key="ToggleButtonForegroundChecked" Color="#9B8AFB"/>
 

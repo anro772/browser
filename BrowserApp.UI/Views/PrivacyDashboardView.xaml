@@ -40,12 +40,6 @@
                                    Command="{Binding ResetStatsCommand}"
                                    ToolTip="Reset all statistics"
                                    Appearance="Secondary"
-                                   VerticalAlignment="Center"
-                                   Margin="0,0,4,0"/>
-                        <ui:Button Icon="{ui:SymbolIcon ArrowSync24}"
-                                   Command="{Binding RefreshStatsCommand}"
-                                   ToolTip="Refresh stats"
-                                   Appearance="Secondary"
                                    VerticalAlignment="Center"/>
                     </StackPanel>
                 </Grid>

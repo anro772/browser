@@ -111,6 +111,18 @@ public class SettingsService
         }
     }
 
+    public bool ShowBookmarksBar
+    {
+        get => _settings.ShowBookmarksBar;
+        set
+        {
+            if (_settings.ShowBookmarksBar == value) return;
+            _settings.ShowBookmarksBar = value;
+            SaveSettings();
+            ShowBookmarksBarChanged?.Invoke(this, value);
+        }
+    }
+
     public string Username
     {
         get => _settings.Username;
@@ -164,6 +176,7 @@ public class SettingsService
     public event EventHandler<PrivacyMode>? PrivacyModeChanged;
     public event EventHandler<string>? SearchEngineChanged;
     public event EventHandler<string>? UsernameChanged;
+    public event EventHandler<bool>? ShowBookmarksBarChanged;
 
     private void LoadSettings()
     {
@@ -216,6 +229,7 @@ public class UserSettings
     public StartupBehavior StartupBehavior { get; set; } = StartupBehavior.RestoreSession;
     public string Username { get; set; } = string.Empty;
     public string UserTag { get; set; } = string.Empty;
+    public bool ShowBookmarksBar { get; set; } = false;
 }
 
 /// <summary>

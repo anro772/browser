@@ -10,6 +10,47 @@
              d:DesignWidth="900"
              d:DataContext="{d:DesignInstance vm:LogViewerViewModel}">
 
+    <UserControl.Resources>
+        <!-- Pill toggle: small bordered toggle with semantic-coloured fill when checked. -->
+        <Style x:Key="LogLevelTogglePill" TargetType="ToggleButton">
+            <Setter Property="Padding" Value="8,3"/>
+            <Setter Property="Margin" Value="0,0,6,0"/>
+            <Setter Property="MinWidth" Value="48"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ToggleButton">
+                        <Border x:Name="Bg"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="10"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bg" Property="Background" Value="{StaticResource BgSurfaceHoverBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
+                                <Setter TargetName="Bg" Property="BorderBrush" Value="{StaticResource AccentBorderBrush}"/>
+                                <Setter TargetName="Bg" Property="Background" Value="{StaticResource AccentSubtleBrush}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </UserControl.Resources>
+
     <Grid Style="{StaticResource FadeInOnLoadModern}">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -20,34 +61,71 @@
         <Border Grid.Row="0"
                 Style="{StaticResource PanelHeaderCardStyle}">
             <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
 
-                <StackPanel Grid.Column="0" Orientation="Vertical">
-                    <TextBlock Text="Debug Console"
-                               FontSize="16"
-                               FontWeight="SemiBold"
-                               Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
-                    <TextBlock FontSize="12"
-                               Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                               Margin="0,4,0,0">
-                        <Run Text="Real-time application logs and debug output"/>
-                    </TextBlock>
-                </StackPanel>
+                <Grid Grid.Row="0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
 
-                <StackPanel Grid.Column="1" Orientation="Horizontal">
-                    <ui:Button Content="Clear"
-                               Command="{Binding ClearCommand}"
-                               Icon="{ui:SymbolIcon Delete24}"
-                               Appearance="Secondary"
-                               Margin="0,0,8,0"/>
-                    <ui:Button Content="Copy All"
-                               Command="{Binding CopyAllCommand}"
-                               Icon="{ui:SymbolIcon Copy24}"
-                               Appearance="Secondary"/>
-                </StackPanel>
+                    <StackPanel Grid.Column="0" Orientation="Vertical">
+                        <TextBlock Text="Debug Console"
+                                   FontSize="16"
+                                   FontWeight="SemiBold"
+                                   Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                        <TextBlock FontSize="12"
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                   Margin="0,4,0,0">
+                            <Run Text="Live trace + log files. "/>
+                            <Run Text="{Binding LogEntries.Count, Mode=OneWay, StringFormat={}{0} entries}"/>
+                        </TextBlock>
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="1" Orientation="Horizontal">
+                        <ui:Button Content="Open Folder"
+                                   Command="{Binding OpenLogFolderCommand}"
+                                   Appearance="Secondary"
+                                   Margin="0,0,8,0"/>
+                        <ui:Button Content="Copy Visible"
+                                   Command="{Binding CopyAllCommand}"
+                                   Icon="{ui:SymbolIcon Copy24}"
+                                   Appearance="Secondary"
+                                   Margin="0,0,8,0"/>
+                        <ui:Button Content="Clear"
+                                   Command="{Binding ClearCommand}"
+                                   Icon="{ui:SymbolIcon Delete24}"
+                                   Appearance="Secondary"/>
+                    </StackPanel>
+                </Grid>
+
+                <!-- Search row -->
+                <Border Grid.Row="1"
+                        Style="{StaticResource AddressBarContainerStyle}"
+                        Margin="0,10,0,0">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <ui:SymbolIcon Grid.Column="0"
+                                       Symbol="Search24"
+                                       FontSize="14"
+                                       Margin="6,0,4,0"
+                                       VerticalAlignment="Center"
+                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                        <TextBox Grid.Column="1"
+                                 Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
+                                 Background="Transparent"
+                                 BorderThickness="0"
+                                 Padding="2,4"
+                                 Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                                 CaretBrush="{DynamicResource TextFillColorPrimaryBrush}"/>
+                    </Grid>
+                </Border>
             </Grid>
         </Border>
 
@@ -62,45 +140,76 @@
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
 
-                <!-- Filters -->
-                <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,8">
-                    <CheckBox Content="Debug"
-                              IsChecked="{Binding ShowDebug}"
-                              ToolTip="Show debug messages"
-                              Margin="0,0,12,0"/>
-                    <CheckBox Content="Info"
-                              IsChecked="{Binding ShowInfo}"
-                              ToolTip="Show info messages"
-                              Margin="0,0,12,0"/>
-                    <CheckBox Content="Warning"
-                              IsChecked="{Binding ShowWarning}"
-                              ToolTip="Show warnings"
-                              Margin="0,0,12,0"/>
-                    <CheckBox Content="Error"
-                              IsChecked="{Binding ShowError}"
-                              ToolTip="Show errors"
-                              Margin="0,0,12,0"/>
-                    <CheckBox Content="Auto-scroll"
+                <!-- Filters: level pills + category dropdown + auto-scroll -->
+                <Grid Grid.Row="0" Margin="0,0,0,8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                        <ToggleButton Style="{StaticResource LogLevelTogglePill}"
+                                      IsChecked="{Binding ShowDebug}"
+                                      Content="DBG"
+                                      ToolTip="Debug"/>
+                        <ToggleButton Style="{StaticResource LogLevelTogglePill}"
+                                      IsChecked="{Binding ShowInfo}"
+                                      Content="INF"
+                                      ToolTip="Info"/>
+                        <ToggleButton Style="{StaticResource LogLevelTogglePill}"
+                                      IsChecked="{Binding ShowWarning}"
+                                      Content="WRN"
+                                      ToolTip="Warning"/>
+                        <ToggleButton Style="{StaticResource LogLevelTogglePill}"
+                                      IsChecked="{Binding ShowError}"
+                                      Content="ERR"
+                                      ToolTip="Error"/>
+                    </StackPanel>
+
+                    <ComboBox Grid.Column="1"
+                              ItemsSource="{Binding Categories}"
+                              SelectedItem="{Binding SelectedCategory}"
+                              MinWidth="140"
+                              Margin="8,0,0,0"
+                              VerticalAlignment="Center"
+                              ToolTip="Filter by category"/>
+
+                    <CheckBox Grid.Column="3"
+                              Content="Auto-scroll"
                               IsChecked="{Binding AutoScroll}"
-                              Margin="20,0,0,0"
+                              VerticalAlignment="Center"
+                              Margin="8,0,0,0"
                               ToolTip="Automatically scroll to latest log"/>
-                </StackPanel>
+                </Grid>
 
                 <!-- Log entries -->
                 <ScrollViewer Grid.Row="1"
                               x:Name="LogScrollViewer"
                               VerticalScrollBarVisibility="Auto"
                               HorizontalScrollBarVisibility="Auto">
-                    <ItemsControl ItemsSource="{Binding LogEntries}">
+                    <ItemsControl ItemsSource="{Binding FilteredEntries}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
                                 <Border BorderBrush="{StaticResource BorderSubtleBrush}"
                                         BorderThickness="0,0,0,1"
-                                        Padding="4,6">
+                                        Padding="2,4">
+                                    <Border.ContextMenu>
+                                        <ContextMenu>
+                                            <MenuItem Header="Copy entry"
+                                                      Command="{Binding DataContext.CopyEntryCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                      CommandParameter="{Binding}"/>
+                                            <MenuItem Header="Copy message only"
+                                                      Command="{Binding DataContext.CopyMessageCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                      CommandParameter="{Binding}"/>
+                                        </ContextMenu>
+                                    </Border.ContextMenu>
                                     <Grid>
                                         <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="98"/>
+                                            <ColumnDefinition Width="44"/>
                                             <ColumnDefinition Width="100"/>
-                                            <ColumnDefinition Width="30"/>
                                             <ColumnDefinition Width="*"/>
                                         </Grid.ColumnDefinitions>
 
@@ -110,24 +219,44 @@
                                                    FontFamily="{StaticResource AppMonoFontFamily}"
                                                    FontSize="11"
                                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                                                   VerticalAlignment="Top"/>
-
-                                        <!-- Level badge -->
-                                        <TextBlock Grid.Column="1"
-                                                   Text="{Binding LevelBadge}"
-                                                   FontSize="14"
                                                    VerticalAlignment="Top"
-                                                   Margin="4,0,0,0"/>
+                                                   Padding="2,1,4,0"/>
+
+                                        <!-- Level pill -->
+                                        <Border Grid.Column="1"
+                                                CornerRadius="3"
+                                                Padding="3,1"
+                                                Margin="0,0,6,0"
+                                                VerticalAlignment="Top"
+                                                HorizontalAlignment="Left"
+                                                BorderThickness="1"
+                                                BorderBrush="{Binding LevelColor, Converter={StaticResource StringToBrush}}">
+                                            <TextBlock Text="{Binding LevelLabel}"
+                                                       FontSize="9.5"
+                                                       FontWeight="Bold"
+                                                       Foreground="{Binding LevelColor, Converter={StaticResource StringToBrush}}"
+                                                       HorizontalAlignment="Center"/>
+                                        </Border>
+
+                                        <!-- Category -->
+                                        <TextBlock Grid.Column="2"
+                                                   Text="{Binding Category}"
+                                                   FontFamily="{StaticResource AppMonoFontFamily}"
+                                                   FontSize="11"
+                                                   Foreground="{StaticResource AccentLightBrush}"
+                                                   TextTrimming="CharacterEllipsis"
+                                                   VerticalAlignment="Top"
+                                                   Padding="0,1,6,0"/>
 
                                         <!-- Message -->
-                                        <TextBlock Grid.Column="2"
+                                        <TextBlock Grid.Column="3"
                                                    Text="{Binding Message}"
                                                    FontFamily="{StaticResource AppMonoFontFamily}"
                                                    FontSize="12"
                                                    TextWrapping="Wrap"
                                                    Foreground="{DynamicResource TextFillColorPrimaryBrush}"
                                                    VerticalAlignment="Top"
-                                                   Margin="8,0,0,0"/>
+                                                   ToolTip="{Binding Detail}"/>
                                     </Grid>
                                 </Border>
                             </DataTemplate>

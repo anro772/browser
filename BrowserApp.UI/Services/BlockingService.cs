@@ -15,6 +15,8 @@ public class BlockingService : IBlockingService
     private long _bytesSaved;
     private readonly object _statsLock = new();
 
+    public event EventHandler<NetworkRequest>? RequestBlocked;
+
     public BlockingService(IRuleEngine ruleEngine)
     {
         _ruleEngine = ruleEngine;
@@ -44,6 +46,15 @@ public class BlockingService : IBlockingService
 
                 ErrorLogger.LogInfo($"BLOCKED: {request.Url} by rule: {result.BlockedByRuleName}");
                 Debug.WriteLine($"[BlockingService] Blocked: {request.Url} by rule: {result.BlockedByRuleName}");
+
+                try
+                {
+                    RequestBlocked?.Invoke(this, request);
+                }
+                catch (Exception evtEx)
+                {
+                    Debug.WriteLine($"[BlockingService] RequestBlocked handler error: {evtEx.Message}");
+                }
             }
 
             return result;
