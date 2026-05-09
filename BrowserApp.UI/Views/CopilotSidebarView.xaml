@@ -141,6 +141,7 @@
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
 
                 <!-- Title row -->
@@ -209,6 +210,49 @@
                               VerticalContentAlignment="Center"
                               HorizontalContentAlignment="Stretch"
                               IsEnabled="{Binding IsOllamaConnected}"/>
+                </Grid>
+
+                <!-- Page-context chip: shows the current page and toggles whether the LLM sees it -->
+                <Grid Grid.Row="2"
+                      Margin="0,8,0,0"
+                      Visibility="{Binding HasActivePage, Converter={StaticResource BoolToVisibility}}">
+                    <ui:Button Command="{Binding ToggleIncludePageContextCommand}"
+                               HorizontalAlignment="Stretch"
+                               HorizontalContentAlignment="Left"
+                               ToolTip="{Binding CurrentPageUrl}"
+                               Padding="10,4">
+                        <ui:Button.Style>
+                            <Style TargetType="ui:Button" BasedOn="{StaticResource {x:Type ui:Button}}">
+                                <Setter Property="Appearance" Value="Secondary"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IncludePageContext}" Value="True">
+                                        <Setter Property="Appearance" Value="Primary"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </ui:Button.Style>
+                        <StackPanel Orientation="Horizontal">
+                            <ui:SymbolIcon FontSize="13"
+                                           VerticalAlignment="Center"
+                                           Margin="0,0,6,0">
+                                <ui:SymbolIcon.Style>
+                                    <Style TargetType="ui:SymbolIcon">
+                                        <Setter Property="Symbol" Value="EyeOff24"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IncludePageContext}" Value="True">
+                                                <Setter Property="Symbol" Value="Eye24"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </ui:SymbolIcon.Style>
+                            </ui:SymbolIcon>
+                            <TextBlock Text="{Binding CurrentPageTitle}"
+                                       FontSize="11"
+                                       TextTrimming="CharacterEllipsis"
+                                       MaxWidth="240"
+                                       VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </ui:Button>
                 </Grid>
             </Grid>
         </Border>
@@ -326,6 +370,28 @@
                                 Orientation="Horizontal"
                                 VerticalAlignment="Center"
                                 Margin="0,0,4,0">
+
+                        <!-- Screenshot toggle — Appearance shifts from Secondary → Primary when armed. Hidden when no active page. -->
+                        <ui:Button Icon="{ui:SymbolIcon Camera24}"
+                                   Command="{Binding ToggleAttachScreenshotCommand}"
+                                   Width="30" Height="30"
+                                   Padding="0"
+                                   CornerRadius="15"
+                                   Margin="0,0,4,0"
+                                   Visibility="{Binding HasActivePage, Converter={StaticResource BoolToVisibility}}">
+                            <ui:Button.Style>
+                                <Style TargetType="ui:Button" BasedOn="{StaticResource {x:Type ui:Button}}">
+                                    <Setter Property="Appearance" Value="Secondary"/>
+                                    <Setter Property="ToolTip" Value="Attach a screenshot of the current page to the next message (needs a vision model like llava)"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding AttachScreenshotOnNext}" Value="True">
+                                            <Setter Property="Appearance" Value="Primary"/>
+                                            <Setter Property="ToolTip" Value="Screenshot will be attached to your next message — click to unarm"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </ui:Button.Style>
+                        </ui:Button>
 
                         <!-- Send button (circular, visible when not generating) -->
                         <ui:Button Icon="{ui:SymbolIcon Send24}"

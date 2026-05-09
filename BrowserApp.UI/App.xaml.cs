@@ -239,6 +239,7 @@ public partial class App : Application
         // Phase 6: AI/Ollama Services
         services.AddSingleton<IOllamaClient, OllamaClient>();
         services.AddSingleton<IRuleGenerationService, RuleGenerationService>();
+        services.AddSingleton<IPageContextService, PageContextService>();
 
         // Settings Service
         services.AddSingleton<SettingsService>();

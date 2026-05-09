@@ -28,4 +28,8 @@ public class OllamaChatMessage
 
     [JsonPropertyName("content")]
     public string Content { get; set; } = string.Empty;
+
+    [JsonPropertyName("images")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public List<string>? Images { get; set; }
 }
