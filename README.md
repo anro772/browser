@@ -4,7 +4,7 @@ A privacy-focused browser built with C# WPF, WebView2, and Entity Framework Core
 
 ## Status
 
-**Phase 13 Complete** | 442 tests passing
+**Phase 14 Complete** | 442 tests passing
 
 ## Features
 
@@ -19,10 +19,12 @@ A privacy-focused browser built with C# WPF, WebView2, and Entity Framework Core
 - Certificate error warnings with proceed/go-back
 
 ### Content Blocking & Rules
-- Request blocking (ads, trackers, custom patterns)
-- CSS/JS injection per-site with wildcard URL matching
+- Three independent blocking layers, all feeding the same dashboard counter:
+  - **Custom rules** (block patterns, header mods, CSS/JS injection per-site with wildcard URL matching)
+  - **`FilterListService`** — 136,898 filters from EasyList + EasyPrivacy parsed on startup (primary ad/tracker blocker)
+  - **Adblock Plus extension** (bundled, ~80MB unpacked, toggled from Settings) — declarativeNetRequest + cosmetic filtering
 - 5 built-in templates (Privacy Mode, Block Ads, Hide Cookie Banners, Dark Mode, Hide Social Widgets)
-- Rule manager UI with priority system
+- Rule manager UI with dense table layout, source attribution (Local / Marketplace / Channel / Enforced), priority system
 - Rule marketplace and channel sharing
 - **Privacy modes are functional** (not just labels):
   - **Relaxed** — only user-created (`local`) + channel-enforced rules apply
@@ -32,6 +34,7 @@ A privacy-focused browser built with C# WPF, WebView2, and Entity Framework Core
 ### Privacy & Monitoring
 - Real-time network request capture with filtering and CSV export
 - Live privacy dashboard with session-scoped **Detected / Blocked / Saved** stats — auto-refreshes via `RequestBlocked` event (500ms debounce), no manual refresh button
+- All blocks (custom rules + EasyList/EasyPrivacy + extension toggle state) flow through one pipeline → one accurate counter
 - All data stored locally (no cloud sync)
 - Multi-profile support with isolated data directories
 
@@ -43,10 +46,15 @@ A privacy-focused browser built with C# WPF, WebView2, and Entity Framework Core
 - **Debug console** with file-tail integration (`info_*.log` + `errors_*.log` via `FileSystemWatcher`), search, level/category filters, copy-entry context menu
 
 ### UI / UX
-- Lightened dark theme (warm obsidian surfaces, indigo accent)
+- Lightened dark theme (warm obsidian surfaces, indigo accent), aligned to the Claude Design `browser-profiles/` bundle
+- **Active-profile pill** in the title bar — avatar + name + privacy mode dot + live ABP shield indicator (visible when the ad blocker is on)
+- Source attribution in the Rules list — slate dot for Local, amber bookmark notch for Marketplace, channel-hued stripe + pulsing dot for Channel rules, rose lock for Enforced
+- Per-channel deterministic color identity (FNV-1a hash over channel name → 16-hue palette) — same channel renders the same color across avatar, name, and rule rows
+- Workspace polish: dense table-style Rules grid, featured "Editor's Pick" hero card in Marketplace + 3-up grid, single-line channel rows with "Live · Nm ago" chip, compact profile rows
+- Reusable empty-state slab (`Controls/WorkspaceEmptyState`) shared across Rules / Marketplace / Channels
 - Centered modal tools workspace (`1280x820`, click-outside-to-close) for Rules, Extensions, Marketplace, Channels, Profiles, Settings
 - Custom draggable titlebar with restore-on-drag from maximized, double-click maximize toggle
-- Session recovery with auto-save (30s interval) and crash detection
+- Session recovery with auto-save (30s interval) and crash detection — sentinel deletion now runs synchronously at the top of `OnExit` so it survives the WebView2 dispose latency
 
 ## Project Structure
 
@@ -125,7 +133,8 @@ dotnet ef database update --project BrowserApp.Data --startup-project BrowserApp
 1. Check logs at `%LOCALAPPDATA%\BrowserApp\Logs\`
 2. Reset database: `Remove-Item "$env:LOCALAPPDATA\BrowserApp\Profiles" -Recurse -Force`
 3. Verify WebView2 Runtime is installed
-4. Check blocking: logs show `BLOCKED: <url> by rule: <rule-name>`
+4. Check blocking: logs show `BLOCKED: <url> by rule: <rule-name>` for custom rules and `BLOCKED: <url> by Filter List (EasyList/EasyPrivacy)` for filter-list hits
+5. Wipe runtime extensions safely: `Remove-Item "$env:LOCALAPPDATA\BrowserApp\Extensions" -Recurse -Force` — the bundled ad blocker is re-materialized from `BrowserApp.UI/Resources/BuiltInExtensions/` on next launch
 
 ## Documentation
 
@@ -146,4 +155,4 @@ dotnet ef database update --project BrowserApp.Data --startup-project BrowserApp
 
 ---
 
-**Last Updated**: May 16, 2026 | **Build**: 442/442 tests passing
+**Last Updated**: May 17, 2026 | **Build**: 442/442 tests passing
