@@ -124,6 +124,16 @@ public class SettingsService : INotifyPropertyChanged
         }
     }
 
+    public bool HasMigratedToFilterListPrimary
+    {
+        get => _settings.HasMigratedToFilterListPrimary;
+        set
+        {
+            _settings.HasMigratedToFilterListPrimary = value;
+            SaveSettings();
+        }
+    }
+
     public bool ShowBookmarksBar
     {
         get => _settings.ShowBookmarksBar;
@@ -243,6 +253,15 @@ public class UserSettings
     public string Username { get; set; } = string.Empty;
     public string UserTag { get; set; } = string.Empty;
     public bool ShowBookmarksBar { get; set; } = false;
+
+    /// <summary>
+    /// One-shot migration marker: when switching FilterListService back to being the
+    /// primary ad/tracker blocker (previously delegated to the ABP extension),
+    /// we disable any currently-enabled ABP built-in so the user gets a clean
+    /// FilterListService-only experience to evaluate. Once the migration runs,
+    /// this flag stays true and the user's Settings toggle is honored thereafter.
+    /// </summary>
+    public bool HasMigratedToFilterListPrimary { get; set; } = false;
 }
 
 /// <summary>

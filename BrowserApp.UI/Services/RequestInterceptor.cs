@@ -208,8 +208,26 @@ public class RequestInterceptor : IRequestInterceptor
                 }
             }
 
-            // Note: FilterListService blocking removed — AdBlock Plus handles ad/tracker blocking natively
-            // FilterListService cosmetic CSS injection is still used in the navigation-completed handler
+            // FilterListService: network blocking via EasyList + EasyPrivacy. Re-enabled
+            // so blocks flow through this interceptor (and thus the dashboard counter)
+            // instead of being silently handled by the ABP extension's network stack.
+            // Cosmetic CSS injection is wired separately on navigation completion.
+            if (!shouldBlock && !isFirstPartyDocument && _filterListService != null)
+            {
+                try
+                {
+                    if (_filterListService.ShouldBlock(request.Url, currentPageUrl, request.ResourceType))
+                    {
+                        shouldBlock = true;
+                        blockReason = "Filter List (EasyList/EasyPrivacy)";
+                        ErrorLogger.LogInfo($"BLOCKED: {request.Url} by {blockReason}");
+                    }
+                }
+                catch (Exception flsEx)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[RequestInterceptor] FilterListService check failed: {flsEx.Message}");
+                }
+            }
 
             // Block the request if needed
             if (shouldBlock)

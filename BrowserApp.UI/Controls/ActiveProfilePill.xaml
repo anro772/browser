@@ -84,6 +84,31 @@
                        Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                        VerticalAlignment="Center"/>
 
+            <!-- Ad-blocker shield (visible only when ABP is on). Sits after the privacy
+                 label so the layout doesn't shift when toggled. -->
+            <Border Margin="8,0,0,0"
+                    VerticalAlignment="Center"
+                    Padding="4,1"
+                    CornerRadius="6"
+                    Background="{StaticResource AccentSubtleBrush}"
+                    BorderBrush="{StaticResource AccentBorderBrush}"
+                    BorderThickness="1"
+                    ToolTip="Adblock Plus extension is active"
+                    Visibility="{Binding IsAdBlockerEnabled, Converter={StaticResource BoolToVisibility}}">
+                <StackPanel Orientation="Horizontal">
+                    <ui:SymbolIcon Symbol="ShieldCheckmark24"
+                                   FontSize="11"
+                                   VerticalAlignment="Center"
+                                   Foreground="{StaticResource AccentLightBrush}"
+                                   Margin="0,0,3,0"/>
+                    <TextBlock Text="ABP"
+                               FontSize="10"
+                               FontWeight="SemiBold"
+                               VerticalAlignment="Center"
+                               Foreground="{StaticResource AccentLightBrush}"/>
+                </StackPanel>
+            </Border>
+
             <!-- Chevron -->
             <ui:SymbolIcon Symbol="ChevronDown24"
                            FontSize="11"

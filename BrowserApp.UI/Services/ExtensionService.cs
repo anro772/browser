@@ -11,6 +11,7 @@ namespace BrowserApp.UI.Services;
 public class ExtensionService
 {
     private readonly IServiceScopeFactory _scopeFactory;
+    private readonly SettingsService? _settingsService;
     private CoreWebView2Profile? _profile;
     private bool _profileReady;
 
@@ -22,9 +23,23 @@ public class ExtensionService
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
         "BrowserApp", "Extensions");
 
-    public ExtensionService(IServiceScopeFactory scopeFactory)
+    public ExtensionService(IServiceScopeFactory scopeFactory, SettingsService? settingsService = null)
     {
         _scopeFactory = scopeFactory;
+        _settingsService = settingsService;
+    }
+
+    /// <summary>
+    /// Raised whenever the built-in ad blocker's enabled state changes (toggle, startup
+    /// sync, migration). Chrome elements (e.g. the active-profile pill's shield indicator)
+    /// subscribe here to refresh live without polling.
+    /// </summary>
+    public event EventHandler<bool>? AdBlockerStateChanged;
+
+    private void RaiseAdBlockerStateChanged(bool enabled)
+    {
+        try { AdBlockerStateChanged?.Invoke(this, enabled); }
+        catch (Exception ex) { ErrorLogger.LogError("[ExtensionService] AdBlockerStateChanged handler threw", ex); }
     }
 
     /// <summary>
@@ -64,6 +79,21 @@ public class ExtensionService
             // Any IsBuiltIn record counts — we only ever register one. Avoids
             // name-substring matching that could miss future ad blockers.
             var existingBuiltIn = extensions.FirstOrDefault(e => e.IsBuiltIn);
+
+            // One-shot migration: FilterListService is now the primary blocker. If the
+            // built-in ABP is currently enabled, disable it once so the user gets a
+            // clean comparison. The flag ensures we don't fight the user's later choice.
+            if (existingBuiltIn != null && _settingsService != null
+                && !_settingsService.HasMigratedToFilterListPrimary)
+            {
+                if (existingBuiltIn.IsEnabled)
+                {
+                    existingBuiltIn.IsEnabled = false;
+                    await repo.UpdateAsync(existingBuiltIn);
+                    ErrorLogger.LogInfo($"[ExtensionService] One-shot migration: disabled built-in ad blocker so FilterListService is the sole blocker. Re-enable via Settings if desired.");
+                }
+                _settingsService.HasMigratedToFilterListPrimary = true;
+            }
 
             if (existingBuiltIn != null)
             {
@@ -119,38 +149,41 @@ public class ExtensionService
                     }
                 }
 
-                // Built-in should default to enabled on every startup, even if a previous
-                // session left it disabled — fixes "I have to toggle adblock on every launch".
-                if (!existingBuiltIn.IsEnabled)
-                {
-                    existingBuiltIn.IsEnabled = true;
-                    await repo.UpdateAsync(existingBuiltIn);
-                    ErrorLogger.LogInfo($"[ExtensionService] Re-enabled built-in ad blocker on startup: {existingBuiltIn.Name}");
-                }
-
-                // Also force the WebView2-side toggle on, in case WebView2's profile
-                // cache remembers a disabled state from a prior session.
+                // Sync the WebView2 side with the DB state. We no longer force-enable —
+                // the user's toggle in Settings is the source of truth. If DB says
+                // enabled, we make sure WebView2 has it loaded and enabled; if DB says
+                // disabled, we explicitly disable it in WebView2 (it may have been
+                // cached as enabled from a prior session).
                 try
                 {
                     var live = await _profile.GetBrowserExtensionsAsync();
                     var match = live.FirstOrDefault(e => e.Name.Equals(existingBuiltIn.Name, StringComparison.OrdinalIgnoreCase));
-                    if (match == null && !string.IsNullOrEmpty(existingBuiltIn.FolderPath) && Directory.Exists(existingBuiltIn.FolderPath))
+
+                    if (existingBuiltIn.IsEnabled)
                     {
-                        await _profile.AddBrowserExtensionAsync(existingBuiltIn.FolderPath);
-                        live = await _profile.GetBrowserExtensionsAsync();
-                        match = live.FirstOrDefault(e => e.Name.Equals(existingBuiltIn.Name, StringComparison.OrdinalIgnoreCase));
+                        if (match == null && !string.IsNullOrEmpty(existingBuiltIn.FolderPath) && Directory.Exists(existingBuiltIn.FolderPath))
+                        {
+                            await _profile.AddBrowserExtensionAsync(existingBuiltIn.FolderPath);
+                            live = await _profile.GetBrowserExtensionsAsync();
+                            match = live.FirstOrDefault(e => e.Name.Equals(existingBuiltIn.Name, StringComparison.OrdinalIgnoreCase));
+                        }
+                        if (match != null)
+                        {
+                            await match.EnableAsync(true);
+                        }
                     }
-                    if (match != null)
+                    else if (match != null)
                     {
-                        await match.EnableAsync(true);
+                        await match.EnableAsync(false);
                     }
                 }
                 catch (Exception ex)
                 {
-                    ErrorLogger.LogError($"[ExtensionService] Failed to force-enable built-in in WebView2", ex);
+                    ErrorLogger.LogError($"[ExtensionService] Failed to sync built-in WebView2 state with DB", ex);
                 }
 
-                ErrorLogger.LogInfo($"[ExtensionService] Built-in ad blocker already registered: {existingBuiltIn.Name}");
+                ErrorLogger.LogInfo($"[ExtensionService] Built-in ad blocker already registered: {existingBuiltIn.Name} ({(existingBuiltIn.IsEnabled ? "enabled" : "disabled")})");
+                RaiseAdBlockerStateChanged(existingBuiltIn.IsEnabled);
                 return;
             }
 
@@ -407,7 +440,7 @@ public class ExtensionService
                 if (match != null)
                 {
                     await match.EnableAsync(true);
-                    ErrorLogger.LogInfo($"[ExtensionService] Forced-enabled extension at startup: {ext.Name}");
+                    ErrorLogger.LogInfo($"[ExtensionService] Loaded extension at startup (DB said enabled): {ext.Name}");
                 }
             }
             catch (Exception ex)
@@ -626,6 +659,13 @@ public class ExtensionService
 
         ext.IsEnabled = enabled;
         await repo.UpdateAsync(ext);
+
+        // Notify chrome listeners (active-profile pill shield indicator etc.) when the
+        // built-in ad blocker's state changes.
+        if (ext.IsBuiltIn)
+        {
+            RaiseAdBlockerStateChanged(enabled);
+        }
     }
 
     /// <summary>

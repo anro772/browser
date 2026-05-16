@@ -24,6 +24,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private readonly BookmarkViewModel _bookmarkViewModel;
     private readonly ProfileSelectorViewModel? _profileSelectorViewModel;
     private readonly SettingsService? _settingsService;
+    private readonly ExtensionService? _extensionService;
     private bool _isDisposed;
     private DispatcherTimer? _debounceTimer;
     private CancellationTokenSource? _autocompleteCts;
@@ -75,6 +76,14 @@ public partial class MainViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private string _certificateErrorMessage = string.Empty;
 
+    /// <summary>
+    /// Live mirror of the built-in ad blocker (ABP) enabled state. Updated by
+    /// <see cref="ExtensionService.AdBlockerStateChanged"/>. The active-profile pill
+    /// shows a shield indicator when this is true.
+    /// </summary>
+    [ObservableProperty]
+    private bool _isAdBlockerEnabled;
+
     public TabStripViewModel TabStrip => _tabStrip;
     public BookmarkViewModel BookmarkViewModel => _bookmarkViewModel;
     public ProfileSelectorViewModel? ProfileSelectorViewModel => _profileSelectorViewModel;
@@ -90,7 +99,8 @@ public partial class MainViewModel : ObservableObject, IDisposable
         TabStripViewModel tabStrip,
         BookmarkViewModel bookmarkViewModel,
         SettingsService? settingsService = null,
-        ProfileSelectorViewModel? profileSelectorViewModel = null)
+        ProfileSelectorViewModel? profileSelectorViewModel = null,
+        ExtensionService? extensionService = null)
     {
         _searchEngineService = searchEngineService;
         _historyRepository = historyRepository;
@@ -99,6 +109,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         _bookmarkViewModel = bookmarkViewModel;
         _settingsService = settingsService;
         _profileSelectorViewModel = profileSelectorViewModel;
+        _extensionService = extensionService;
 
         // Subscribe to active tab changes
         _tabStrip.ActiveTabChanged += OnActiveTabChanged;
@@ -112,6 +123,42 @@ public partial class MainViewModel : ObservableObject, IDisposable
         {
             _isBookmarksBarVisible = _settingsService.ShowBookmarksBar;
             _settingsService.ShowBookmarksBarChanged += OnShowBookmarksBarChanged;
+        }
+
+        // Mirror the built-in ad blocker state for the active-profile pill's shield
+        // indicator. Initial value is set when EnsureBuiltInExtensionsAsync fires the
+        // event after the first tab loads; this also catches user toggles in Settings.
+        if (_extensionService != null)
+        {
+            _extensionService.AdBlockerStateChanged += OnAdBlockerStateChanged;
+            _ = LoadInitialAdBlockerStateAsync();
+        }
+    }
+
+    private async Task LoadInitialAdBlockerStateAsync()
+    {
+        if (_extensionService == null) return;
+        try
+        {
+            IsAdBlockerEnabled = await _extensionService.IsAdBlockerEnabledAsync();
+        }
+        catch (Exception ex)
+        {
+            ErrorLogger.LogError("[MainViewModel] Failed to load initial ad blocker state", ex);
+        }
+    }
+
+    private void OnAdBlockerStateChanged(object? sender, bool enabled)
+    {
+        // ExtensionService can fire on background threads (CRX install, WebView2 callbacks).
+        // Marshal to the UI thread so the pill binding updates safely.
+        if (System.Windows.Application.Current?.Dispatcher.CheckAccess() == true)
+        {
+            IsAdBlockerEnabled = enabled;
+        }
+        else
+        {
+            System.Windows.Application.Current?.Dispatcher.BeginInvoke(() => IsAdBlockerEnabled = enabled);
         }
     }
 
@@ -565,6 +612,11 @@ public partial class MainViewModel : ObservableObject, IDisposable
         if (_settingsService != null)
         {
             _settingsService.ShowBookmarksBarChanged -= OnShowBookmarksBarChanged;
+        }
+
+        if (_extensionService != null)
+        {
+            _extensionService.AdBlockerStateChanged -= OnAdBlockerStateChanged;
         }
 
         if (_subscribedTab != null)
