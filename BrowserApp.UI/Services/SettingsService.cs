@@ -1,4 +1,6 @@
+using System.ComponentModel;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Text.Json;
 using BrowserApp.Core.Models;
 
@@ -7,8 +9,10 @@ namespace BrowserApp.UI.Services;
 /// <summary>
 /// Service for managing user settings persistence.
 /// Settings are stored in LocalAppData as JSON.
+/// Implements INotifyPropertyChanged so chrome bindings (e.g. the active-profile
+/// pill's privacy-mode label) refresh when settings change.
 /// </summary>
-public class SettingsService
+public class SettingsService : INotifyPropertyChanged
 {
     private static string? _customPath;
     private readonly string _settingsPath;
@@ -44,10 +48,19 @@ public class SettingsService
         get => _settings.PrivacyMode;
         set
         {
+            if (_settings.PrivacyMode == value) return;
             _settings.PrivacyMode = value;
             SaveSettings();
+            OnPropertyChanged();
             PrivacyModeChanged?.Invoke(this, value);
         }
+    }
+
+    public event PropertyChangedEventHandler? PropertyChanged;
+
+    private void OnPropertyChanged([CallerMemberName] string? propertyName = null)
+    {
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
     }
 
     public string ServerUrl

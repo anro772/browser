@@ -29,7 +29,11 @@ public partial class ExtensionManagerViewModel : ObservableObject
 
         try
         {
-            var all = await _extensionService.GetAllExtensionsAsync();
+            // Hide built-ins (e.g. the bundled ad blocker). They're managed via the
+            // Settings panel's dedicated toggle, not the user-facing extension list —
+            // showing them here also led to confusing duplicates when the user could
+            // toggle the same extension from two places with opposite results.
+            var all = (await _extensionService.GetAllExtensionsAsync()).Where(e => !e.IsBuiltIn);
 
             Application.Current?.Dispatcher.Invoke(() =>
             {

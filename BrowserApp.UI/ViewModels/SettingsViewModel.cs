@@ -122,6 +122,18 @@ public partial class SettingsViewModel : ObservableObject
         }
     }
 
+    /// <summary>
+    /// Re-reads the ad-blocker state from the DB. Settings panel calls this on Loaded,
+    /// because the VM is constructed eagerly at app startup (before the first tab opens),
+    /// while the built-in extension is registered only after the first tab triggers
+    /// EnsureBuiltInExtensionsAsync. Without this refresh, the toggle would show stale
+    /// "off" even when the DB and WebView2 say "on".
+    /// </summary>
+    public async Task RefreshAdBlockerStateAsync()
+    {
+        await LoadAdBlockerStateAsync();
+    }
+
     async partial void OnIsAdBlockerEnabledChanged(bool value)
     {
         try

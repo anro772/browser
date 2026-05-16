@@ -39,16 +39,117 @@ public class ExtensionService
         {
             using var scope = _scopeFactory.CreateScope();
             var repo = scope.ServiceProvider.GetRequiredService<IExtensionRepository>();
-            var extensions = await repo.GetAllAsync();
+            var extensions = (await repo.GetAllAsync()).ToList();
 
-            // Check if already marked as built-in
-            var existingBuiltIn = extensions.FirstOrDefault(e => e.IsBuiltIn &&
-                (e.Name.Contains("Adblock", StringComparison.OrdinalIgnoreCase) ||
-                 e.Name.Contains("adblock", StringComparison.OrdinalIgnoreCase) ||
-                 e.Name.Contains("uBlock", StringComparison.OrdinalIgnoreCase)));
+            // ── De-dupe: prior bug stored the unresolved manifest placeholder
+            // "__MSG_name_releasebuild__" as the name, which broke the "already
+            // registered" check and let us add a new built-in record on every restart.
+            // Collapse any duplicates to a single record (preferring one whose
+            // FolderPath still resolves) and delete the rest.
+            var builtIns = extensions.Where(e => e.IsBuiltIn).ToList();
+            if (builtIns.Count > 1)
+            {
+                var keeper = builtIns
+                    .OrderByDescending(e => !string.IsNullOrEmpty(e.FolderPath) && Directory.Exists(e.FolderPath))
+                    .ThenBy(e => e.Id)
+                    .First();
+                foreach (var dup in builtIns.Where(e => e.Id != keeper.Id))
+                {
+                    await repo.DeleteAsync(dup.Id);
+                    ErrorLogger.LogInfo($"[ExtensionService] Removed duplicate built-in record: '{dup.Name}' (Id={dup.Id})");
+                }
+                extensions = (await repo.GetAllAsync()).ToList();
+            }
+
+            // Any IsBuiltIn record counts — we only ever register one. Avoids
+            // name-substring matching that could miss future ad blockers.
+            var existingBuiltIn = extensions.FirstOrDefault(e => e.IsBuiltIn);
 
             if (existingBuiltIn != null)
             {
+                // The recorded folder may have been deleted between sessions (e.g. user
+                // cleared LocalAppData\BrowserApp\Extensions). Re-materialize it from the
+                // bundled source so the extension keeps working without losing the DB row.
+                if (string.IsNullOrEmpty(existingBuiltIn.FolderPath) || !Directory.Exists(existingBuiltIn.FolderPath))
+                {
+                    var bundledSource = Path.Combine(AppDomain.CurrentDomain.BaseDirectory,
+                        "Resources", "BuiltInExtensions", "adblock-plus");
+                    var rematerializeTarget = Path.IsPathRooted(existingBuiltIn.FolderPath ?? "")
+                        ? existingBuiltIn.FolderPath!
+                        : Path.Combine(BuiltInExtensionsDir, "adblock-plus");
+
+                    if (Directory.Exists(bundledSource))
+                    {
+                        try
+                        {
+                            Directory.CreateDirectory(BuiltInExtensionsDir);
+                            if (!Directory.Exists(rematerializeTarget))
+                            {
+                                CopyDirectory(bundledSource, rematerializeTarget);
+                                ErrorLogger.LogInfo($"[ExtensionService] Re-materialized missing built-in folder: {rematerializeTarget}");
+                            }
+                            if (existingBuiltIn.FolderPath != rematerializeTarget)
+                            {
+                                existingBuiltIn.FolderPath = rematerializeTarget;
+                                await repo.UpdateAsync(existingBuiltIn);
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            ErrorLogger.LogError($"[ExtensionService] Failed to re-materialize built-in from bundled source", ex);
+                        }
+                    }
+                    else
+                    {
+                        ErrorLogger.LogInfo($"[ExtensionService] Built-in folder missing and no bundled source at {bundledSource} — extension is unrecoverable until reinstall");
+                    }
+                }
+
+                // Repair a stored "__MSG_..." placeholder name from earlier launches by
+                // resolving it against the on-disk _locales/<default>/messages.json.
+                if (!string.IsNullOrEmpty(existingBuiltIn.FolderPath) && Directory.Exists(existingBuiltIn.FolderPath)
+                    && (existingBuiltIn.Name.StartsWith("__MSG_") || string.IsNullOrWhiteSpace(existingBuiltIn.Name)))
+                {
+                    var (resolved, _) = await ReadManifestNameAndVersionAsync(existingBuiltIn.FolderPath, fallbackName: existingBuiltIn.Name);
+                    if (!string.IsNullOrEmpty(resolved) && resolved != existingBuiltIn.Name)
+                    {
+                        ErrorLogger.LogInfo($"[ExtensionService] Repaired built-in name: '{existingBuiltIn.Name}' → '{resolved}'");
+                        existingBuiltIn.Name = resolved;
+                        await repo.UpdateAsync(existingBuiltIn);
+                    }
+                }
+
+                // Built-in should default to enabled on every startup, even if a previous
+                // session left it disabled — fixes "I have to toggle adblock on every launch".
+                if (!existingBuiltIn.IsEnabled)
+                {
+                    existingBuiltIn.IsEnabled = true;
+                    await repo.UpdateAsync(existingBuiltIn);
+                    ErrorLogger.LogInfo($"[ExtensionService] Re-enabled built-in ad blocker on startup: {existingBuiltIn.Name}");
+                }
+
+                // Also force the WebView2-side toggle on, in case WebView2's profile
+                // cache remembers a disabled state from a prior session.
+                try
+                {
+                    var live = await _profile.GetBrowserExtensionsAsync();
+                    var match = live.FirstOrDefault(e => e.Name.Equals(existingBuiltIn.Name, StringComparison.OrdinalIgnoreCase));
+                    if (match == null && !string.IsNullOrEmpty(existingBuiltIn.FolderPath) && Directory.Exists(existingBuiltIn.FolderPath))
+                    {
+                        await _profile.AddBrowserExtensionAsync(existingBuiltIn.FolderPath);
+                        live = await _profile.GetBrowserExtensionsAsync();
+                        match = live.FirstOrDefault(e => e.Name.Equals(existingBuiltIn.Name, StringComparison.OrdinalIgnoreCase));
+                    }
+                    if (match != null)
+                    {
+                        await match.EnableAsync(true);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    ErrorLogger.LogError($"[ExtensionService] Failed to force-enable built-in in WebView2", ex);
+                }
+
                 ErrorLogger.LogInfo($"[ExtensionService] Built-in ad blocker already registered: {existingBuiltIn.Name}");
                 return;
             }
@@ -96,12 +197,7 @@ public class ExtensionService
                 return;
             }
 
-            var json = await File.ReadAllTextAsync(manifestPath);
-            using var doc = JsonDocument.Parse(json);
-            var root = doc.RootElement;
-
-            var name = root.TryGetProperty("name", out var nameProp) ? nameProp.GetString() ?? "Adblock Plus" : "Adblock Plus";
-            var version = root.TryGetProperty("version", out var verProp) ? verProp.GetString() ?? "0.0" : "0.0";
+            var (name, version) = await ReadManifestNameAndVersionAsync(targetDir, fallbackName: "Adblock Plus");
 
             // Load into WebView2
             try
@@ -134,6 +230,75 @@ public class ExtensionService
     }
 
     /// <summary>
+    /// Reads (name, version) from a Chrome extension manifest, resolving any
+    /// "__MSG_key__" localization placeholder against _locales/&lt;default_locale&gt;/messages.json.
+    /// Returns the fallback name if the manifest is missing or unreadable.
+    /// </summary>
+    private static async Task<(string Name, string Version)> ReadManifestNameAndVersionAsync(string folder, string fallbackName)
+    {
+        var manifestPath = Path.Combine(folder, "manifest.json");
+        if (!File.Exists(manifestPath))
+        {
+            return (fallbackName, "0.0");
+        }
+
+        try
+        {
+            var json = await File.ReadAllTextAsync(manifestPath);
+            using var doc = JsonDocument.Parse(json);
+            var root = doc.RootElement;
+
+            var rawName = root.TryGetProperty("name", out var nameProp) ? nameProp.GetString() ?? fallbackName : fallbackName;
+            var version = root.TryGetProperty("version", out var verProp) ? verProp.GetString() ?? "0.0" : "0.0";
+            var defaultLocale = root.TryGetProperty("default_locale", out var locProp) ? locProp.GetString() : null;
+
+            var resolved = await ResolveLocalizedMessageAsync(folder, rawName, defaultLocale) ?? rawName;
+            return (resolved, version);
+        }
+        catch (Exception ex)
+        {
+            ErrorLogger.LogError($"[ExtensionService] Failed to read manifest at {manifestPath}", ex);
+            return (fallbackName, "0.0");
+        }
+    }
+
+    /// <summary>
+    /// If <paramref name="raw"/> is a "__MSG_key__" placeholder, look it up in the extension's
+    /// default-locale messages file and return the resolved string. Otherwise return null.
+    /// </summary>
+    private static async Task<string?> ResolveLocalizedMessageAsync(string folder, string raw, string? defaultLocale)
+    {
+        if (string.IsNullOrEmpty(raw) || !raw.StartsWith("__MSG_") || !raw.EndsWith("__")) return null;
+        var key = raw.Substring("__MSG_".Length, raw.Length - "__MSG_".Length - "__".Length);
+        if (string.IsNullOrEmpty(key)) return null;
+
+        var locale = string.IsNullOrEmpty(defaultLocale) ? "en_US" : defaultLocale;
+        var candidates = new[] { locale, locale.Replace('-', '_'), "en_US", "en" };
+        foreach (var c in candidates.Distinct())
+        {
+            var messagesPath = Path.Combine(folder, "_locales", c, "messages.json");
+            if (!File.Exists(messagesPath)) continue;
+
+            try
+            {
+                var json = await File.ReadAllTextAsync(messagesPath);
+                using var doc = JsonDocument.Parse(json);
+                if (doc.RootElement.TryGetProperty(key, out var entry) &&
+                    entry.TryGetProperty("message", out var msg))
+                {
+                    var resolved = msg.GetString();
+                    if (!string.IsNullOrEmpty(resolved)) return resolved;
+                }
+            }
+            catch
+            {
+                // try next candidate
+            }
+        }
+        return null;
+    }
+
+    /// <summary>
     /// Gets whether the built-in ad blocker extension is currently enabled.
     /// </summary>
     public async Task<bool> IsAdBlockerEnabledAsync()
@@ -146,15 +311,35 @@ public class ExtensionService
     }
 
     /// <summary>
-    /// Toggles the built-in ad blocker extension on/off.
+    /// Toggles the built-in ad blocker extension on/off. If the built-in isn't yet
+    /// registered (e.g. user toggled before the first tab triggered EnsureBuiltIn),
+    /// we attempt registration first so the toggle isn't silently lost.
     /// </summary>
     public async Task SetAdBlockerEnabledAsync(bool enabled)
     {
-        using var scope = _scopeFactory.CreateScope();
-        var repo = scope.ServiceProvider.GetRequiredService<IExtensionRepository>();
-        var extensions = await repo.GetAllAsync();
-        var adblock = extensions.FirstOrDefault(e => e.IsBuiltIn);
-        if (adblock == null) return;
+        ExtensionEntity? adblock;
+
+        using (var scope = _scopeFactory.CreateScope())
+        {
+            var repo = scope.ServiceProvider.GetRequiredService<IExtensionRepository>();
+            adblock = (await repo.GetAllAsync()).FirstOrDefault(e => e.IsBuiltIn);
+        }
+
+        if (adblock == null)
+        {
+            // Try to register/promote the built-in now (no-op if the WebView2 profile
+            // isn't ready yet — but at least the DB record will be created next time).
+            await EnsureBuiltInExtensionsAsync();
+            using var scope = _scopeFactory.CreateScope();
+            var repo = scope.ServiceProvider.GetRequiredService<IExtensionRepository>();
+            adblock = (await repo.GetAllAsync()).FirstOrDefault(e => e.IsBuiltIn);
+        }
+
+        if (adblock == null)
+        {
+            ErrorLogger.LogInfo($"[ExtensionService] Cannot {(enabled ? "enable" : "disable")} ad blocker — no built-in registered yet (profile not ready?)");
+            return;
+        }
 
         await ToggleExtensionAsync(adblock.Id, enabled);
     }
@@ -186,7 +371,10 @@ public class ExtensionService
     }
 
     /// <summary>
-    /// Loads all enabled extensions from the database into the WebView2 profile on startup.
+    /// Loads all DB-enabled extensions into the WebView2 profile on startup.
+    /// WebView2 persists per-extension on/off state in its profile data, so if the user
+    /// (or a previous session) disabled an extension at the WebView2 level, AddBrowserExtensionAsync
+    /// alone won't re-enable it. Always re-resolve the live match and force EnableAsync(true).
     /// </summary>
     public async Task LoadAllEnabledAsync()
     {
@@ -206,8 +394,21 @@ public class ExtensionService
 
             try
             {
-                await _profile.AddBrowserExtensionAsync(ext.FolderPath);
-                ErrorLogger.LogInfo($"[ExtensionService] Loaded extension: {ext.Name}");
+                var live = await _profile.GetBrowserExtensionsAsync();
+                var match = live.FirstOrDefault(e => e.Name.Equals(ext.Name, StringComparison.OrdinalIgnoreCase));
+                if (match == null)
+                {
+                    await _profile.AddBrowserExtensionAsync(ext.FolderPath);
+                    ErrorLogger.LogInfo($"[ExtensionService] Added extension at startup: {ext.Name}");
+                    live = await _profile.GetBrowserExtensionsAsync();
+                    match = live.FirstOrDefault(e => e.Name.Equals(ext.Name, StringComparison.OrdinalIgnoreCase));
+                }
+
+                if (match != null)
+                {
+                    await match.EnableAsync(true);
+                    ErrorLogger.LogInfo($"[ExtensionService] Forced-enabled extension at startup: {ext.Name}");
+                }
             }
             catch (Exception ex)
             {
@@ -237,12 +438,7 @@ public class ExtensionService
 
         try
         {
-            var json = await File.ReadAllTextAsync(manifestPath);
-            using var doc = JsonDocument.Parse(json);
-            var root = doc.RootElement;
-
-            var name = root.TryGetProperty("name", out var nameProp) ? nameProp.GetString() ?? "Unknown" : "Unknown";
-            var version = root.TryGetProperty("version", out var verProp) ? verProp.GetString() ?? "0.0" : "0.0";
+            var (name, version) = await ReadManifestNameAndVersionAsync(folderPath, fallbackName: "Unknown");
 
             // Load into WebView2 profile if available
             if (_profileReady && _profile != null)
@@ -405,14 +601,21 @@ public class ExtensionService
                 var liveExtensions = await _profile.GetBrowserExtensionsAsync();
                 var match = liveExtensions.FirstOrDefault(e =>
                     e.Name.Equals(ext.Name, StringComparison.OrdinalIgnoreCase));
+
+                if (match == null && enabled && !string.IsNullOrEmpty(ext.FolderPath) && Directory.Exists(ext.FolderPath))
+                {
+                    // Not loaded yet — add, then re-resolve so we can explicitly enable
+                    // (AddBrowserExtensionAsync alone may attach it in WebView2's last-known
+                    // state, which can be disabled across sessions).
+                    await _profile.AddBrowserExtensionAsync(ext.FolderPath);
+                    liveExtensions = await _profile.GetBrowserExtensionsAsync();
+                    match = liveExtensions.FirstOrDefault(e =>
+                        e.Name.Equals(ext.Name, StringComparison.OrdinalIgnoreCase));
+                }
+
                 if (match != null)
                 {
                     await match.EnableAsync(enabled);
-                }
-                else if (enabled && !string.IsNullOrEmpty(ext.FolderPath) && Directory.Exists(ext.FolderPath))
-                {
-                    // Re-add if enabling and not currently loaded
-                    await _profile.AddBrowserExtensionAsync(ext.FolderPath);
                 }
             }
             catch (Exception ex)

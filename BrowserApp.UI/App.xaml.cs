@@ -82,6 +82,32 @@ public partial class App : Application
 
         // Write crash-detection sentinel file
         _sessionLockPath = Path.Combine(Path.GetDirectoryName(_profileService.GetDatabasePath())!, "session.lock");
+
+        // Sweep orphaned sentinels from other profile folders. They can only come from
+        // prior runs on those profiles where OnExit didn't reach the sentinel-delete
+        // (mostly historical — pre-async-void fix), and they'd cause a spurious
+        // "didn't shut down properly" dialog if the user ever switched back to that
+        // profile. The current profile's sentinel is written immediately after.
+        try
+        {
+            var profilesRoot = Path.GetDirectoryName(Path.GetDirectoryName(_sessionLockPath));
+            if (!string.IsNullOrEmpty(profilesRoot) && Directory.Exists(profilesRoot))
+            {
+                foreach (var orphan in Directory.EnumerateFiles(profilesRoot, "session.lock", SearchOption.AllDirectories))
+                {
+                    if (!string.Equals(orphan, _sessionLockPath, StringComparison.OrdinalIgnoreCase))
+                    {
+                        try { File.Delete(orphan); ErrorLogger.LogInfo($"[CrashRecovery] Swept orphan sentinel: {orphan}"); }
+                        catch { /* best effort */ }
+                    }
+                }
+            }
+        }
+        catch (Exception sweepEx)
+        {
+            ErrorLogger.LogError("[CrashRecovery] Orphan sweep failed", sweepEx);
+        }
+
         File.WriteAllText(_sessionLockPath, DateTime.UtcNow.ToString("O"));
         ErrorLogger.LogInfo($"[CrashRecovery] Sentinel written: {_sessionLockPath}");
 
@@ -422,6 +448,25 @@ public partial class App : Application
 
     protected override async void OnExit(ExitEventArgs e)
     {
+        // ── Delete crash-detection sentinel FIRST, synchronously.
+        // OnExit is async void, which WPF does not await — anything after the first
+        // `await` below may not finish before the process tears down (the WebView2
+        // dispose path can stall long enough to kill the continuation). Removing the
+        // sentinel here means "the user asked to close", which is the signal we
+        // actually want; the post-await work is best-effort cleanup.
+        if (_sessionLockPath != null && File.Exists(_sessionLockPath))
+        {
+            try
+            {
+                File.Delete(_sessionLockPath);
+                ErrorLogger.LogInfo("[CrashRecovery] Sentinel deleted on clean exit");
+            }
+            catch (Exception ex)
+            {
+                ErrorLogger.LogError("Failed to delete session lock", ex);
+            }
+        }
+
         if (_serviceProvider != null)
         {
             // Save tab session before exit
@@ -450,20 +495,6 @@ public partial class App : Application
             // Dispose tab strip
             var strip = _serviceProvider.GetService<TabStripViewModel>();
             strip?.Dispose();
-        }
-
-        // Delete crash-detection sentinel on clean exit
-        if (_sessionLockPath != null && File.Exists(_sessionLockPath))
-        {
-            try
-            {
-                File.Delete(_sessionLockPath);
-                ErrorLogger.LogInfo("[CrashRecovery] Sentinel deleted on clean exit");
-            }
-            catch (Exception ex)
-            {
-                ErrorLogger.LogError("Failed to delete session lock", ex);
-            }
         }
 
         if (_serviceProvider is IDisposable disposable)

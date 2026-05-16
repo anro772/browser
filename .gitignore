@@ -1,3 +1,7 @@
+# Standalone Chrome extension archives — bundled extensions live extracted under
+# BrowserApp.UI/Resources/BuiltInExtensions/ (those are committed, the .crx isn't).
+*.crx
+
 # .NET / Visual Studio / Rider
 ## Build results
 [Dd]ebug/
