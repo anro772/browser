@@ -4,6 +4,27 @@
     <BackEase x:Key="PremiumEaseOut" EasingMode="EaseOut" Amplitude="0.35"/>
     <BackEase x:Key="PremiumEaseInOut" EasingMode="EaseInOut" Amplitude="0.25"/>
 
+    <!-- Live-sync pulse — used on the channel-origin dot in the rules grid.
+         Maps directly to the design system's 2.6s opacity pulse. -->
+    <Style x:Key="LivePulseDotStyle" TargetType="FrameworkElement">
+        <Setter Property="Opacity" Value="1"/>
+        <Style.Triggers>
+            <EventTrigger RoutedEvent="FrameworkElement.Loaded">
+                <BeginStoryboard>
+                    <Storyboard RepeatBehavior="Forever" AutoReverse="True">
+                        <DoubleAnimation Storyboard.TargetProperty="Opacity"
+                                         From="1.0" To="0.35"
+                                         Duration="0:0:1.3">
+                            <DoubleAnimation.EasingFunction>
+                                <SineEase EasingMode="EaseInOut"/>
+                            </DoubleAnimation.EasingFunction>
+                        </DoubleAnimation>
+                    </Storyboard>
+                </BeginStoryboard>
+            </EventTrigger>
+        </Style.Triggers>
+    </Style>
+
     <Style x:Key="SidebarPanelAnimatedStyle" TargetType="Border">
         <Setter Property="Opacity" Value="0"/>
         <Setter Property="RenderTransform">

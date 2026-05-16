@@ -2,7 +2,33 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+             xmlns:controls="clr-namespace:BrowserApp.UI.Controls"
              Loaded="RulesWorkspaceView_Loaded">
+
+    <UserControl.Resources>
+        <!-- Dense table-style rows (per design): hairline divider, no rounded corners. -->
+        <Style x:Key="RuleRowStyle" TargetType="Border">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Padding" Value="8,10"/>
+            <Setter Property="BorderThickness" Value="0,0,0,1"/>
+            <Setter Property="BorderBrush" Value="{StaticResource BorderSubtleBrush}"/>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="{StaticResource BgSurfaceHoverBrush}"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- Small chip used in the filter row -->
+        <Style x:Key="FilterChipStyle" TargetType="Border">
+            <Setter Property="Background" Value="{StaticResource BgSurfaceBrush}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource BorderSubtleBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="14"/>
+            <Setter Property="Padding" Value="10,4"/>
+            <Setter Property="Margin" Value="0,0,6,0"/>
+        </Style>
+    </UserControl.Resources>
 
     <Grid Style="{StaticResource FadeInOnLoadModern}">
         <Grid.RowDefinitions>
@@ -10,28 +36,34 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <StackPanel Grid.Row="0" Margin="0,0,0,16">
-            <TextBlock Text="Rules" Style="{StaticResource TitleTextStyle}" Margin="0,0,0,4"/>
-            <TextBlock Text="Site customizations, privacy headers, and content policies" Foreground="{StaticResource TextSecondaryBrush}"/>
-        </StackPanel>
-
-        <Grid Grid.Row="1" Margin="0,0,0,8">
+        <!-- HEADER: title + rich substats on the left, Export + New Rule on the right -->
+        <Grid Grid.Row="0" Margin="0,0,0,14">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
 
-            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                <TextBlock Text="{Binding TotalRules}" FontWeight="SemiBold"/>
-                <TextBlock Text=" rules total, " Foreground="{StaticResource TextSecondaryBrush}"/>
-                <TextBlock Text="{Binding EnabledRules}" FontWeight="SemiBold" Foreground="{StaticResource SuccessBrush}"/>
-                <TextBlock Text=" enabled" Foreground="{StaticResource TextSecondaryBrush}"/>
+            <StackPanel Grid.Column="0">
+                <TextBlock Text="Rules"
+                           FontSize="22"
+                           FontWeight="SemiBold"
+                           Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                    <TextBlock Text="{Binding EnabledRules}" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                    <TextBlock Text=" active" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                    <TextBlock Text=" · " FontSize="12" Foreground="{DynamicResource TextFillColorTertiaryBrush}"/>
+                    <TextBlock FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}">
+                        <Run Text="{Binding DisabledRules, Mode=OneWay}"/>
+                        <Run Text=" disabled"/>
+                    </TextBlock>
+                </StackPanel>
             </StackPanel>
 
-            <StackPanel Grid.Column="1" Orientation="Horizontal">
-                <ui:DropDownButton Content="Load Template" Margin="0,0,8,0">
+            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                <ui:DropDownButton Content="Templates" Margin="0,0,8,0" Icon="{ui:SymbolIcon BookmarkMultiple24}">
                     <ui:DropDownButton.Flyout>
                         <ContextMenu>
                             <MenuItem Header="Auto-Dismiss Cookie Banners" Command="{Binding LoadTemplateCommand}" CommandParameter="cookie-banners"/>
@@ -43,157 +75,228 @@
                         </ContextMenu>
                     </ui:DropDownButton.Flyout>
                 </ui:DropDownButton>
-                <ui:Button Content="Refresh" Icon="{ui:SymbolIcon ArrowSync24}" Command="{Binding LoadRulesCommand}"
-                           Margin="0,0,8,0"/>
                 <ui:Button Content="Advanced" Icon="{ui:SymbolIcon Code24}"
                            Command="{Binding CreateRuleCommand}"
                            Margin="0,0,8,0"/>
-                <ui:Button Content="Quick Add" Icon="{ui:SymbolIcon Add24}"
+                <ui:Button Content="New rule" Icon="{ui:SymbolIcon Add24}"
                            Command="{Binding QuickAddRuleCommand}"
+                           Style="{StaticResource PrimaryAccentUiButton}"
                            Appearance="Primary"/>
             </StackPanel>
         </Grid>
 
-        <!-- Search bar -->
-        <ui:TextBox Grid.Row="2"
-                    PlaceholderText="Search rules by name or site..."
-                    Icon="{ui:SymbolIcon Search24}"
-                    Text="{Binding SearchFilter, UpdateSourceTrigger=PropertyChanged}"
-                    Margin="0,0,0,8"/>
+        <!-- SEARCH + FILTER CHIPS -->
+        <Grid Grid.Row="1" Margin="0,0,0,8">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
 
+            <ui:TextBox Grid.Column="0"
+                        PlaceholderText="Search rules…"
+                        Icon="{ui:SymbolIcon Search24}"
+                        Text="{Binding SearchFilter, UpdateSourceTrigger=PropertyChanged}"
+                        Margin="0,0,12,0"/>
+
+            <!-- Filter chips reuse the same style; show source legend + total count -->
+            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                <Border Style="{StaticResource FilterChipStyle}">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="{Binding TotalRules}" FontSize="11" FontWeight="SemiBold"
+                                   Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                        <TextBlock Text=" rules" FontSize="11"
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource FilterChipStyle}">
+                    <StackPanel Orientation="Horizontal">
+                        <Ellipse Width="6" Height="6" Margin="0,0,5,0" VerticalAlignment="Center"
+                                 Fill="{StaticResource SuccessBrush}"/>
+                        <TextBlock Text="{Binding EnabledRules}" FontSize="11" FontWeight="SemiBold"
+                                   Foreground="{StaticResource SuccessBrush}"/>
+                        <TextBlock Text=" active" FontSize="11"
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </Grid>
+
+        <!-- COLUMN HEADERS — uppercase, tracking, design-system 10px -->
+        <Grid Grid.Row="2" Margin="8,4,8,6">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="28"/>
+                <ColumnDefinition Width="40"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="130"/>
+                <ColumnDefinition Width="70"/>
+                <ColumnDefinition Width="70"/>
+                <ColumnDefinition Width="28"/>
+            </Grid.ColumnDefinitions>
+            <TextBlock Grid.Column="2" Text="RULE"
+                       FontSize="10" FontWeight="SemiBold"
+                       Foreground="{DynamicResource TextFillColorTertiaryBrush}"
+                       Margin="2,0,0,0"/>
+            <TextBlock Grid.Column="3" Text="SOURCE"
+                       FontSize="10" FontWeight="SemiBold"
+                       Foreground="{DynamicResource TextFillColorTertiaryBrush}"/>
+            <TextBlock Grid.Column="4" Text="HITS / 7D"
+                       FontSize="10" FontWeight="SemiBold"
+                       TextAlignment="Right"
+                       Foreground="{DynamicResource TextFillColorTertiaryBrush}"/>
+            <TextBlock Grid.Column="5" Text="UPDATED"
+                       FontSize="10" FontWeight="SemiBold"
+                       Foreground="{DynamicResource TextFillColorTertiaryBrush}"
+                       Margin="8,0,0,0"/>
+        </Grid>
+
+        <!-- ROWS -->
         <Grid Grid.Row="3">
-            <Border BorderBrush="{DynamicResource ControlElevationBorderBrush}" BorderThickness="1" CornerRadius="8">
-                <DataGrid ItemsSource="{Binding Rules}"
-                          Style="{StaticResource ThemedDataGrid}"
-                          SelectedItem="{Binding SelectedRule}"
-                          AutoGenerateColumns="False"
-                          IsReadOnly="True"
-                          SelectionMode="Single"
-                          CanUserAddRows="False"
-                          CanUserDeleteRows="False"
-                          HeadersVisibility="Column"
-                          GridLinesVisibility="Horizontal"
-                          BorderThickness="0"
-                          Background="Transparent">
-                    <DataGrid.Columns>
-                        <DataGridTemplateColumn Header="Enabled" Width="70">
-                            <DataGridTemplateColumn.CellTemplate>
-                                <DataTemplate>
-                                    <ui:ToggleSwitch IsChecked="{Binding IsEnabled, Mode=OneWay}"
-                                                     Command="{Binding DataContext.ToggleRuleCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+            <!-- Empty state overlay -->
+            <controls:WorkspaceEmptyState x:Name="RulesEmptyState"
+                                          IconSymbol="Shield24"
+                                          Eyebrow="YOUR RULES"
+                                          EyebrowBrush="{StaticResource LocalOriginBrush}"
+                                          EyebrowSubtleBrush="{StaticResource BgSurfaceBrush}"
+                                          Headline="No rules yet"
+                                          Body="Add your own rule, or install a public pack from Marketplace. Your active set lives in this profile."
+                                          PrimaryCtaText="New rule"
+                                          SecondaryCtaText="Browse Marketplace"
+                                          PrimaryCtaClicked="RulesEmpty_Primary"
+                                          SecondaryCtaClicked="RulesEmpty_Secondary"
+                                          Visibility="{Binding Rules.Count, Converter={StaticResource CountToVisibility}}"
+                                          Panel.ZIndex="10"/>
+
+            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                <ItemsControl ItemsSource="{Binding Rules}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border Style="{StaticResource RuleRowStyle}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="28"/>
+                                        <ColumnDefinition Width="40"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="130"/>
+                                        <ColumnDefinition Width="70"/>
+                                        <ColumnDefinition Width="70"/>
+                                        <ColumnDefinition Width="28"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <!-- 1 · Source marker (slate dot / amber bookmark / channel stripe+pulse) -->
+                                    <Grid Grid.Column="0" Width="20" Height="20"
+                                          HorizontalAlignment="Center" VerticalAlignment="Center">
+                                        <Ellipse Width="8" Height="8"
+                                                 Fill="{StaticResource LocalOriginBrush}"
+                                                 HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                 Visibility="{Binding Source, Converter={StaticResource StringEqToVis}, ConverterParameter=local|template|ai}"/>
+                                        <Path Fill="{StaticResource MarketOriginBrush}"
+                                              Data="M 0,0 L 10,0 L 10,15 L 5,11 L 0,15 Z"
+                                              HorizontalAlignment="Center" VerticalAlignment="Center"
+                                              Visibility="{Binding Source, Converter={StaticResource StringEqToVis}, ConverterParameter=marketplace}"/>
+                                        <StackPanel Orientation="Horizontal"
+                                                    HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                    Visibility="{Binding Source, Converter={StaticResource StringEqToVis}, ConverterParameter=channel}">
+                                            <Border Width="3" Height="14" CornerRadius="1.5"
+                                                    Background="{StaticResource ChannelOriginBrush}"
+                                                    Margin="0,0,4,0"/>
+                                            <Grid Width="8" Height="8">
+                                                <Ellipse Width="8" Height="8" Fill="{StaticResource ChannelOriginHaloBrush}"/>
+                                                <Ellipse Width="5" Height="5" Fill="{StaticResource ChannelOriginBrush}"
+                                                         HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                         Style="{StaticResource LivePulseDotStyle}"/>
+                                            </Grid>
+                                        </StackPanel>
+                                    </Grid>
+
+                                    <!-- 2 · Toggle (disabled when enforced) — scaled to design density -->
+                                    <ui:ToggleSwitch Grid.Column="1"
+                                                     IsChecked="{Binding IsEnabled, Mode=OneWay}"
+                                                     Command="{Binding DataContext.ToggleRuleCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
                                                      CommandParameter="{Binding}"
                                                      IsEnabled="{Binding IsEnforced, Converter={StaticResource InverseBoolConverter}}"
-                                                     HorizontalAlignment="Center"/>
-                                </DataTemplate>
-                            </DataGridTemplateColumn.CellTemplate>
-                        </DataGridTemplateColumn>
+                                                     RenderTransformOrigin="0.5,0.5"
+                                                     HorizontalAlignment="Left" VerticalAlignment="Center">
+                                        <ui:ToggleSwitch.RenderTransform>
+                                            <ScaleTransform ScaleX="0.78" ScaleY="0.78"/>
+                                        </ui:ToggleSwitch.RenderTransform>
+                                    </ui:ToggleSwitch>
 
-                        <DataGridTemplateColumn Header="Name" Width="200">
-                            <DataGridTemplateColumn.CellTemplate>
-                                <DataTemplate>
-                                    <TextBlock Text="{Binding Name}" ToolTip="{Binding Description}"
-                                               TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
-                                </DataTemplate>
-                            </DataGridTemplateColumn.CellTemplate>
-                        </DataGridTemplateColumn>
-
-                        <DataGridTextColumn Header="Site" Binding="{Binding Site}" Width="140"/>
-
-                        <DataGridTemplateColumn Header="Actions" Width="180">
-                            <DataGridTemplateColumn.CellTemplate>
-                                <DataTemplate>
-                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                        <Border CornerRadius="4" Padding="5,2" Margin="0,0,4,0"
-                                                Background="#20F87171"
-                                                Visibility="{Binding HasBlockActions, Converter={StaticResource BoolToVisibility}}">
-                                            <StackPanel Orientation="Horizontal">
-                                                <TextBlock Text="{Binding BlockActionCount}" FontSize="10" FontWeight="SemiBold" Foreground="#F87171"/>
-                                                <TextBlock Text=" Block" FontSize="10" Foreground="#F87171"/>
-                                            </StackPanel>
-                                        </Border>
-                                        <Border CornerRadius="4" Padding="5,2" Margin="0,0,4,0"
-                                                Background="#20A78BFA"
-                                                Visibility="{Binding HasCssActions, Converter={StaticResource BoolToVisibility}}">
-                                            <StackPanel Orientation="Horizontal">
-                                                <TextBlock Text="{Binding CssActionCount}" FontSize="10" FontWeight="SemiBold" Foreground="#A78BFA"/>
-                                                <TextBlock Text=" CSS" FontSize="10" Foreground="#A78BFA"/>
-                                            </StackPanel>
-                                        </Border>
-                                        <Border CornerRadius="4" Padding="5,2"
-                                                Background="#20FBBF24"
-                                                Visibility="{Binding HasJsActions, Converter={StaticResource BoolToVisibility}}">
-                                            <StackPanel Orientation="Horizontal">
-                                                <TextBlock Text="{Binding JsActionCount}" FontSize="10" FontWeight="SemiBold" Foreground="#FBBF24"/>
-                                                <TextBlock Text=" JS" FontSize="10" Foreground="#FBBF24"/>
-                                            </StackPanel>
-                                        </Border>
+                                    <!-- 3 · Rule name (+ lock if enforced) -->
+                                    <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Margin="2,0,12,0">
+                                        <TextBlock Text="{Binding Name}"
+                                                   FontSize="13"
+                                                   FontWeight="Medium"
+                                                   Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                                                   TextTrimming="CharacterEllipsis"
+                                                   ToolTip="{Binding Description}"
+                                                   VerticalAlignment="Center"/>
+                                        <ui:SymbolIcon Symbol="LockClosed24"
+                                                       FontSize="11"
+                                                       Margin="6,0,0,0"
+                                                       VerticalAlignment="Center"
+                                                       Foreground="{StaticResource EnforcedOriginBrush}"
+                                                       ToolTip="Enforced — can't disable"
+                                                       Visibility="{Binding IsEnforced, Converter={StaticResource BoolToVisibility}}"/>
                                     </StackPanel>
-                                </DataTemplate>
-                            </DataGridTemplateColumn.CellTemplate>
-                        </DataGridTemplateColumn>
 
-                        <DataGridTemplateColumn Header="Source" Width="80">
-                            <DataGridTemplateColumn.CellTemplate>
-                                <DataTemplate>
-                                    <Border CornerRadius="4" Padding="6,2" Margin="2"
-                                            Background="{Binding SourceDisplay, Converter={StaticResource SourceTypeToColor}}"
-                                            HorizontalAlignment="Left">
-                                        <TextBlock Text="{Binding SourceDisplay}" FontSize="10" FontWeight="SemiBold"
-                                                   Foreground="#0B0E12" HorizontalAlignment="Center"/>
-                                    </Border>
-                                </DataTemplate>
-                            </DataGridTemplateColumn.CellTemplate>
-                        </DataGridTemplateColumn>
+                                    <!-- 4 · Source label (colored to match the marker) -->
+                                    <TextBlock Grid.Column="3"
+                                               Text="{Binding SourceDisplay}"
+                                               FontSize="11"
+                                               FontWeight="SemiBold"
+                                               VerticalAlignment="Center"
+                                               TextTrimming="CharacterEllipsis">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="Foreground" Value="{StaticResource LocalOriginBrush}"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding Source}" Value="marketplace">
+                                                        <Setter Property="Foreground" Value="{StaticResource MarketOriginBrush}"/>
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding Source}" Value="channel">
+                                                        <Setter Property="Foreground" Value="{StaticResource ChannelOriginBrush}"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
 
-                        <DataGridTemplateColumn Header="" Width="45">
-                            <DataGridTemplateColumn.CellTemplate>
-                                <DataTemplate>
-                                    <ui:Button ToolTip="Edit rule"
+                                    <!-- 5 · Hits / 7d ("—" placeholder until per-rule counts ship) -->
+                                    <TextBlock Grid.Column="4"
+                                               Text="{Binding HitsDisplay}"
+                                               FontSize="12"
+                                               TextAlignment="Right"
+                                               VerticalAlignment="Center"
+                                               Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+
+                                    <!-- 6 · Updated (relative time) -->
+                                    <TextBlock Grid.Column="5"
+                                               Text="{Binding UpdatedDisplay}"
+                                               FontSize="11"
+                                               VerticalAlignment="Center"
+                                               Margin="8,0,0,0"
+                                               Foreground="{DynamicResource TextFillColorTertiaryBrush}"/>
+
+                                    <!-- 7 · More menu (edit / publish / delete tucked away) -->
+                                    <ui:Button Grid.Column="6"
+                                               ToolTip="More"
                                                Padding="4"
-                                               Command="{Binding DataContext.EditRuleCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
-                                               CommandParameter="{Binding}">
+                                               Background="Transparent"
+                                               BorderThickness="0"
+                                               HorizontalAlignment="Right"
+                                               VerticalAlignment="Center"
+                                               Click="RuleMore_Click">
                                         <ui:Button.Icon>
-                                            <ui:SymbolIcon Symbol="Edit24" Foreground="{StaticResource AccentLightBrush}"/>
+                                            <ui:SymbolIcon Symbol="MoreHorizontal24"
+                                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                                         </ui:Button.Icon>
                                     </ui:Button>
-                                </DataTemplate>
-                            </DataGridTemplateColumn.CellTemplate>
-                        </DataGridTemplateColumn>
-
-                        <DataGridTemplateColumn Header="" Width="45">
-                            <DataGridTemplateColumn.CellTemplate>
-                                <DataTemplate>
-                                    <ui:Button ToolTip="Publish to marketplace"
-                                               Padding="4"
-                                               Visibility="{Binding CanPublish, Converter={StaticResource BoolToVisibility}}"
-                                               Command="{Binding DataContext.PublishRuleCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
-                                               CommandParameter="{Binding}">
-                                        <ui:Button.Icon>
-                                            <ui:SymbolIcon Symbol="ArrowUpload24" Foreground="{StaticResource AccentBrush}"/>
-                                        </ui:Button.Icon>
-                                    </ui:Button>
-                                </DataTemplate>
-                            </DataGridTemplateColumn.CellTemplate>
-                        </DataGridTemplateColumn>
-
-                        <DataGridTemplateColumn Header="" Width="45">
-                            <DataGridTemplateColumn.CellTemplate>
-                                <DataTemplate>
-                                    <ui:Button Appearance="Danger"
-                                               Command="{Binding DataContext.DeleteRuleCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
-                                               CommandParameter="{Binding}"
-                                               ToolTip="Delete rule"
-                                               Padding="4">
-                                        <ui:Button.Icon>
-                                            <ui:SymbolIcon Symbol="Delete24" Foreground="{StaticResource ErrorBrush}"/>
-                                        </ui:Button.Icon>
-                                    </ui:Button>
-                                </DataTemplate>
-                            </DataGridTemplateColumn.CellTemplate>
-                        </DataGridTemplateColumn>
-                    </DataGrid.Columns>
-                </DataGrid>
-            </Border>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
 
             <Border Background="{StaticResource BgPrimaryBrush}"
                     Opacity="0.82"
@@ -201,5 +304,34 @@
                 <ui:ProgressRing IsIndeterminate="True"/>
             </Border>
         </Grid>
+
+        <!-- STATUS BAR -->
+        <Border Grid.Row="4"
+                Background="{StaticResource BgElevatedBrush}"
+                CornerRadius="6"
+                Padding="12,6"
+                Margin="0,8,0,0">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <Ellipse Width="7" Height="7" Margin="0,0,6,0"
+                             Fill="{StaticResource SuccessBrush}"/>
+                    <TextBlock Text="Active profile rules · synced with this device"
+                               FontSize="11"
+                               Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                </StackPanel>
+                <TextBlock Grid.Column="1"
+                           FontSize="11"
+                           Foreground="{DynamicResource TextFillColorTertiaryBrush}">
+                    <Run Text="Showing "/>
+                    <Run Text="{Binding Rules.Count, Mode=OneWay}" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                    <Run Text=" of "/>
+                    <Run Text="{Binding TotalRules, Mode=OneWay}" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                </TextBlock>
+            </Grid>
+        </Border>
     </Grid>
 </UserControl>

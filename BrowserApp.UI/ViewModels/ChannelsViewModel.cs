@@ -530,6 +530,40 @@ public partial class UnifiedChannelViewModel : ObservableObject
         ? $"Last synced: {LastSyncedAt.Value:g}"
         : string.Empty;
 
+    /// <summary>Two-letter monogram for the channel avatar (per channels.jsx V_Monogram).</summary>
+    public string MonogramDisplay
+    {
+        get
+        {
+            var cleaned = (Name ?? string.Empty).Replace('-', ' ').Replace('_', ' ').Trim();
+            if (string.IsNullOrEmpty(cleaned)) return "??";
+            var parts = cleaned.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            if (parts.Length >= 2)
+            {
+                return $"{char.ToUpperInvariant(parts[0][0])}{char.ToUpperInvariant(parts[1][0])}";
+            }
+            return cleaned.Length >= 2
+                ? cleaned[..2].ToUpperInvariant()
+                : cleaned.ToUpperInvariant();
+        }
+    }
+
+    /// <summary>Relative-time display for last sync — always stays "Nx ago" framing.</summary>
+    public string LastSyncDisplay
+    {
+        get
+        {
+            if (!LastSyncedAt.HasValue) return "never";
+            var delta = DateTime.UtcNow - LastSyncedAt.Value;
+            if (delta.TotalSeconds < 60) return "just now";
+            if (delta.TotalMinutes < 60) return $"{(int)delta.TotalMinutes}m ago";
+            if (delta.TotalHours < 24) return $"{(int)delta.TotalHours}h ago";
+            if (delta.TotalDays < 30) return $"{(int)delta.TotalDays}d ago";
+            if (delta.TotalDays < 365) return $"{(int)(delta.TotalDays / 30)}mo ago";
+            return $"{(int)(delta.TotalDays / 365)}y ago";
+        }
+    }
+
     public UnifiedChannelViewModel(ChannelResponse response, ChannelMembershipDto? membership = null)
     {
         Id = response.Id;

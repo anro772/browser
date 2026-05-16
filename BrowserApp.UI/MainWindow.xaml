@@ -61,12 +61,13 @@
 
         <!-- Row 0: Tab Strip
              Layout (Chrome/Brave-style):
-               Column 0: ScrollViewer hosting tabs + an inline "+" button glued to the last tab.
+               Column 0: Active-profile pill (chrome identity, Placement A from design).
+               Column 1: ScrollViewer hosting tabs + an inline "+" button glued to the last tab.
                          MaxWidth is capped via WidthSubtractConverter so the caption buttons
                          and sticky "+" stay visible when many tabs are open.
-               Column 1: Sticky "+" — only visible when the tab list overflows.
-               Column 2: Drag spacer (fills remaining horizontal space).
-               Column 3: Window caption buttons (min/max/close).
+               Column 2: Sticky "+" — only visible when the tab list overflows.
+               Column 3: Drag spacer (fills remaining horizontal space).
+               Column 4: Window caption buttons (min/max/close).
         -->
         <Grid x:Name="TabStripGrid"
               Grid.Row="0"
@@ -76,17 +77,23 @@
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="140"/>
             </Grid.ColumnDefinitions>
 
+            <!-- Active profile pill — always visible. Click opens Profiles workspace. -->
+            <controls:ActiveProfilePill Grid.Column="0"
+                                        Margin="10,0,4,0"
+                                        VerticalAlignment="Center"/>
+
             <!-- Tab items + inline "+" (scrollable) -->
-            <ScrollViewer Grid.Column="0"
+            <ScrollViewer Grid.Column="1"
                           x:Name="TabScrollViewer"
                           HorizontalScrollBarVisibility="Hidden"
                           VerticalScrollBarVisibility="Disabled"
-                          Margin="8,0,0,0"
-                          MaxWidth="{Binding ActualWidth, ElementName=TabStripGrid, Converter={StaticResource WidthSubtract}, ConverterParameter=200}"
+                          Margin="4,0,0,0"
+                          MaxWidth="{Binding ActualWidth, ElementName=TabStripGrid, Converter={StaticResource WidthSubtract}, ConverterParameter=380}"
                           PreviewMouseWheel="TabScrollViewer_PreviewMouseWheel"
                           ScrollChanged="TabScrollViewer_ScrollChanged"
                           SizeChanged="TabScrollViewer_SizeChanged">
@@ -115,14 +122,14 @@
             </ScrollViewer>
 
             <!-- Sticky "+" — visible only when tabs overflow the viewport. -->
-            <Button Grid.Column="1"
+            <Button Grid.Column="2"
                     x:Name="StickyNewTabButton"
                     Style="{StaticResource StickyNewTabButtonStyle}"
                     Click="NewTabButton_Click"
                     Visibility="{Binding TabStrip.IsTabStripOverflowing, Converter={StaticResource BoolToVisibility}}"/>
 
             <!-- Window caption buttons area (space for min/max/close) -->
-            <ui:TitleBar Grid.Column="3"
+            <ui:TitleBar Grid.Column="4"
                          ShowMinimize="True"
                          ShowMaximize="True"
                          ShowClose="True"/>

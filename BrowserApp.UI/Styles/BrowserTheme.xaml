@@ -58,6 +58,26 @@
     <SolidColorBrush x:Key="WarningSubtleBrush" Color="#18FCD34D"/>
     <SolidColorBrush x:Key="InfoSubtleBrush" Color="#1893C5FD"/>
 
+    <!-- ORIGIN SEMANTICS — one hue per rule source so the badge color also carries
+         the live/static signal (from Claude Design recommendation). -->
+    <Color x:Key="LocalOrigin">#94A3B8</Color>      <!-- slate · neutral, "this is yours" -->
+    <Color x:Key="MarketOrigin">#E6A23C</Color>     <!-- amber · static / pinned -->
+    <Color x:Key="ChannelOrigin">#5EEAD4</Color>    <!-- teal  · live, networked -->
+    <Color x:Key="EnforcedOrigin">#F0708A</Color>   <!-- rose  · owner-locked -->
+
+    <SolidColorBrush x:Key="LocalOriginBrush" Color="#94A3B8"/>
+    <SolidColorBrush x:Key="MarketOriginBrush" Color="#E6A23C"/>
+    <SolidColorBrush x:Key="ChannelOriginBrush" Color="#5EEAD4"/>
+    <SolidColorBrush x:Key="EnforcedOriginBrush" Color="#F0708A"/>
+
+    <!-- Subtle halo behind the live-pulse dot — ~16% channel teal -->
+    <SolidColorBrush x:Key="ChannelOriginHaloBrush" Color="#295EEAD4"/>
+
+    <!-- Privacy-mode dot colors (used by the active-profile pill). -->
+    <SolidColorBrush x:Key="PrivacyRelaxedBrush" Color="#FACC15"/>
+    <SolidColorBrush x:Key="PrivacyStandardBrush" Color="#5EEAD4"/>
+    <SolidColorBrush x:Key="PrivacyStrictBrush" Color="#A78BFA"/>
+
     <!-- BORDERS — warmer, more visible -->
     <Color x:Key="Border">#404960</Color>
     <Color x:Key="BorderSubtle">#323849</Color>
@@ -96,6 +116,18 @@
     <Color x:Key="SystemAccentColorSecondary">#9B8AFB</Color>
     <Color x:Key="SystemAccentColorTertiary">#6254CC</Color>
 
+    <!-- WPF-UI Primary-appearance button fills route through AccentFillColor*Brush —
+         without these the Primary button renders in the default Windows blue
+         instead of our indigo. -->
+    <SolidColorBrush x:Key="AccentFillColorDefaultBrush" Color="#7C6AEF"/>
+    <SolidColorBrush x:Key="AccentFillColorSecondaryBrush" Color="#8B7BF2"/>
+    <SolidColorBrush x:Key="AccentFillColorTertiaryBrush" Color="#6E5DE0"/>
+    <SolidColorBrush x:Key="AccentFillColorDisabledBrush" Color="#3E465A"/>
+    <SolidColorBrush x:Key="AccentTextFillColorPrimaryBrush" Color="#F1EEFF"/>
+    <SolidColorBrush x:Key="AccentTextFillColorSecondaryBrush" Color="#F1EEFF"/>
+    <SolidColorBrush x:Key="AccentTextFillColorTertiaryBrush" Color="#F1EEFF"/>
+    <SolidColorBrush x:Key="AccentTextFillColorDisabledBrush" Color="#6B7394"/>
+
     <!-- Button foreground overrides -->
     <SolidColorBrush x:Key="ButtonForeground" Color="#F0F0F5"/>
     <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="#F0F0F5"/>
@@ -115,6 +147,20 @@
     <SolidColorBrush x:Key="ToggleButtonForeground" Color="#B0B7CC"/>
     <SolidColorBrush x:Key="ToggleButtonForegroundPointerOver" Color="#F0F0F5"/>
     <SolidColorBrush x:Key="ToggleButtonForegroundChecked" Color="#9B8AFB"/>
+
+    <!-- ToggleSwitch on-state — force indigo so it matches the accent everywhere. -->
+    <SolidColorBrush x:Key="ToggleSwitchFillOn"             Color="#7C6AEF"/>
+    <SolidColorBrush x:Key="ToggleSwitchFillOnPointerOver"  Color="#8B7BF2"/>
+    <SolidColorBrush x:Key="ToggleSwitchFillOnPressed"      Color="#6E5DE0"/>
+    <SolidColorBrush x:Key="ToggleSwitchFillOnDisabled"     Color="#3E465A"/>
+    <SolidColorBrush x:Key="ToggleSwitchStrokeOn"           Color="#7C6AEF"/>
+    <SolidColorBrush x:Key="ToggleSwitchStrokeOnPointerOver" Color="#8B7BF2"/>
+    <SolidColorBrush x:Key="ToggleSwitchStrokeOnPressed"    Color="#6E5DE0"/>
+    <SolidColorBrush x:Key="ToggleSwitchStrokeOnDisabled"   Color="#3E465A"/>
+    <SolidColorBrush x:Key="ToggleSwitchKnobFillOn"         Color="#F1EEFF"/>
+    <SolidColorBrush x:Key="ToggleSwitchKnobFillOnPointerOver" Color="#F1EEFF"/>
+    <SolidColorBrush x:Key="ToggleSwitchKnobFillOnPressed"  Color="#F1EEFF"/>
+    <SolidColorBrush x:Key="ToggleSwitchKnobFillOnDisabled" Color="#B0B7CC"/>
 
     <!-- ═══════════════════════════════════════════════════════════════
          Common Styles
@@ -300,6 +346,42 @@
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
+    </Style>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         ui:Button Primary — force our indigo accent.
+         KEYED (not implicit) so it never replaces WPF-UI's default
+         ui:Button template, which would strip toolbar buttons.
+         Apply explicitly with Style="{StaticResource PrimaryAccentUiButton}"
+         on workspace Primary buttons.
+         ═══════════════════════════════════════════════════════════════ -->
+
+    <Style x:Key="PrimaryAccentUiButton"
+           TargetType="{x:Type ui:Button}"
+           BasedOn="{StaticResource {x:Type ui:Button}}">
+        <Style.Triggers>
+            <Trigger Property="Appearance" Value="Primary">
+                <Setter Property="Background" Value="{StaticResource AccentBrush}"/>
+                <Setter Property="BorderBrush" Value="{StaticResource AccentBrush}"/>
+                <Setter Property="Foreground" Value="#F1EEFF"/>
+            </Trigger>
+            <MultiTrigger>
+                <MultiTrigger.Conditions>
+                    <Condition Property="Appearance" Value="Primary"/>
+                    <Condition Property="IsMouseOver" Value="True"/>
+                </MultiTrigger.Conditions>
+                <Setter Property="Background" Value="{StaticResource AccentLightBrush}"/>
+                <Setter Property="BorderBrush" Value="{StaticResource AccentLightBrush}"/>
+            </MultiTrigger>
+            <MultiTrigger>
+                <MultiTrigger.Conditions>
+                    <Condition Property="Appearance" Value="Primary"/>
+                    <Condition Property="IsPressed" Value="True"/>
+                </MultiTrigger.Conditions>
+                <Setter Property="Background" Value="{StaticResource AccentDarkBrush}"/>
+                <Setter Property="BorderBrush" Value="{StaticResource AccentDarkBrush}"/>
+            </MultiTrigger>
+        </Style.Triggers>
     </Style>
 
 </ResourceDictionary>

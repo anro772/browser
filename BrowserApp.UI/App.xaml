@@ -34,6 +34,11 @@
             <converters:StatusCodeToColorConverter x:Key="StatusCodeToColor"/>
             <converters:SourceTypeToColorConverter x:Key="SourceTypeToColor"/>
             <converters:WidthSubtractConverter x:Key="WidthSubtract"/>
+            <converters:FirstLetterConverter x:Key="FirstLetter"/>
+            <converters:ChannelIdToBrushConverter x:Key="ChannelIdToBrush"/>
+            <converters:PrivacyModeToBrushConverter x:Key="PrivacyModeToBrush"/>
+            <converters:PrivacyModeToLabelConverter x:Key="PrivacyModeToLabel"/>
+            <converters:StringEqualsVisibilityConverter x:Key="StringEqToVis"/>
 
             <!-- Typography override: Outfit font with premium rendering -->
             <Style x:Key="{x:Type TextBlock}" TargetType="TextBlock">

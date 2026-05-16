@@ -45,6 +45,11 @@ public partial class RuleManagerViewModel : ObservableObject
     [ObservableProperty]
     private int _enabledRules;
 
+    public int DisabledRules => TotalRules - EnabledRules;
+
+    partial void OnTotalRulesChanged(int value) => OnPropertyChanged(nameof(DisabledRules));
+    partial void OnEnabledRulesChanged(int value) => OnPropertyChanged(nameof(DisabledRules));
+
     [ObservableProperty]
     private string _searchFilter = string.Empty;
 
@@ -410,6 +415,7 @@ public partial class RuleItemViewModel : ObservableObject
     public bool HasBlockActions { get; }
     public bool HasCssActions { get; }
     public bool HasJsActions { get; }
+    public DateTime UpdatedAt { get; }
 
     [ObservableProperty]
     private bool _isEnabled;
@@ -426,6 +432,7 @@ public partial class RuleItemViewModel : ObservableObject
         IsEnabled = entity.Enabled;
         RulesJson = entity.RulesJson;
         CanPublish = Source is "local" or "template" or "ai";
+        UpdatedAt = entity.UpdatedAt;
 
         // Parse and count actions by type
         try
@@ -456,4 +463,21 @@ public partial class RuleItemViewModel : ObservableObject
         "ai" => "AI",
         _ => Source
     };
+
+    // Placeholder until per-rule hit counts are plumbed; design uses "—" for unknown.
+    public string HitsDisplay => "—";
+
+    public string UpdatedDisplay
+    {
+        get
+        {
+            var delta = DateTime.UtcNow - UpdatedAt;
+            if (delta.TotalSeconds < 60) return "now";
+            if (delta.TotalMinutes < 60) return $"{(int)delta.TotalMinutes}m";
+            if (delta.TotalHours < 24) return $"{(int)delta.TotalHours}h";
+            if (delta.TotalDays < 30) return $"{(int)delta.TotalDays}d";
+            if (delta.TotalDays < 365) return $"{(int)(delta.TotalDays / 30)}mo";
+            return $"{(int)(delta.TotalDays / 365)}y";
+        }
+    }
 }

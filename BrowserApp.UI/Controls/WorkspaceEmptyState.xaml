@@ -1,0 +1,73 @@
+<UserControl x:Class="BrowserApp.UI.Controls.WorkspaceEmptyState"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+             mc:Ignorable="d"
+             d:DesignHeight="320"
+             d:DesignWidth="640"
+             x:Name="Root">
+
+    <!-- Reusable empty-state slab (per Claude Design empty.jsx).
+         Center-aligned column: 56px ring icon + uppercase eyebrow + headline + body + primary/secondary CTAs. -->
+    <Grid HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="440">
+        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+
+            <!-- Eyebrow + icon block -->
+            <Border Width="56" Height="56"
+                    CornerRadius="28"
+                    HorizontalAlignment="Center"
+                    Background="{Binding EyebrowSubtleBrush, ElementName=Root}"
+                    BorderBrush="{Binding EyebrowBrush, ElementName=Root}"
+                    BorderThickness="1.4"
+                    Margin="0,0,0,16">
+                <ui:SymbolIcon Symbol="{Binding IconSymbol, ElementName=Root}"
+                               FontSize="24"
+                               HorizontalAlignment="Center"
+                               VerticalAlignment="Center"
+                               Foreground="{Binding EyebrowBrush, ElementName=Root}"/>
+            </Border>
+
+            <TextBlock Text="{Binding Eyebrow, ElementName=Root}"
+                       FontSize="11"
+                       FontWeight="Bold"
+                       Foreground="{Binding EyebrowBrush, ElementName=Root}"
+                       HorizontalAlignment="Center"
+                       Margin="0,0,0,8">
+                <TextBlock.LayoutTransform>
+                    <ScaleTransform/>
+                </TextBlock.LayoutTransform>
+            </TextBlock>
+
+            <TextBlock Text="{Binding Headline, ElementName=Root}"
+                       FontSize="20"
+                       FontWeight="SemiBold"
+                       TextAlignment="Center"
+                       Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                       Margin="0,0,0,8"/>
+
+            <TextBlock Text="{Binding Body, ElementName=Root}"
+                       FontSize="13"
+                       TextAlignment="Center"
+                       TextWrapping="Wrap"
+                       Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                       Margin="0,0,0,20"
+                       MaxWidth="380"/>
+
+            <!-- CTAs row -->
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                <ui:Button Content="{Binding PrimaryCtaText, ElementName=Root}"
+                           Style="{StaticResource PrimaryAccentUiButton}"
+                           Appearance="Primary"
+                           Visibility="{Binding HasPrimaryCta, ElementName=Root, Converter={StaticResource BoolToVisibility}}"
+                           Click="PrimaryCta_Click"
+                           Margin="0,0,8,0"/>
+                <ui:Button Content="{Binding SecondaryCtaText, ElementName=Root}"
+                           Appearance="Secondary"
+                           Visibility="{Binding HasSecondaryCta, ElementName=Root, Converter={StaticResource BoolToVisibility}}"
+                           Click="SecondaryCta_Click"/>
+            </StackPanel>
+        </StackPanel>
+    </Grid>
+</UserControl>

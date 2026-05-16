@@ -18,4 +18,12 @@ public partial class MarketplaceWorkspaceView : UserControl
             await viewModel.LoadRulesCommand.ExecuteAsync(null);
         }
     }
+
+    private async void MarketplaceEmpty_Refresh(object? sender, System.EventArgs e)
+    {
+        if (DataContext is MarketplaceViewModel vm)
+        {
+            await vm.LoadRulesCommand.ExecuteAsync(null);
+        }
+    }
 }

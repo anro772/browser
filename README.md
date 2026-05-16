@@ -4,12 +4,14 @@ A privacy-focused browser built with C# WPF, WebView2, and Entity Framework Core
 
 ## Status
 
-**Phase 11 Complete** | 419 tests passing
+**Phase 13 Complete** | 442 tests passing
 
 ## Features
 
 ### Browsing
 - WebView2 (Chromium) engine with tabbed browsing
+- Chrome-style tab strip: inline `+` after the last tab + sticky `+` when tabs overflow; vertical wheel scrolls horizontally
+- Toggleable **bookmarks bar** under the address bar (`Ctrl+Shift+B`, persists across restarts; middle-click → new tab)
 - Address bar with autocomplete (history + bookmarks, debounced)
 - Session persistence (tabs restored on relaunch)
 - Back/forward, refresh, home, zoom controls
@@ -22,23 +24,27 @@ A privacy-focused browser built with C# WPF, WebView2, and Entity Framework Core
 - 5 built-in templates (Privacy Mode, Block Ads, Hide Cookie Banners, Dark Mode, Hide Social Widgets)
 - Rule manager UI with priority system
 - Rule marketplace and channel sharing
+- **Privacy modes are functional** (not just labels):
+  - **Relaxed** — only user-created (`local`) + channel-enforced rules apply
+  - **Standard** — all enabled rules apply (default)
+  - **Strict** — all enabled rules + built-in tracker hostname blocklist
 
 ### Privacy & Monitoring
 - Real-time network request capture with filtering and CSV export
-- Privacy dashboard with session-scoped blocking stats
+- Live privacy dashboard with session-scoped **Detected / Blocked / Saved** stats — auto-refreshes via `RequestBlocked` event (500ms debounce), no manual refresh button
 - All data stored locally (no cloud sync)
 - Multi-profile support with isolated data directories
 
 ### Management
-- Browsing history with search
-- Bookmarks
+- Browsing history grouped by day (Today / Yesterday / weekday / date) with host avatar, page title, and time
+- Bookmarks (sidebar removed; lives in the bookmarks bar now)
 - Download manager with progress tracking
-- Extension support (Manifest V3 unpacked extensions)
-- Log viewer
+- Extension support (Manifest V3 unpacked extensions, `.crx` install)
+- **Debug console** with file-tail integration (`info_*.log` + `errors_*.log` via `FileSystemWatcher`), search, level/category filters, copy-entry context menu
 
 ### UI / UX
-- Dark graphite/blue theme (dark mode only)
-- Single-window tools workspace for Rules, Extensions, Marketplace, Channels, Profiles, and Settings
+- Lightened dark theme (warm obsidian surfaces, indigo accent)
+- Centered modal tools workspace (`1280x820`, click-outside-to-close) for Rules, Extensions, Marketplace, Channels, Profiles, Settings
 - Custom draggable titlebar with restore-on-drag from maximized, double-click maximize toggle
 - Session recovery with auto-save (30s interval) and crash detection
 
@@ -63,7 +69,7 @@ BrowserApp/
 │   ├── Repositories/        # Data repositories
 │   └── Migrations/          # EF Core migrations
 ├── BrowserApp.Server/       # Marketplace API server
-└── BrowserApp.Tests/        # Unit tests (419 tests)
+└── BrowserApp.Tests/        # Unit tests (442 tests)
 ```
 
 ## Tech Stack
@@ -140,4 +146,4 @@ dotnet ef database update --project BrowserApp.Data --startup-project BrowserApp
 
 ---
 
-**Last Updated**: March 14, 2026 | **Build**: 419/419 tests passing
+**Last Updated**: May 16, 2026 | **Build**: 442/442 tests passing

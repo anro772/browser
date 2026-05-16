@@ -22,6 +22,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly TabStripViewModel _tabStrip;
     private readonly BookmarkViewModel _bookmarkViewModel;
+    private readonly ProfileSelectorViewModel? _profileSelectorViewModel;
     private readonly SettingsService? _settingsService;
     private bool _isDisposed;
     private DispatcherTimer? _debounceTimer;
@@ -76,6 +77,8 @@ public partial class MainViewModel : ObservableObject, IDisposable
 
     public TabStripViewModel TabStrip => _tabStrip;
     public BookmarkViewModel BookmarkViewModel => _bookmarkViewModel;
+    public ProfileSelectorViewModel? ProfileSelectorViewModel => _profileSelectorViewModel;
+    public SettingsService? Settings => _settingsService;
 
     public bool CanGoBack => _tabStrip.ActiveTab?.CanGoBack ?? false;
     public bool CanGoForward => _tabStrip.ActiveTab?.CanGoForward ?? false;
@@ -86,7 +89,8 @@ public partial class MainViewModel : ObservableObject, IDisposable
         IServiceScopeFactory scopeFactory,
         TabStripViewModel tabStrip,
         BookmarkViewModel bookmarkViewModel,
-        SettingsService? settingsService = null)
+        SettingsService? settingsService = null,
+        ProfileSelectorViewModel? profileSelectorViewModel = null)
     {
         _searchEngineService = searchEngineService;
         _historyRepository = historyRepository;
@@ -94,6 +98,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         _tabStrip = tabStrip;
         _bookmarkViewModel = bookmarkViewModel;
         _settingsService = settingsService;
+        _profileSelectorViewModel = profileSelectorViewModel;
 
         // Subscribe to active tab changes
         _tabStrip.ActiveTabChanged += OnActiveTabChanged;
