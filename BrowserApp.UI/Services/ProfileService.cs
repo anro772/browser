@@ -131,6 +131,20 @@ public class ProfileService
     }
 
     /// <summary>
+    /// Renames an existing profile. Returns false if name is empty or profile not found.
+    /// </summary>
+    public bool UpdateProfileName(Guid profileId, string name)
+    {
+        if (string.IsNullOrWhiteSpace(name)) return false;
+        var profile = _profiles.FirstOrDefault(p => p.Id == profileId);
+        if (profile == null) return false;
+
+        profile.Name = name.Trim();
+        SaveProfiles();
+        return true;
+    }
+
+    /// <summary>
     /// Deletes a profile and its data. Cannot delete the default profile.
     /// </summary>
     public bool DeleteProfile(Guid profileId)

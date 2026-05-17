@@ -55,6 +55,9 @@ public partial class ChannelsViewModel : ObservableObject
     [ObservableProperty]
     private bool _isCreatePanelVisible;
 
+    [ObservableProperty]
+    private int _totalChannels;
+
     public ChannelsViewModel(
         IChannelApiClient apiClient,
         IChannelSyncService syncService,
@@ -126,6 +129,7 @@ public partial class ChannelsViewModel : ObservableObject
                     .ThenByDescending(c => c.IsJoined ? 0 : c.MemberCount)
                     .ToList();
 
+                TotalChannels = _allChannels.Count;
                 FilterChannels();
             });
 
@@ -171,8 +175,11 @@ public partial class ChannelsViewModel : ObservableObject
             else
             {
                 StatusMessage = "Failed to join channel. Check the password.";
-                MessageBox.Show("Failed to join channel. Please check the password.",
-                    "Join Failed", MessageBoxButton.OK, MessageBoxImage.Warning);
+                ConfirmDialog.Show(
+                    Application.Current.MainWindow,
+                    "Join failed",
+                    "Failed to join channel. Please check the password.",
+                    showCancel: false);
             }
         }
         catch (Exception ex)
@@ -191,13 +198,14 @@ public partial class ChannelsViewModel : ObservableObject
     {
         if (channel == null) return;
 
-        var result = MessageBox.Show(
+        var confirmed = ConfirmDialog.Show(
+            Application.Current.MainWindow,
+            "Leave channel",
             $"Are you sure you want to leave '{channel.Name}'?\n\nAll rules from this channel will be removed.",
-            "Leave Channel",
-            MessageBoxButton.YesNo,
-            MessageBoxImage.Question);
+            destructive: true,
+            confirmText: "Leave");
 
-        if (result != MessageBoxResult.Yes) return;
+        if (!confirmed) return;
 
         IsLoading = true;
         StatusMessage = $"Leaving '{channel.Name}'...";
@@ -258,30 +266,39 @@ public partial class ChannelsViewModel : ObservableObject
 
         if (channel.IsExpanded && channel.IsJoined && channel.RulePreview.Count == 0)
         {
-            channel.IsLoadingPreview = true;
-            try
+            await LoadChannelRulesAsync(channel);
+        }
+    }
+
+    /// <summary>
+    /// Loads the channel's rule list into <see cref="UnifiedChannelViewModel.RulePreview"/>.
+    /// Called from <see cref="ToggleExpandAsync"/> and from <see cref="ChannelDetailDialog"/>.
+    /// </summary>
+    public async Task LoadChannelRulesAsync(UnifiedChannelViewModel channel)
+    {
+        channel.IsLoadingPreview = true;
+        try
+        {
+            var rulesResponse = await _apiClient.GetChannelRulesAsync(channel.Id, Username);
+            if (rulesResponse != null)
             {
-                var rulesResponse = await _apiClient.GetChannelRulesAsync(channel.Id, Username);
-                if (rulesResponse != null)
+                Application.Current.Dispatcher.Invoke(() =>
                 {
-                    Application.Current.Dispatcher.Invoke(() =>
+                    channel.RulePreview.Clear();
+                    foreach (var rule in rulesResponse.Rules)
                     {
-                        channel.RulePreview.Clear();
-                        foreach (var rule in rulesResponse.Rules)
-                        {
-                            channel.RulePreview.Add(new RulePreviewItem(rule.Id, rule.ChannelId, rule.Name, rule.Site, rule.IsEnforced));
-                        }
-                    });
-                }
+                        channel.RulePreview.Add(new RulePreviewItem(rule.Id, rule.ChannelId, rule.Name, rule.Site, rule.IsEnforced));
+                    }
+                });
             }
-            catch (Exception ex)
-            {
-                ErrorLogger.LogError($"Failed to load rule preview for channel {channel.Id}", ex);
-            }
-            finally
-            {
-                channel.IsLoadingPreview = false;
-            }
+        }
+        catch (Exception ex)
+        {
+            ErrorLogger.LogError($"Failed to load rule preview for channel {channel.Id}", ex);
+        }
+        finally
+        {
+            channel.IsLoadingPreview = false;
         }
     }
 
@@ -393,13 +410,14 @@ public partial class ChannelsViewModel : ObservableObject
     {
         if (rule == null) return;
 
-        var result = MessageBox.Show(
+        var confirmed = ConfirmDialog.Show(
+            Application.Current.MainWindow,
+            "Remove rule",
             $"Remove rule '{rule.Name}' from this channel?",
-            "Remove Rule",
-            MessageBoxButton.YesNo,
-            MessageBoxImage.Question);
+            destructive: true,
+            confirmText: "Remove");
 
-        if (result != MessageBoxResult.Yes) return;
+        if (!confirmed) return;
 
         IsLoading = true;
         try
@@ -434,6 +452,27 @@ public partial class ChannelsViewModel : ObservableObject
     partial void OnShowJoinedOnlyChanged(bool value) => FilterChannels();
 
     partial void OnSearchFilterChanged(string value) => FilterChannels();
+
+    /// <summary>
+    /// Opens the channel detail modal for inspecting rules + owner controls.
+    /// </summary>
+    [RelayCommand]
+    private async Task ShowChannelDetailsAsync(UnifiedChannelViewModel? channel)
+    {
+        if (channel == null) return;
+
+        var dialog = new ChannelDetailDialog(channel, this)
+        {
+            Owner = Application.Current.MainWindow
+        };
+        dialog.ShowDialog();
+
+        // Detail dialog may have mutated rules — refresh card view.
+        if (channel.IsJoined)
+        {
+            await LoadChannelRulesAsync(channel);
+        }
+    }
 
     private void FilterChannels()
     {

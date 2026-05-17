@@ -39,6 +39,7 @@
             <converters:PrivacyModeToBrushConverter x:Key="PrivacyModeToBrush"/>
             <converters:PrivacyModeToLabelConverter x:Key="PrivacyModeToLabel"/>
             <converters:StringEqualsVisibilityConverter x:Key="StringEqToVis"/>
+            <converters:NullToVisibilityConverter x:Key="NullToVisibility"/>
 
             <!-- Typography override: Outfit font with premium rendering -->
             <Style x:Key="{x:Type TextBlock}" TargetType="TextBlock">

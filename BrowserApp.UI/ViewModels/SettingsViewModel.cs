@@ -6,6 +6,7 @@ using BrowserApp.Core.Interfaces;
 using BrowserApp.Core.Models;
 using BrowserApp.Data.Interfaces;
 using BrowserApp.UI.Services;
+using BrowserApp.UI.Views;
 
 namespace BrowserApp.UI.ViewModels;
 
@@ -58,6 +59,23 @@ public partial class SettingsViewModel : ObservableObject
 
     [ObservableProperty]
     private bool _showBookmarksBar;
+
+    /// <summary>
+    /// Counter incremented every time auto-save fires. View binds a Storyboard's
+    /// "play" trigger to changes here (via SavedPillAnimator) so every save shows
+    /// a quick "Saved ✓" pill.
+    /// </summary>
+    [ObservableProperty]
+    private int _lastSavedCounter;
+
+    [ObservableProperty]
+    private string _homePageError = string.Empty;
+
+    [ObservableProperty]
+    private string _serverUrlError = string.Empty;
+
+    [ObservableProperty]
+    private string _customSearchEngineError = string.Empty;
 
     /// <summary>
     /// Available privacy modes for the dropdown.
@@ -147,57 +165,33 @@ public partial class SettingsViewModel : ObservableObject
     }
 
     /// <summary>
-    /// Saves the current settings.
-    /// </summary>
-    [RelayCommand]
-    private void SaveSettings()
-    {
-        IsSaving = true;
-
-        try
-        {
-            _settingsService.PrivacyMode = SelectedPrivacyMode;
-            _settingsService.ServerUrl = ServerUrl;
-        }
-        finally
-        {
-            IsSaving = false;
-        }
-    }
-
-    /// <summary>
     /// Clears all browsing history.
     /// </summary>
     [RelayCommand]
     private async Task ClearHistoryAsync()
     {
-        var result = MessageBox.Show(
-            "Are you sure you want to clear all browsing history? This cannot be undone.",
-            "Clear Browsing History",
-            MessageBoxButton.YesNo,
-            MessageBoxImage.Warning);
-
-        if (result == MessageBoxResult.Yes)
+        if (!ConfirmDialog.Show(Application.Current.MainWindow,
+                "Clear browsing history",
+                "Are you sure you want to clear all browsing history? This cannot be undone.",
+                destructive: true,
+                confirmText: "Clear"))
         {
-            try
-            {
-                using var scope = _scopeFactory.CreateScope();
-                var historyRepository = scope.ServiceProvider.GetRequiredService<IBrowsingHistoryRepository>();
-                await historyRepository.ClearAllAsync();
-                MessageBox.Show(
-                    "Browsing history has been cleared.",
-                    "Success",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Information);
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(
-                    $"Failed to clear history: {ex.Message}",
-                    "Error",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Error);
-            }
+            return;
+        }
+
+        try
+        {
+            using var scope = _scopeFactory.CreateScope();
+            var historyRepository = scope.ServiceProvider.GetRequiredService<IBrowsingHistoryRepository>();
+            await historyRepository.ClearAllAsync();
+            BumpSaved();
+        }
+        catch (Exception ex)
+        {
+            ConfirmDialog.Show(Application.Current.MainWindow,
+                "Clear failed",
+                $"Failed to clear history: {ex.Message}",
+                showCancel: false);
         }
     }
 
@@ -207,46 +201,56 @@ public partial class SettingsViewModel : ObservableObject
     [RelayCommand]
     private async Task ClearNetworkLogsAsync()
     {
-        var result = MessageBox.Show(
-            "Are you sure you want to clear all network logs? This cannot be undone.",
-            "Clear Network Logs",
-            MessageBoxButton.YesNo,
-            MessageBoxImage.Warning);
-
-        if (result == MessageBoxResult.Yes)
+        if (!ConfirmDialog.Show(Application.Current.MainWindow,
+                "Clear network logs",
+                "Are you sure you want to clear all network logs? This cannot be undone.",
+                destructive: true,
+                confirmText: "Clear"))
         {
-            try
-            {
-                using var scope = _scopeFactory.CreateScope();
-                var networkLogRepository = scope.ServiceProvider.GetRequiredService<INetworkLogRepository>();
-                await networkLogRepository.ClearAllAsync();
-                MessageBox.Show(
-                    "Network logs have been cleared.",
-                    "Success",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Information);
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(
-                    $"Failed to clear network logs: {ex.Message}",
-                    "Error",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Error);
-            }
+            return;
         }
+
+        try
+        {
+            using var scope = _scopeFactory.CreateScope();
+            var networkLogRepository = scope.ServiceProvider.GetRequiredService<INetworkLogRepository>();
+            await networkLogRepository.ClearAllAsync();
+            BumpSaved();
+        }
+        catch (Exception ex)
+        {
+            ConfirmDialog.Show(Application.Current.MainWindow,
+                "Clear failed",
+                $"Failed to clear network logs: {ex.Message}",
+                showCancel: false);
+        }
+    }
+
+    private void BumpSaved() => LastSavedCounter++;
+
+    private static bool IsValidUrl(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value)) return true;  // empty = use default
+        return Uri.TryCreate(value, UriKind.Absolute, out var uri)
+            && (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps);
     }
 
     partial void OnSelectedPrivacyModeChanged(PrivacyMode value)
     {
-        // Auto-save when privacy mode changes
         _settingsService.PrivacyMode = value;
+        BumpSaved();
     }
 
     partial void OnServerUrlChanged(string value)
     {
-        // Auto-save when server URL changes
+        if (!IsValidUrl(value))
+        {
+            ServerUrlError = "Enter a valid http(s) URL.";
+            return;
+        }
+        ServerUrlError = string.Empty;
         _settingsService.ServerUrl = value;
+        BumpSaved();
     }
 
     partial void OnSelectedSearchEngineChanged(string value)
@@ -262,40 +266,61 @@ public partial class SettingsViewModel : ObservableObject
         {
             _searchEngineService.SetSearchEngine(value);
         }
+        BumpSaved();
     }
 
     partial void OnCustomSearchEngineUrlChanged(string value)
     {
+        // Custom engine URL must contain a {query} placeholder somewhere; basic shape check first.
+        if (!string.IsNullOrWhiteSpace(value)
+            && !Uri.TryCreate(value.Replace("{query}", "test"), UriKind.Absolute, out _))
+        {
+            CustomSearchEngineError = "Enter a full URL with {query} placeholder.";
+            return;
+        }
+        CustomSearchEngineError = string.Empty;
         _settingsService.CustomSearchEngineUrl = value;
         if (SelectedSearchEngine == "Custom" && !string.IsNullOrWhiteSpace(value))
         {
             _searchEngineService.SetCustomSearchEngine(value);
         }
+        BumpSaved();
     }
 
     partial void OnHomePageChanged(string value)
     {
+        if (!IsValidUrl(value))
+        {
+            HomePageError = "Enter a valid http(s) URL.";
+            return;
+        }
+        HomePageError = string.Empty;
         _settingsService.HomePage = value;
+        BumpSaved();
     }
 
     partial void OnDefaultDownloadPathChanged(string value)
     {
         _settingsService.DefaultDownloadPath = value;
+        BumpSaved();
     }
 
     partial void OnSelectedStartupBehaviorChanged(StartupBehavior value)
     {
         _settingsService.StartupBehavior = value;
+        BumpSaved();
     }
 
     partial void OnShowBookmarksBarChanged(bool value)
     {
         _settingsService.ShowBookmarksBar = value;
+        BumpSaved();
     }
 
     partial void OnUsernameChanged(string value)
     {
         _settingsService.Username = value;
+        BumpSaved();
     }
 }
 

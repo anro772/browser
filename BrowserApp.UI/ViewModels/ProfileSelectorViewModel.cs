@@ -17,6 +17,9 @@ public partial class ProfileSelectorViewModel : ObservableObject
     [ObservableProperty]
     private string _activeProfileChannelSummary = string.Empty;
 
+    [ObservableProperty]
+    private int _lastSavedCounter;
+
     public ObservableCollection<BrowserProfile> Profiles { get; } = new();
 
     public BrowserProfile ActiveProfile => _profileService.ActiveProfile;
@@ -32,8 +35,10 @@ public partial class ProfileSelectorViewModel : ObservableObject
     private void LoadProfiles()
     {
         Profiles.Clear();
+        var activeId = _profileService.ActiveProfile.Id;
         foreach (var profile in _profileService.Profiles)
         {
+            profile.IsActive = profile.Id == activeId;
             Profiles.Add(profile);
         }
     }
@@ -76,6 +81,32 @@ public partial class ProfileSelectorViewModel : ObservableObject
             _profileService.UpdateProfileColor(profile.Id, dialog.SelectedColor);
             LoadProfiles();
             OnPropertyChanged(nameof(ActiveProfile));
+            LastSavedCounter++;
+        }
+    }
+
+    [RelayCommand]
+    private void RenameProfile(BrowserProfile? profile)
+    {
+        if (profile == null) return;
+
+        var dialog = new CreateProfileDialog
+        {
+            DialogTitle = "Rename Profile",
+            DialogSubtitle = $"Choose a new name for \"{profile.Name}\".",
+            ShowNameField = true,
+            ShowColorPicker = false,
+            InitialName = profile.Name,
+            Owner = Application.Current.MainWindow
+        };
+        dialog.ConfirmButton.Content = "Save";
+
+        if (dialog.ShowDialog() == true && !string.IsNullOrWhiteSpace(dialog.ProfileName))
+        {
+            _profileService.UpdateProfileName(profile.Id, dialog.ProfileName);
+            LoadProfiles();
+            OnPropertyChanged(nameof(ActiveProfile));
+            LastSavedCounter++;
         }
     }
 
@@ -84,17 +115,16 @@ public partial class ProfileSelectorViewModel : ObservableObject
     {
         if (profile == null || profile.Id == ActiveProfile.Id) return;
 
-        var result = MessageBox.Show(
-            $"Switch to profile \"{profile.Name}\"?\n\nThe browser will restart to load the new profile.",
-            "Switch Profile",
-            MessageBoxButton.YesNo,
-            MessageBoxImage.Question);
-
-        if (result == MessageBoxResult.Yes)
+        if (!ConfirmDialog.Show(Application.Current.MainWindow,
+                "Switch profile",
+                $"Switch to profile \"{profile.Name}\"?\n\nThe browser will restart to load the new profile.",
+                confirmText: "Switch & restart"))
         {
-            _profileService.SwitchProfile(profile.Id);
-            RestartApplication();
+            return;
         }
+
+        _profileService.SwitchProfile(profile.Id);
+        RestartApplication();
     }
 
     [RelayCommand]
@@ -102,17 +132,17 @@ public partial class ProfileSelectorViewModel : ObservableObject
     {
         if (profile == null || profile.IsDefault) return;
 
-        var result = MessageBox.Show(
-            $"Delete profile \"{profile.Name}\"?\n\nAll bookmarks, history, and settings for this profile will be permanently deleted.",
-            "Delete Profile",
-            MessageBoxButton.YesNo,
-            MessageBoxImage.Warning);
-
-        if (result == MessageBoxResult.Yes)
+        if (!ConfirmDialog.Show(Application.Current.MainWindow,
+                "Delete profile",
+                $"Delete profile \"{profile.Name}\"?\n\nAll bookmarks, history, and settings for this profile will be permanently deleted.",
+                destructive: true,
+                confirmText: "Delete"))
         {
-            _profileService.DeleteProfile(profile.Id);
-            LoadProfiles();
+            return;
         }
+
+        _profileService.DeleteProfile(profile.Id);
+        LoadProfiles();
     }
 
     private async Task LoadChannelStatsAsync()

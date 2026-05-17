@@ -95,6 +95,20 @@
         </Style.Triggers>
     </Style>
 
+    <!-- "Saved" pill: fade in 150ms · hold 1.2s · fade out 250ms.
+         Consumers trigger via SavedPillAnimator.Pulse(borderElement). -->
+    <Storyboard x:Key="SavedPillFadeStoryboard">
+        <DoubleAnimation Storyboard.TargetProperty="Opacity"
+                         From="0" To="1"
+                         Duration="0:0:0.15"
+                         EasingFunction="{StaticResource PremiumEaseOut}"/>
+        <DoubleAnimation Storyboard.TargetProperty="Opacity"
+                         To="0"
+                         BeginTime="0:0:1.35"
+                         Duration="0:0:0.25"
+                         EasingFunction="{StaticResource PremiumEaseOut}"/>
+    </Storyboard>
+
     <Style x:Key="FadeInOnLoadModern" TargetType="FrameworkElement">
         <Setter Property="Opacity" Value="1"/>
         <Style.Triggers>

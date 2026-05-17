@@ -90,7 +90,13 @@
                                 BorderThickness="1"
                                 CornerRadius="8"
                                 Margin="0,0,0,6"
-                                Padding="12,10">
+                                Padding="12,10"
+                                Cursor="Hand"
+                                Tag="{Binding}"
+                                MouseLeftButtonUp="ChannelCard_MouseLeftButtonUp">
+                            <Border.ToolTip>
+                                <ToolTip Content="Click to view rules and details"/>
+                            </Border.ToolTip>
                             <Grid>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="Auto"/>
@@ -217,10 +223,24 @@
         <Border Grid.Row="3" Background="{StaticResource BgElevatedBrush}" Padding="16,8" Margin="0,12,0,0"
                 CornerRadius="8">
             <Grid>
-                <TextBlock Text="{Binding StatusMessage}"
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0"
+                           Text="{Binding StatusMessage}"
                            Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
-                <ui:ProgressRing IsIndeterminate="True" Width="16" Height="16"
-                                 HorizontalAlignment="Right"
+                <TextBlock Grid.Column="1"
+                           Margin="0,0,10,0"
+                           Foreground="{DynamicResource TextFillColorTertiaryBrush}">
+                    <Run Text="Showing "/>
+                    <Run Text="{Binding Channels.Count, Mode=OneWay}"/>
+                    <Run Text=" of "/>
+                    <Run Text="{Binding TotalChannels, Mode=OneWay}"/>
+                </TextBlock>
+                <ui:ProgressRing Grid.Column="2"
+                                 IsIndeterminate="True" Width="16" Height="16"
                                  Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisibility}}"/>
             </Grid>
         </Border>

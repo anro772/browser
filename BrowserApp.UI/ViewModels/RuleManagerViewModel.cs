@@ -53,7 +53,52 @@ public partial class RuleManagerViewModel : ObservableObject
     [ObservableProperty]
     private string _searchFilter = string.Empty;
 
+    [ObservableProperty]
+    private RuleSourceFilter _sourceFilter = RuleSourceFilter.All;
+
+    [ObservableProperty]
+    private RuleSortBy _sortBy = RuleSortBy.Name;
+
+    [ObservableProperty]
+    private bool _sortDescending;
+
     partial void OnSearchFilterChanged(string value) => FilterRules();
+    partial void OnSourceFilterChanged(RuleSourceFilter value) => FilterRules();
+    partial void OnSortByChanged(RuleSortBy value) => FilterRules();
+    partial void OnSortDescendingChanged(bool value) => FilterRules();
+
+    /// <summary>
+    /// Toggles the chip strip. If the chip clicked is already active and is "All",
+    /// no-op; otherwise sets it as the new filter. Called from the workspace
+    /// when a chip button fires.
+    /// </summary>
+    [RelayCommand]
+    private void SetSourceFilter(string filterName)
+    {
+        if (Enum.TryParse<RuleSourceFilter>(filterName, ignoreCase: true, out var parsed))
+        {
+            SourceFilter = parsed;
+        }
+    }
+
+    /// <summary>
+    /// Column-header click: toggles direction if same column, otherwise switches.
+    /// </summary>
+    [RelayCommand]
+    private void SetSort(string columnName)
+    {
+        if (!Enum.TryParse<RuleSortBy>(columnName, ignoreCase: true, out var parsed)) return;
+
+        if (parsed == SortBy)
+        {
+            SortDescending = !SortDescending;
+        }
+        else
+        {
+            SortBy = parsed;
+            SortDescending = false;
+        }
+    }
 
     public RuleManagerViewModel(
         IServiceScopeFactory scopeFactory,
@@ -107,7 +152,10 @@ public partial class RuleManagerViewModel : ObservableObject
     {
         if (rule.IsEnforced)
         {
-            MessageBox.Show("This rule is enforced by a channel and cannot be disabled.", "Enforced Rule", MessageBoxButton.OK, MessageBoxImage.Information);
+            ConfirmDialog.Show(Application.Current.MainWindow,
+                "Enforced rule",
+                "This rule is enforced by a channel and cannot be disabled.",
+                showCancel: false);
             return;
         }
 
@@ -139,17 +187,21 @@ public partial class RuleManagerViewModel : ObservableObject
     {
         if (rule.IsEnforced)
         {
-            MessageBox.Show("This rule is enforced by a channel and cannot be deleted.", "Enforced Rule", MessageBoxButton.OK, MessageBoxImage.Information);
+            ConfirmDialog.Show(Application.Current.MainWindow,
+                "Enforced rule",
+                "This rule is enforced by a channel and cannot be deleted.",
+                showCancel: false);
             return;
         }
 
-        var result = MessageBox.Show(
-            $"Are you sure you want to delete the rule '{rule.Name}'?",
-            "Delete Rule",
-            MessageBoxButton.YesNo,
-            MessageBoxImage.Question);
-
-        if (result != MessageBoxResult.Yes) return;
+        if (!ConfirmDialog.Show(Application.Current.MainWindow,
+                "Delete rule",
+                $"Are you sure you want to delete the rule '{rule.Name}'?",
+                destructive: true,
+                confirmText: "Delete"))
+        {
+            return;
+        }
 
         try
         {
@@ -297,7 +349,10 @@ public partial class RuleManagerViewModel : ObservableObject
 
         if (rule.IsEnforced)
         {
-            MessageBox.Show("This rule is enforced by a channel and cannot be edited.", "Enforced Rule", MessageBoxButton.OK, MessageBoxImage.Information);
+            ConfirmDialog.Show(Application.Current.MainWindow,
+                "Enforced rule",
+                "This rule is enforced by a channel and cannot be edited.",
+                showCancel: false);
             return;
         }
 
@@ -372,17 +427,103 @@ public partial class RuleManagerViewModel : ObservableObject
         }
     }
 
+    [RelayCommand]
+    private async Task DuplicateRuleAsync(RuleItemViewModel? rule)
+    {
+        if (rule == null) return;
+
+        try
+        {
+            using var scope = _scopeFactory.CreateScope();
+            var repository = scope.ServiceProvider.GetRequiredService<IRuleRepository>();
+            var source = await repository.GetByIdAsync(rule.Id);
+            if (source == null) return;
+
+            var clone = new RuleEntity
+            {
+                Id = Guid.NewGuid().ToString(),
+                Name = source.Name + " (copy)",
+                Description = source.Description,
+                Site = source.Site,
+                Priority = source.Priority,
+                RulesJson = source.RulesJson,
+                Source = "local",
+                MarketplaceId = null,
+                ChannelId = null,
+                Enabled = source.Enabled,
+                IsEnforced = false,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
+
+            await repository.AddAsync(clone);
+            await _ruleEngine.ReloadRulesAsync();
+            await LoadRulesAsync();
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[RuleManager] Error duplicating rule: {ex.Message}");
+            ConfirmDialog.Show(Application.Current.MainWindow,
+                "Duplicate failed",
+                $"Could not duplicate rule: {ex.Message}",
+                showCancel: false);
+        }
+    }
+
+    [RelayCommand]
+    private void CopyRuleId(RuleItemViewModel? rule)
+    {
+        if (rule == null) return;
+        try
+        {
+            Clipboard.SetText(rule.Id);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[RuleManager] Clipboard.SetText failed: {ex.Message}");
+        }
+    }
+
     private void FilterRules()
     {
         Application.Current.Dispatcher.Invoke(() =>
         {
             Rules.Clear();
-            var filtered = string.IsNullOrWhiteSpace(SearchFilter)
-                ? _allRules
-                : _allRules.Where(r =>
+            IEnumerable<RuleItemViewModel> query = _allRules;
+
+            // Source / origin filter
+            query = SourceFilter switch
+            {
+                RuleSourceFilter.Local => query.Where(r => r.Source is "local" or "template" or "ai"),
+                RuleSourceFilter.Marketplace => query.Where(r => r.Source == "marketplace"),
+                RuleSourceFilter.Channel => query.Where(r => r.Source == "channel"),
+                RuleSourceFilter.Enforced => query.Where(r => r.IsEnforced),
+                _ => query
+            };
+
+            // Search filter
+            if (!string.IsNullOrWhiteSpace(SearchFilter))
+            {
+                query = query.Where(r =>
                     r.Name.Contains(SearchFilter, StringComparison.OrdinalIgnoreCase) ||
-                    r.Site.Contains(SearchFilter, StringComparison.OrdinalIgnoreCase)).ToList();
-            foreach (var r in filtered) Rules.Add(r);
+                    r.Site.Contains(SearchFilter, StringComparison.OrdinalIgnoreCase));
+            }
+
+            // Sort
+            query = SortBy switch
+            {
+                RuleSortBy.Source => SortDescending
+                    ? query.OrderByDescending(r => r.SourceDisplay).ThenBy(r => r.Name)
+                    : query.OrderBy(r => r.SourceDisplay).ThenBy(r => r.Name),
+                RuleSortBy.Updated => SortDescending
+                    ? query.OrderBy(r => r.UpdatedAt)
+                    : query.OrderByDescending(r => r.UpdatedAt),
+                _ => SortDescending
+                    ? query.OrderByDescending(r => r.Name)
+                    : query.OrderBy(r => r.Name)
+            };
+
+            foreach (var r in query) Rules.Add(r);
             UpdateStats();
         });
     }
@@ -454,6 +595,25 @@ public partial class RuleItemViewModel : ObservableObject
         HasJsActions = JsActionCount > 0;
     }
 
+    /// <summary>
+    /// Tooltip text for the origin marker — includes channel name where known.
+    /// </summary>
+    public string OriginTooltip
+    {
+        get
+        {
+            var label = Source switch
+            {
+                "marketplace" => "Marketplace pack",
+                "channel" => "Channel rule",
+                "template" => "Loaded from template",
+                "ai" => "AI-generated rule",
+                _ => "Local rule"
+            };
+            return IsEnforced ? $"{label} (enforced)" : label;
+        }
+    }
+
     public string SourceDisplay => Source switch
     {
         "local" => "Local",
@@ -480,4 +640,20 @@ public partial class RuleItemViewModel : ObservableObject
             return $"{(int)(delta.TotalDays / 365)}y";
         }
     }
+}
+
+public enum RuleSourceFilter
+{
+    All,
+    Local,
+    Marketplace,
+    Channel,
+    Enforced
+}
+
+public enum RuleSortBy
+{
+    Name,
+    Source,
+    Updated
 }

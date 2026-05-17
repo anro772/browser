@@ -80,12 +80,11 @@ public class SettingsViewModelTests
     }
 
     [Fact]
-    public void SaveSettingsCommand_UpdatesSettingsService()
+    public void Settings_AutoSaveOnPropertyChange()
     {
+        // SaveSettings command was removed — auto-save via OnPropertyChanged is the only path now.
         _viewModel.SelectedPrivacyMode = PrivacyMode.Relaxed;
         _viewModel.ServerUrl = "https://custom.com";
-
-        _viewModel.SaveSettingsCommand.Execute(null);
 
         Assert.Equal(PrivacyMode.Relaxed, _settingsService.PrivacyMode);
         Assert.Equal("https://custom.com", _settingsService.ServerUrl);

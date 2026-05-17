@@ -1,6 +1,9 @@
 using System;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
+using System.Windows.Input;
+using System.Windows.Media;
 using BrowserApp.UI.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -44,22 +47,60 @@ public partial class ChannelsWorkspaceView : UserControl
     }
 
     /// <summary>
-    /// Per-row "..." on a joined channel — currently houses Leave to keep the
-    /// destructive action away from the dominant Sync button.
+    /// Per-row "..." on a joined channel. View details + (for owners) Add rule,
+    /// then Leave at the bottom (destructive, separated).
     /// </summary>
     private void ChannelMore_Click(object sender, RoutedEventArgs e)
     {
-        if (sender is not FrameworkElement fe || fe.Tag is null) return;
+        if (sender is not FrameworkElement fe || fe.Tag is not UnifiedChannelViewModel channel) return;
         if (DataContext is not ChannelsViewModel vm) return;
 
         var menu = new ContextMenu();
 
+        var view = new MenuItem { Header = "View details" };
+        view.Click += (_, _) => { if (vm.ShowChannelDetailsCommand.CanExecute(channel)) vm.ShowChannelDetailsCommand.Execute(channel); };
+        menu.Items.Add(view);
+
+        if (channel.IsOwner)
+        {
+            var add = new MenuItem { Header = "Add rule…" };
+            add.Click += (_, _) => { if (vm.AddRuleToChannelCommand.CanExecute(channel)) vm.AddRuleToChannelCommand.Execute(channel); };
+            menu.Items.Add(add);
+        }
+
+        menu.Items.Add(new Separator());
+
         var leave = new MenuItem { Header = "Leave channel" };
-        leave.Click += (_, _) => { if (vm.LeaveChannelCommand.CanExecute(fe.Tag)) vm.LeaveChannelCommand.Execute(fe.Tag); };
+        leave.Click += (_, _) => { if (vm.LeaveChannelCommand.CanExecute(channel)) vm.LeaveChannelCommand.Execute(channel); };
         menu.Items.Add(leave);
 
         menu.PlacementTarget = fe;
         menu.IsOpen = true;
         e.Handled = true;
+    }
+
+    /// <summary>
+    /// Click anywhere on a channel card → opens the detail dialog. Skip interactive
+    /// children (Join/Sync/More buttons) so they keep their own behavior.
+    /// </summary>
+    private void ChannelCard_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is not FrameworkElement fe || fe.Tag is not UnifiedChannelViewModel channel) return;
+        if (DataContext is not ChannelsViewModel vm) return;
+
+        var node = e.OriginalSource as DependencyObject;
+        while (node != null && node != fe)
+        {
+            if (node is ButtonBase)
+            {
+                return;
+            }
+            node = VisualTreeHelper.GetParent(node) ?? (node as FrameworkElement)?.Parent;
+        }
+
+        if (vm.ShowChannelDetailsCommand.CanExecute(channel))
+        {
+            vm.ShowChannelDetailsCommand.Execute(channel);
+        }
     }
 }

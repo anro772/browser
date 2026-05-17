@@ -17,6 +17,8 @@ namespace BrowserApp.UI.ViewModels;
 /// </summary>
 public partial class MarketplaceViewModel : ObservableObject
 {
+    private const int PageSize = 50;
+
     private readonly IMarketplaceApiClient _apiClient;
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly IRuleEngine _ruleEngine;
@@ -30,33 +32,45 @@ public partial class MarketplaceViewModel : ObservableObject
     [ObservableProperty]
     private bool _isLoading;
 
+    /// <summary>Filtered count (what the user sees in the grid).</summary>
     [ObservableProperty]
     private int _totalRules;
+
+    /// <summary>Unfiltered server-side total — drives the "Load more" footer.</summary>
+    [ObservableProperty]
+    private int _serverTotalCount;
 
     [ObservableProperty]
     private string _statusMessage = string.Empty;
 
+    [ObservableProperty]
+    private bool _isOffline;
+
+    [ObservableProperty]
+    private MarketplaceRuleItemViewModel? _topRule;
+
+    [ObservableProperty]
+    private ObservableCollection<string> _availableTags = new();
+
+    [ObservableProperty]
+    private string? _selectedTag;
+
     private List<MarketplaceRuleItemViewModel> _allRules = new();
+    private int _currentPage = 1;
 
     [ObservableProperty]
     private string _searchFilter = string.Empty;
 
+    public bool HasMore => _allRules.Count < ServerTotalCount;
+
+    partial void OnServerTotalCountChanged(int value) => OnPropertyChanged(nameof(HasMore));
+
     partial void OnSearchFilterChanged(string value) => FilterRules();
 
-    private void FilterRules()
+    partial void OnSelectedTagChanged(string? value)
     {
-        Application.Current.Dispatcher.Invoke(() =>
-        {
-            Rules.Clear();
-            var filtered = string.IsNullOrWhiteSpace(SearchFilter)
-                ? _allRules
-                : _allRules.Where(r =>
-                    r.Name.Contains(SearchFilter, StringComparison.OrdinalIgnoreCase) ||
-                    r.Description.Contains(SearchFilter, StringComparison.OrdinalIgnoreCase) ||
-                    r.AuthorUsername.Contains(SearchFilter, StringComparison.OrdinalIgnoreCase)).ToList();
-            foreach (var r in filtered) Rules.Add(r);
-            TotalRules = Rules.Count;
-        });
+        // When the user toggles a tag chip, hit the server-side /search endpoint.
+        _ = ReloadForTagAsync();
     }
 
     public MarketplaceViewModel(
@@ -74,37 +88,52 @@ public partial class MarketplaceViewModel : ObservableObject
     {
         IsLoading = true;
         StatusMessage = "Loading marketplace rules...";
+        _currentPage = 1;
 
         try
         {
-            var response = await _apiClient.GetRulesAsync(1, 50);
+            // Connection check — show offline banner instead of silently failing.
+            var connected = await _apiClient.CheckConnectionAsync();
+            if (!connected)
+            {
+                IsOffline = true;
+                StatusMessage = "Marketplace server is offline.";
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    Rules.Clear();
+                    _allRules.Clear();
+                    TopRule = null;
+                    TotalRules = 0;
+                    ServerTotalCount = 0;
+                });
+                return;
+            }
+
+            IsOffline = false;
+
+            var response = await _apiClient.GetRulesAsync(_currentPage, PageSize);
             if (response != null)
             {
-                // Get installed rule IDs to check for duplicates
-                using var scope = _scopeFactory.CreateScope();
-                var repository = scope.ServiceProvider.GetRequiredService<IRuleRepository>();
-                var localRules = await repository.GetAllAsync();
-                var installedIds = localRules
-                    .Where(r => !string.IsNullOrEmpty(r.MarketplaceId))
-                    .Select(r => r.MarketplaceId)
-                    .ToHashSet();
+                var installedIds = await GetInstalledMarketplaceIdsAsync();
 
                 Application.Current.Dispatcher.Invoke(() =>
                 {
                     Rules.Clear();
                     foreach (var rule in response.Rules)
                     {
-                        var item = new MarketplaceRuleItemViewModel(rule)
+                        Rules.Add(new MarketplaceRuleItemViewModel(rule)
                         {
                             IsInstalled = installedIds.Contains(rule.Id.ToString())
-                        };
-                        Rules.Add(item);
+                        });
                     }
-                    TotalRules = response.TotalCount;
                     _allRules = Rules.ToList();
+                    ServerTotalCount = response.TotalCount;
+                    RebuildAvailableTags();
+                    UpdateTopRule();
+                    TotalRules = Rules.Count;
                 });
 
-                StatusMessage = $"Loaded {Rules.Count} rules from marketplace";
+                StatusMessage = $"Loaded {Rules.Count} of {ServerTotalCount} rules from marketplace";
             }
             else
             {
@@ -123,17 +152,115 @@ public partial class MarketplaceViewModel : ObservableObject
     }
 
     [RelayCommand]
+    private async Task LoadMoreAsync()
+    {
+        if (!HasMore || IsLoading) return;
+        IsLoading = true;
+        try
+        {
+            _currentPage++;
+            var response = SelectedTag is { Length: > 0 }
+                ? await _apiClient.SearchRulesAsync(SearchFilter, new[] { SelectedTag }, _currentPage, PageSize)
+                : await _apiClient.GetRulesAsync(_currentPage, PageSize);
+
+            if (response == null || response.Rules.Count == 0) return;
+
+            var installedIds = await GetInstalledMarketplaceIdsAsync();
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                foreach (var rule in response.Rules)
+                {
+                    var vm = new MarketplaceRuleItemViewModel(rule)
+                    {
+                        IsInstalled = installedIds.Contains(rule.Id.ToString())
+                    };
+                    Rules.Add(vm);
+                    _allRules.Add(vm);
+                }
+                RebuildAvailableTags();
+                UpdateTopRule();
+                TotalRules = Rules.Count;
+            });
+
+            StatusMessage = $"Loaded {Rules.Count} of {ServerTotalCount} rules";
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Load-more failed: {ex.Message}";
+            ErrorLogger.LogError("Failed to load more marketplace rules", ex);
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private async Task ReloadForTagAsync()
+    {
+        if (SelectedTag is null or "")
+        {
+            // Clearing the tag → fall back to the unfiltered list.
+            await LoadRulesAsync();
+            return;
+        }
+
+        IsLoading = true;
+        StatusMessage = $"Searching by tag '{SelectedTag}'…";
+        _currentPage = 1;
+        try
+        {
+            var response = await _apiClient.SearchRulesAsync(SearchFilter, new[] { SelectedTag }, _currentPage, PageSize);
+            if (response == null) return;
+
+            var installedIds = await GetInstalledMarketplaceIdsAsync();
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                Rules.Clear();
+                _allRules.Clear();
+                foreach (var rule in response.Rules)
+                {
+                    var vm = new MarketplaceRuleItemViewModel(rule)
+                    {
+                        IsInstalled = installedIds.Contains(rule.Id.ToString())
+                    };
+                    Rules.Add(vm);
+                    _allRules.Add(vm);
+                }
+                ServerTotalCount = response.TotalCount;
+                UpdateTopRule();
+                TotalRules = Rules.Count;
+            });
+            StatusMessage = $"Tag '{SelectedTag}': {Rules.Count} matches";
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Tag search failed: {ex.Message}";
+            ErrorLogger.LogError($"Failed to search tag {SelectedTag}", ex);
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    [RelayCommand]
+    private void ClearTagFilter() => SelectedTag = null;
+
+    [RelayCommand]
+    private void FilterByAuthor(string? username)
+    {
+        if (string.IsNullOrWhiteSpace(username)) return;
+        SearchFilter = $"author:{username}";
+    }
+
+    [RelayCommand]
     private async Task InstallRuleAsync(MarketplaceRuleItemViewModel? rule)
     {
         if (rule == null) return;
 
         if (rule.IsInstalled)
         {
-            MessageBox.Show(
-                $"Rule '{rule.Name}' is already installed.",
-                "Already Installed",
-                MessageBoxButton.OK,
-                MessageBoxImage.Information);
+            StatusMessage = $"'{rule.Name}' is already installed.";
             return;
         }
 
@@ -145,20 +272,14 @@ public partial class MarketplaceViewModel : ObservableObject
             using var scope = _scopeFactory.CreateScope();
             var repository = scope.ServiceProvider.GetRequiredService<IRuleRepository>();
 
-            // Check if already exists by marketplace ID
             var existing = await repository.GetByMarketplaceIdAsync(rule.Id.ToString());
             if (existing != null)
             {
                 rule.IsInstalled = true;
-                MessageBox.Show(
-                    $"Rule '{rule.Name}' is already installed.",
-                    "Already Installed",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Information);
+                StatusMessage = $"'{rule.Name}' is already installed.";
                 return;
             }
 
-            // Create local rule entity
             var entity = new RuleEntity
             {
                 Id = Guid.NewGuid().ToString(),
@@ -176,37 +297,96 @@ public partial class MarketplaceViewModel : ObservableObject
             };
 
             await repository.AddAsync(entity);
-
-            // Increment download count on server
             await _apiClient.IncrementDownloadAsync(rule.Id);
-
-            // Reload rules in engine
             await _ruleEngine.ReloadRulesAsync();
 
             rule.IsInstalled = true;
             rule.DownloadCount++;
 
-            StatusMessage = $"Installed '{rule.Name}' successfully!";
-            MessageBox.Show(
-                $"Rule '{rule.Name}' has been installed and enabled.",
-                "Installation Successful",
-                MessageBoxButton.OK,
-                MessageBoxImage.Information);
+            StatusMessage = $"Installed '{rule.Name}'.";
         }
         catch (Exception ex)
         {
-            StatusMessage = $"Error installing rule: {ex.Message}";
+            StatusMessage = $"Failed to install '{rule.Name}': {ex.Message}";
             ErrorLogger.LogError($"Failed to install rule {rule.Id}", ex);
-            MessageBox.Show(
-                $"Failed to install rule: {ex.Message}",
-                "Installation Failed",
-                MessageBoxButton.OK,
-                MessageBoxImage.Error);
         }
         finally
         {
             IsLoading = false;
         }
+    }
+
+    [RelayCommand]
+    private void ShowRuleDetails(MarketplaceRuleItemViewModel? rule)
+    {
+        if (rule == null) return;
+        var dialog = new Views.MarketplaceRuleDetailDialog(rule, this)
+        {
+            Owner = Application.Current.MainWindow
+        };
+        dialog.ShowDialog();
+    }
+
+    private void FilterRules()
+    {
+        Application.Current.Dispatcher.Invoke(() =>
+        {
+            Rules.Clear();
+
+            IEnumerable<MarketplaceRuleItemViewModel> filtered = _allRules;
+
+            // Author prefix syntax — power-user shortcut, also fired by author chip clicks.
+            if (!string.IsNullOrWhiteSpace(SearchFilter))
+            {
+                if (SearchFilter.StartsWith("author:", StringComparison.OrdinalIgnoreCase))
+                {
+                    var who = SearchFilter[7..].Trim();
+                    filtered = filtered.Where(r => r.AuthorUsername.Equals(who, StringComparison.OrdinalIgnoreCase));
+                }
+                else
+                {
+                    filtered = filtered.Where(r =>
+                        r.Name.Contains(SearchFilter, StringComparison.OrdinalIgnoreCase) ||
+                        r.Description.Contains(SearchFilter, StringComparison.OrdinalIgnoreCase) ||
+                        r.AuthorUsername.Contains(SearchFilter, StringComparison.OrdinalIgnoreCase));
+                }
+            }
+
+            foreach (var r in filtered) Rules.Add(r);
+            TotalRules = Rules.Count;
+            UpdateTopRule();
+        });
+    }
+
+    private void UpdateTopRule()
+    {
+        TopRule = _allRules
+            .OrderByDescending(r => r.DownloadCount)
+            .FirstOrDefault();
+    }
+
+    private void RebuildAvailableTags()
+    {
+        var distinct = _allRules
+            .SelectMany(r => r.Tags ?? Array.Empty<string>())
+            .Where(t => !string.IsNullOrWhiteSpace(t))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(t => t, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        AvailableTags.Clear();
+        foreach (var t in distinct) AvailableTags.Add(t);
+    }
+
+    private async Task<HashSet<string?>> GetInstalledMarketplaceIdsAsync()
+    {
+        using var scope = _scopeFactory.CreateScope();
+        var repository = scope.ServiceProvider.GetRequiredService<IRuleRepository>();
+        var localRules = await repository.GetAllAsync();
+        return localRules
+            .Where(r => !string.IsNullOrEmpty(r.MarketplaceId))
+            .Select(r => r.MarketplaceId)
+            .ToHashSet();
     }
 }
 

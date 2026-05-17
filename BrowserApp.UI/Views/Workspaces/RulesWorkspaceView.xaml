@@ -3,7 +3,10 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
              xmlns:controls="clr-namespace:BrowserApp.UI.Controls"
-             Loaded="RulesWorkspaceView_Loaded">
+             x:Name="RulesRoot"
+             Loaded="RulesWorkspaceView_Loaded"
+             KeyDown="RulesRoot_KeyDown"
+             Focusable="True">
 
     <UserControl.Resources>
         <!-- Dense table-style rows (per design): hairline divider, no rounded corners. -->
@@ -12,10 +15,58 @@
             <Setter Property="Padding" Value="8,10"/>
             <Setter Property="BorderThickness" Value="0,0,0,1"/>
             <Setter Property="BorderBrush" Value="{StaticResource BorderSubtleBrush}"/>
+            <Setter Property="Cursor" Value="Hand"/>
             <Style.Triggers>
                 <Trigger Property="IsMouseOver" Value="True">
                     <Setter Property="Background" Value="{StaticResource BgSurfaceHoverBrush}"/>
                 </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- Source-filter chip with active-state DataTrigger -->
+        <Style x:Key="SourceChipLocal" TargetType="Button" BasedOn="{StaticResource FilterChipButtonStyle}">
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding SourceFilter, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Local}" Value="True">
+                    <Setter Property="Background" Value="{StaticResource AccentSubtleBrush}"/>
+                    <Setter Property="BorderBrush" Value="{StaticResource AccentBorderBrush}"/>
+                    <Setter Property="Foreground" Value="{StaticResource AccentLightBrush}"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="SourceChipMarketplace" TargetType="Button" BasedOn="{StaticResource FilterChipButtonStyle}">
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding SourceFilter, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Marketplace}" Value="True">
+                    <Setter Property="Background" Value="{StaticResource AccentSubtleBrush}"/>
+                    <Setter Property="BorderBrush" Value="{StaticResource AccentBorderBrush}"/>
+                    <Setter Property="Foreground" Value="{StaticResource AccentLightBrush}"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="SourceChipChannel" TargetType="Button" BasedOn="{StaticResource FilterChipButtonStyle}">
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding SourceFilter, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Channel}" Value="True">
+                    <Setter Property="Background" Value="{StaticResource AccentSubtleBrush}"/>
+                    <Setter Property="BorderBrush" Value="{StaticResource AccentBorderBrush}"/>
+                    <Setter Property="Foreground" Value="{StaticResource AccentLightBrush}"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="SourceChipEnforced" TargetType="Button" BasedOn="{StaticResource FilterChipButtonStyle}">
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding SourceFilter, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Enforced}" Value="True">
+                    <Setter Property="Background" Value="{StaticResource AccentSubtleBrush}"/>
+                    <Setter Property="BorderBrush" Value="{StaticResource AccentBorderBrush}"/>
+                    <Setter Property="Foreground" Value="{StaticResource AccentLightBrush}"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="SourceChipAll" TargetType="Button" BasedOn="{StaticResource FilterChipButtonStyle}">
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding SourceFilter, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=All}" Value="True">
+                    <Setter Property="Background" Value="{StaticResource AccentSubtleBrush}"/>
+                    <Setter Property="BorderBrush" Value="{StaticResource AccentBorderBrush}"/>
+                    <Setter Property="Foreground" Value="{StaticResource AccentLightBrush}"/>
+                </DataTrigger>
             </Style.Triggers>
         </Style>
 
@@ -98,30 +149,55 @@
                         Text="{Binding SearchFilter, UpdateSourceTrigger=PropertyChanged}"
                         Margin="0,0,12,0"/>
 
-            <!-- Filter chips reuse the same style; show source legend + total count -->
+            <!-- Source filter chips — single-select strip. Active chip styled via local trigger. -->
             <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                <Border Style="{StaticResource FilterChipStyle}">
-                    <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="{Binding TotalRules}" FontSize="11" FontWeight="SemiBold"
-                                   Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
-                        <TextBlock Text=" rules" FontSize="11"
-                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
-                    </StackPanel>
-                </Border>
-                <Border Style="{StaticResource FilterChipStyle}">
+                <Button Style="{StaticResource SourceChipAll}"
+                        Content="All"
+                        Command="{Binding SetSourceFilterCommand}"
+                        CommandParameter="All"/>
+                <Button Style="{StaticResource SourceChipLocal}"
+                        Command="{Binding SetSourceFilterCommand}"
+                        CommandParameter="Local">
                     <StackPanel Orientation="Horizontal">
                         <Ellipse Width="6" Height="6" Margin="0,0,5,0" VerticalAlignment="Center"
-                                 Fill="{StaticResource SuccessBrush}"/>
-                        <TextBlock Text="{Binding EnabledRules}" FontSize="11" FontWeight="SemiBold"
-                                   Foreground="{StaticResource SuccessBrush}"/>
-                        <TextBlock Text=" active" FontSize="11"
-                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                 Fill="{StaticResource LocalOriginBrush}"/>
+                        <TextBlock Text="Local" FontSize="11" FontWeight="SemiBold"/>
                     </StackPanel>
-                </Border>
+                </Button>
+                <Button Style="{StaticResource SourceChipMarketplace}"
+                        Command="{Binding SetSourceFilterCommand}"
+                        CommandParameter="Marketplace">
+                    <StackPanel Orientation="Horizontal">
+                        <Path Fill="{StaticResource MarketOriginBrush}"
+                              Data="M 0,0 L 8,0 L 8,12 L 4,9 L 0,12 Z"
+                              VerticalAlignment="Center"
+                              Margin="0,0,5,0"/>
+                        <TextBlock Text="Market" FontSize="11" FontWeight="SemiBold"/>
+                    </StackPanel>
+                </Button>
+                <Button Style="{StaticResource SourceChipChannel}"
+                        Command="{Binding SetSourceFilterCommand}"
+                        CommandParameter="Channel">
+                    <StackPanel Orientation="Horizontal">
+                        <Ellipse Width="6" Height="6" Margin="0,0,5,0" VerticalAlignment="Center"
+                                 Fill="{StaticResource ChannelOriginBrush}"/>
+                        <TextBlock Text="Channel" FontSize="11" FontWeight="SemiBold"/>
+                    </StackPanel>
+                </Button>
+                <Button Style="{StaticResource SourceChipEnforced}"
+                        Command="{Binding SetSourceFilterCommand}"
+                        CommandParameter="Enforced">
+                    <StackPanel Orientation="Horizontal">
+                        <ui:SymbolIcon Symbol="LockClosed24" FontSize="10" Margin="0,0,4,0"
+                                       Foreground="{StaticResource EnforcedOriginBrush}"
+                                       VerticalAlignment="Center"/>
+                        <TextBlock Text="Enforced" FontSize="11" FontWeight="SemiBold"/>
+                    </StackPanel>
+                </Button>
             </StackPanel>
         </Grid>
 
-        <!-- COLUMN HEADERS — uppercase, tracking, design-system 10px -->
+        <!-- COLUMN HEADERS — sortable buttons -->
         <Grid Grid.Row="2" Margin="8,4,8,6">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="28"/>
@@ -132,21 +208,119 @@
                 <ColumnDefinition Width="70"/>
                 <ColumnDefinition Width="28"/>
             </Grid.ColumnDefinitions>
-            <TextBlock Grid.Column="2" Text="RULE"
-                       FontSize="10" FontWeight="SemiBold"
-                       Foreground="{DynamicResource TextFillColorTertiaryBrush}"
-                       Margin="2,0,0,0"/>
-            <TextBlock Grid.Column="3" Text="SOURCE"
-                       FontSize="10" FontWeight="SemiBold"
-                       Foreground="{DynamicResource TextFillColorTertiaryBrush}"/>
+            <Button Grid.Column="2"
+                    Background="Transparent" BorderThickness="0" Padding="2,0,0,0"
+                    Cursor="Hand"
+                    HorizontalContentAlignment="Left"
+                    Command="{Binding SetSortCommand}"
+                    CommandParameter="Name">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="RULE" FontSize="10" FontWeight="SemiBold"
+                               Foreground="{DynamicResource TextFillColorTertiaryBrush}"/>
+                    <TextBlock FontSize="10" Margin="4,0,0,0"
+                               Foreground="{StaticResource AccentLightBrush}">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Text" Value=""/>
+                                <Style.Triggers>
+                                    <MultiDataTrigger>
+                                        <MultiDataTrigger.Conditions>
+                                            <Condition Binding="{Binding SortBy, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Name}" Value="True"/>
+                                            <Condition Binding="{Binding SortDescending}" Value="False"/>
+                                        </MultiDataTrigger.Conditions>
+                                        <Setter Property="Text" Value="▲"/>
+                                    </MultiDataTrigger>
+                                    <MultiDataTrigger>
+                                        <MultiDataTrigger.Conditions>
+                                            <Condition Binding="{Binding SortBy, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Name}" Value="True"/>
+                                            <Condition Binding="{Binding SortDescending}" Value="True"/>
+                                        </MultiDataTrigger.Conditions>
+                                        <Setter Property="Text" Value="▼"/>
+                                    </MultiDataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                </StackPanel>
+            </Button>
+
+            <Button Grid.Column="3"
+                    Background="Transparent" BorderThickness="0" Padding="0"
+                    Cursor="Hand"
+                    HorizontalContentAlignment="Left"
+                    Command="{Binding SetSortCommand}"
+                    CommandParameter="Source">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="SOURCE" FontSize="10" FontWeight="SemiBold"
+                               Foreground="{DynamicResource TextFillColorTertiaryBrush}"/>
+                    <TextBlock FontSize="10" Margin="4,0,0,0"
+                               Foreground="{StaticResource AccentLightBrush}">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Text" Value=""/>
+                                <Style.Triggers>
+                                    <MultiDataTrigger>
+                                        <MultiDataTrigger.Conditions>
+                                            <Condition Binding="{Binding SortBy, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Source}" Value="True"/>
+                                            <Condition Binding="{Binding SortDescending}" Value="False"/>
+                                        </MultiDataTrigger.Conditions>
+                                        <Setter Property="Text" Value="▲"/>
+                                    </MultiDataTrigger>
+                                    <MultiDataTrigger>
+                                        <MultiDataTrigger.Conditions>
+                                            <Condition Binding="{Binding SortBy, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Source}" Value="True"/>
+                                            <Condition Binding="{Binding SortDescending}" Value="True"/>
+                                        </MultiDataTrigger.Conditions>
+                                        <Setter Property="Text" Value="▼"/>
+                                    </MultiDataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                </StackPanel>
+            </Button>
+
             <TextBlock Grid.Column="4" Text="HITS / 7D"
                        FontSize="10" FontWeight="SemiBold"
                        TextAlignment="Right"
                        Foreground="{DynamicResource TextFillColorTertiaryBrush}"/>
-            <TextBlock Grid.Column="5" Text="UPDATED"
-                       FontSize="10" FontWeight="SemiBold"
-                       Foreground="{DynamicResource TextFillColorTertiaryBrush}"
-                       Margin="8,0,0,0"/>
+
+            <Button Grid.Column="5"
+                    Background="Transparent" BorderThickness="0" Padding="0"
+                    Cursor="Hand"
+                    HorizontalContentAlignment="Left"
+                    Margin="8,0,0,0"
+                    Command="{Binding SetSortCommand}"
+                    CommandParameter="Updated">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="UPDATED" FontSize="10" FontWeight="SemiBold"
+                               Foreground="{DynamicResource TextFillColorTertiaryBrush}"/>
+                    <TextBlock FontSize="10" Margin="4,0,0,0"
+                               Foreground="{StaticResource AccentLightBrush}">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Text" Value=""/>
+                                <Style.Triggers>
+                                    <MultiDataTrigger>
+                                        <MultiDataTrigger.Conditions>
+                                            <Condition Binding="{Binding SortBy, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Updated}" Value="True"/>
+                                            <Condition Binding="{Binding SortDescending}" Value="False"/>
+                                        </MultiDataTrigger.Conditions>
+                                        <Setter Property="Text" Value="▲"/>
+                                    </MultiDataTrigger>
+                                    <MultiDataTrigger>
+                                        <MultiDataTrigger.Conditions>
+                                            <Condition Binding="{Binding SortBy, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Updated}" Value="True"/>
+                                            <Condition Binding="{Binding SortDescending}" Value="True"/>
+                                        </MultiDataTrigger.Conditions>
+                                        <Setter Property="Text" Value="▼"/>
+                                    </MultiDataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                </StackPanel>
+            </Button>
         </Grid>
 
         <!-- ROWS -->
@@ -170,7 +344,30 @@
                 <ItemsControl ItemsSource="{Binding Rules}">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
-                            <Border Style="{StaticResource RuleRowStyle}">
+                            <Border Style="{StaticResource RuleRowStyle}"
+                                    MouseLeftButtonUp="RuleRow_MouseLeftButtonUp"
+                                    Tag="{Binding}">
+                                <Border.ContextMenu>
+                                    <ContextMenu>
+                                        <MenuItem Header="Edit"
+                                                  Command="{Binding DataContext.EditRuleCommand, Source={x:Reference RulesRoot}}"
+                                                  CommandParameter="{Binding}"/>
+                                        <MenuItem Header="Duplicate"
+                                                  Command="{Binding DataContext.DuplicateRuleCommand, Source={x:Reference RulesRoot}}"
+                                                  CommandParameter="{Binding}"/>
+                                        <MenuItem Header="Publish to marketplace"
+                                                  Command="{Binding DataContext.PublishRuleCommand, Source={x:Reference RulesRoot}}"
+                                                  CommandParameter="{Binding}"
+                                                  IsEnabled="{Binding CanPublish}"/>
+                                        <MenuItem Header="Copy rule ID"
+                                                  Command="{Binding DataContext.CopyRuleIdCommand, Source={x:Reference RulesRoot}}"
+                                                  CommandParameter="{Binding}"/>
+                                        <Separator/>
+                                        <MenuItem Header="Delete"
+                                                  Command="{Binding DataContext.DeleteRuleCommand, Source={x:Reference RulesRoot}}"
+                                                  CommandParameter="{Binding}"/>
+                                    </ContextMenu>
+                                </Border.ContextMenu>
                                 <Grid>
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="28"/>
@@ -184,7 +381,9 @@
 
                                     <!-- 1 · Source marker (slate dot / amber bookmark / channel stripe+pulse) -->
                                     <Grid Grid.Column="0" Width="20" Height="20"
-                                          HorizontalAlignment="Center" VerticalAlignment="Center">
+                                          HorizontalAlignment="Center" VerticalAlignment="Center"
+                                          ToolTip="{Binding OriginTooltip}"
+                                          Background="Transparent">
                                         <Ellipse Width="8" Height="8"
                                                  Fill="{StaticResource LocalOriginBrush}"
                                                  HorizontalAlignment="Center" VerticalAlignment="Center"

@@ -77,4 +77,59 @@
         <Setter Property="Padding" Value="8"/>
         <Setter Property="Margin" Value="4,3"/>
     </Style>
+
+    <!-- Reusable "chip-shaped" toggle button. Used by Rules source-filter strip
+         and Marketplace tag chips. Active state driven by Tag binding equality. -->
+    <Style x:Key="FilterChipButtonStyle" TargetType="Button">
+        <Setter Property="Background" Value="{StaticResource BgSurfaceBrush}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource BorderSubtleBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}"/>
+        <Setter Property="Padding" Value="10,4"/>
+        <Setter Property="FontSize" Value="11"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Margin" Value="0,0,6,0"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="ChipBorder"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="11"
+                            Padding="{TemplateBinding Padding}">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="ChipBorder" Property="Background" Value="{StaticResource BgSurfaceHoverBrush}"/>
+                            <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Variant: chip in "active" state. Apply via local style override when
+         the consumer's Tag matches a selected value. -->
+    <Style x:Key="FilterChipButtonActiveStyle" TargetType="Button" BasedOn="{StaticResource FilterChipButtonStyle}">
+        <Setter Property="Background" Value="{StaticResource AccentSubtleBrush}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource AccentBorderBrush}"/>
+        <Setter Property="Foreground" Value="{StaticResource AccentLightBrush}"/>
+    </Style>
+
+    <!-- Inline "Saved ✓" pill — fades in and out via a DataTrigger consumers
+         hook to an incrementing counter on the VM. The animation lives in
+         MotionStyles.xaml::SavedPillFadeStoryboard. -->
+    <Style x:Key="SavedPillStyle" TargetType="Border">
+        <Setter Property="Background" Value="{StaticResource SuccessSubtleBrush}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource SuccessBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="CornerRadius" Value="10"/>
+        <Setter Property="Padding" Value="8,2"/>
+        <Setter Property="Opacity" Value="0"/>
+        <Setter Property="IsHitTestVisible" Value="False"/>
+    </Style>
 </ResourceDictionary>

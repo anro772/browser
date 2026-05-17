@@ -3,6 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
              xmlns:controls="clr-namespace:BrowserApp.UI.Controls"
+             x:Name="MarketRoot"
              Loaded="MarketplaceWorkspaceView_Loaded">
 
     <UserControl.Resources>
@@ -93,15 +94,15 @@
             </Border>
         </Grid>
 
-        <!-- FEATURED HERO — design's Editor's Pick. Bound to the first pack; hidden when empty. -->
+        <!-- FEATURED HERO — most-installed pack drives this; collapses when no rules loaded. -->
         <ContentControl Grid.Row="2"
-                        Content="{Binding Rules[0]}"
+                        Content="{Binding TopRule}"
                         Margin="0,0,0,16">
             <ContentControl.Style>
                 <Style TargetType="ContentControl">
                     <Setter Property="Visibility" Value="Visible"/>
                     <Style.Triggers>
-                        <DataTrigger Binding="{Binding Rules.Count}" Value="0">
+                        <DataTrigger Binding="{Binding TopRule}" Value="{x:Null}">
                             <Setter Property="Visibility" Value="Collapsed"/>
                         </DataTrigger>
                     </Style.Triggers>
@@ -209,8 +210,86 @@
             </ContentControl.ContentTemplate>
         </ContentControl>
 
+        <!-- TAG CHIP STRIP -->
+        <Grid Grid.Row="3" Margin="0,0,0,10"
+              Visibility="{Binding AvailableTags.Count, Converter={StaticResource CountToVisibility}, ConverterParameter=Invert}">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <TextBlock Grid.Column="0"
+                       Text="TAGS"
+                       FontSize="10" FontWeight="SemiBold"
+                       VerticalAlignment="Center"
+                       Margin="0,0,10,0"
+                       Foreground="{DynamicResource TextFillColorTertiaryBrush}"/>
+            <ScrollViewer Grid.Column="1"
+                          HorizontalScrollBarVisibility="Auto"
+                          VerticalScrollBarVisibility="Disabled">
+                <ItemsControl ItemsSource="{Binding AvailableTags}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <StackPanel Orientation="Horizontal"/>
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Button Content="{Binding}"
+                                    Tag="{Binding}"
+                                    Command="{Binding DataContext.ShowRuleDetailsCommand, Source={x:Reference MarketRoot}, FallbackValue={x:Null}}"
+                                    Click="TagChip_Click">
+                                <Button.Style>
+                                    <Style TargetType="Button" BasedOn="{StaticResource FilterChipButtonStyle}"/>
+                                </Button.Style>
+                            </Button>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+            <Button Grid.Column="2"
+                    Content="Clear"
+                    Style="{StaticResource FilterChipButtonStyle}"
+                    Command="{Binding ClearTagFilterCommand}"
+                    Visibility="{Binding SelectedTag, Converter={StaticResource NullToVisibility}}"/>
+        </Grid>
+
         <!-- CARDS GRID -->
         <Grid Grid.Row="4">
+            <!-- Offline banner overlay -->
+            <Border Background="{StaticResource WarningSubtleBrush}"
+                    BorderBrush="{StaticResource WarningBrush}"
+                    BorderThickness="1"
+                    CornerRadius="8"
+                    Padding="14,10"
+                    VerticalAlignment="Top"
+                    Margin="0,0,0,8"
+                    Panel.ZIndex="20"
+                    Visibility="{Binding IsOffline, Converter={StaticResource BoolToVisibility}}">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <ui:SymbolIcon Grid.Column="0" Symbol="CloudOff24" FontSize="14"
+                                   Margin="0,0,8,0"
+                                   Foreground="{StaticResource WarningBrush}"
+                                   VerticalAlignment="Center"/>
+                    <TextBlock Grid.Column="1"
+                               Text="Marketplace server is offline. No packs available."
+                               VerticalAlignment="Center"
+                               Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                    <ui:Button Grid.Column="2"
+                               Content="Retry"
+                               Command="{Binding LoadRulesCommand}"/>
+                </Grid>
+            </Border>
+        </Grid>
+
+        <!-- Hidden placeholder so Grid.Row="4" continues to host the grid below -->
+        <Grid Grid.Row="4"
+              Visibility="{Binding IsOffline, Converter={StaticResource BoolToVisibilityInverse}}">
             <controls:WorkspaceEmptyState
                 IconSymbol="BookmarkMultiple24"
                 Eyebrow="PUBLIC PACKS"
@@ -224,6 +303,7 @@
                 Panel.ZIndex="10"/>
 
             <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                <StackPanel>
                 <ItemsControl ItemsSource="{Binding Rules}">
                     <ItemsControl.ItemsPanel>
                         <ItemsPanelTemplate>
@@ -232,9 +312,16 @@
                     </ItemsControl.ItemsPanel>
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
-                            <Border Style="{StaticResource MarketCardStyle}">
+                            <Border Style="{StaticResource MarketCardStyle}"
+                                    Cursor="Hand"
+                                    Tag="{Binding}"
+                                    MouseLeftButtonUp="MarketCard_MouseLeftButtonUp">
+                                <Border.ToolTip>
+                                    <ToolTip Content="Click to view details and preview"/>
+                                </Border.ToolTip>
                                 <Grid>
                                     <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
                                         <RowDefinition Height="Auto"/>
                                         <RowDefinition Height="Auto"/>
                                         <RowDefinition Height="Auto"/>
@@ -269,11 +356,17 @@
                                             <StackPanel Orientation="Horizontal" Margin="0,2,0,0">
                                                 <TextBlock Text="by " FontSize="11"
                                                            Foreground="{DynamicResource TextFillColorTertiaryBrush}"/>
-                                                <TextBlock Text="{Binding AuthorUsername}"
-                                                           FontSize="11"
-                                                           FontWeight="Medium"
-                                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                                                           TextTrimming="CharacterEllipsis"/>
+                                                <Button Padding="0" Background="Transparent" BorderThickness="0"
+                                                        Cursor="Hand"
+                                                        Tag="{Binding AuthorUsername}"
+                                                        Click="AuthorChip_Click"
+                                                        ToolTip="Filter by this author">
+                                                    <TextBlock Text="{Binding AuthorUsername}"
+                                                               FontSize="11"
+                                                               FontWeight="Medium"
+                                                               Foreground="{StaticResource AccentLightBrush}"
+                                                               TextTrimming="CharacterEllipsis"/>
+                                                </Button>
                                             </StackPanel>
                                         </StackPanel>
                                     </Grid>
@@ -286,10 +379,36 @@
                                                MaxHeight="34"
                                                TextTrimming="WordEllipsis"
                                                Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                                               Margin="0,0,0,10"/>
+                                               Margin="0,0,0,8"/>
+
+                                    <!-- Tag chips -->
+                                    <ItemsControl Grid.Row="2"
+                                                  ItemsSource="{Binding Tags}"
+                                                  Margin="0,0,0,8"
+                                                  Visibility="{Binding Tags.Length, Converter={StaticResource CountToVisibility}, ConverterParameter=Invert}">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <WrapPanel/>
+                                            </ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Border Background="{StaticResource BgElevatedBrush}"
+                                                        BorderBrush="{StaticResource BorderSubtleBrush}"
+                                                        BorderThickness="1"
+                                                        CornerRadius="8"
+                                                        Padding="6,1"
+                                                        Margin="0,0,4,2">
+                                                    <TextBlock Text="{Binding}"
+                                                               FontSize="10"
+                                                               Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                                </Border>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
 
                                     <!-- Footer: installs · install button -->
-                                    <Grid Grid.Row="2">
+                                    <Grid Grid.Row="3">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="*"/>
                                             <ColumnDefinition Width="Auto"/>
@@ -335,6 +454,25 @@
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
+                <Button HorizontalAlignment="Center"
+                        Margin="0,8,0,16"
+                        Padding="20,8"
+                        Background="{StaticResource BgSurfaceBrush}"
+                        BorderBrush="{StaticResource BorderBrush}"
+                        BorderThickness="1"
+                        Cursor="Hand"
+                        Command="{Binding LoadMoreCommand}"
+                        Visibility="{Binding HasMore, Converter={StaticResource BoolToVisibility}}">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock FontSize="12" Foreground="{StaticResource AccentLightBrush}">
+                            <Run Text="Load more — "/>
+                            <Run Text="{Binding Rules.Count, Mode=OneWay}"/>
+                            <Run Text=" of "/>
+                            <Run Text="{Binding ServerTotalCount, Mode=OneWay}"/>
+                        </TextBlock>
+                    </StackPanel>
+                </Button>
+                </StackPanel>
             </ScrollViewer>
 
             <Border Background="{StaticResource BgPrimaryBrush}"

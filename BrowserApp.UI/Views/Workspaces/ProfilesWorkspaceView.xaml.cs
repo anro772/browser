@@ -14,7 +14,7 @@ public partial class ProfilesWorkspaceView : UserControl
     }
 
     /// <summary>
-    /// Per-row "..." → context menu with Change color + Delete (Delete hidden for the default profile).
+    /// Per-row "..." → context menu with Rename + Change color + Delete (Delete hidden for the default profile).
     /// </summary>
     private void ProfileMore_Click(object sender, RoutedEventArgs e)
     {
@@ -22,6 +22,10 @@ public partial class ProfilesWorkspaceView : UserControl
         if (DataContext is not ProfileSelectorViewModel vm) return;
 
         var menu = new ContextMenu();
+
+        var rename = new MenuItem { Header = "Rename…" };
+        rename.Click += (_, _) => { if (vm.RenameProfileCommand.CanExecute(profile)) vm.RenameProfileCommand.Execute(profile); };
+        menu.Items.Add(rename);
 
         var color = new MenuItem { Header = "Change color…" };
         color.Click += (_, _) => { if (vm.ChangeProfileColorCommand.CanExecute(profile)) vm.ChangeProfileColorCommand.Execute(profile); };

@@ -12,6 +12,8 @@ public partial class CreateProfileDialog : FluentWindow
     public string DialogTitle { get; set; } = "Create Profile";
     public string DialogSubtitle { get; set; } = "Create a new browser profile with its own data.";
     public bool ShowNameField { get; set; } = true;
+    public bool ShowColorPicker { get; set; } = true;
+    public string InitialName { get; set; } = string.Empty;
 
     private static readonly string[] Colors = new[]
     {
@@ -29,8 +31,18 @@ public partial class CreateProfileDialog : FluentWindow
         Loaded += (s, e) =>
         {
             if (ShowNameField)
+            {
+                if (!string.IsNullOrEmpty(InitialName))
+                {
+                    ProfileNameInput.Text = InitialName;
+                    ProfileNameInput.SelectAll();
+                }
                 ProfileNameInput.Focus();
-            HighlightSelectedColor();
+            }
+            if (ShowColorPicker)
+            {
+                HighlightSelectedColor();
+            }
         };
     }
 
