@@ -125,7 +125,7 @@ public partial class RuleManagerViewModel : ObservableObject
             var entities = await repository.GetAllAsync();
             var ruleItems = entities.Select(e => new RuleItemViewModel(e)).ToList();
 
-            Application.Current.Dispatcher.Invoke(() =>
+            UiThread.Invoke(() =>
             {
                 Rules.Clear();
                 foreach (var item in ruleItems)
@@ -486,7 +486,7 @@ public partial class RuleManagerViewModel : ObservableObject
 
     private void FilterRules()
     {
-        Application.Current.Dispatcher.Invoke(() =>
+        UiThread.Invoke(() =>
         {
             Rules.Clear();
             IEnumerable<RuleItemViewModel> query = _allRules;

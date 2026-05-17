@@ -1,3 +1,4 @@
+using System.Net.Http;
 using BrowserApp.Core.DTOs;
 using BrowserApp.Core.Interfaces;
 using BrowserApp.UI.Services;
@@ -287,6 +288,128 @@ public class RulePreviewItemTests
         Assert.Equal("Dark Mode", item.Name);
         Assert.Equal("*", item.Site);
         Assert.False(item.IsEnforced);
+    }
+}
+
+/// <summary>
+/// Tests for the QOL additions to ChannelsViewModel:
+/// extracted LoadChannelRulesAsync helper, TotalChannels property, ShowChannelDetailsCommand.
+/// </summary>
+public class ChannelsViewModelQolTests
+{
+    private readonly Mock<IChannelApiClient> _api = new();
+    private readonly Mock<IChannelSyncService> _sync = new();
+    private readonly Mock<IServiceScopeFactory> _scopeFactory = new();
+    private readonly Mock<IRuleEngine> _ruleEngine = new();
+    private readonly SettingsService _settings = new();
+
+    private ChannelsViewModel CreateVm() =>
+        new(_api.Object, _sync.Object, _scopeFactory.Object, _ruleEngine.Object, _settings);
+
+    private static UnifiedChannelViewModel MakeChannel(bool joined, Guid? id = null)
+    {
+        var resp = new ChannelResponse
+        {
+            Id = id ?? Guid.NewGuid(),
+            Name = "Test",
+            Description = "",
+            OwnerUsername = "alice",
+            IsPublic = true,
+            MemberCount = 1,
+            RuleCount = 0,
+            CreatedAt = DateTime.UtcNow
+        };
+        if (!joined) return new UnifiedChannelViewModel(resp);
+        var ms = new ChannelMembershipDto
+        {
+            Id = Guid.NewGuid().ToString(),
+            ChannelId = resp.Id.ToString(),
+            ChannelName = resp.Name,
+            ChannelDescription = resp.Description,
+            Username = "bob",
+            IsActive = true,
+            JoinedAt = DateTime.UtcNow,
+            LastSyncedAt = DateTime.UtcNow,
+            RuleCount = 0
+        };
+        return new UnifiedChannelViewModel(resp, ms);
+    }
+
+    [Fact]
+    public void TotalChannels_StartsAtZero()
+    {
+        Assert.Equal(0, CreateVm().TotalChannels);
+    }
+
+    [Fact]
+    public async Task LoadChannelRulesAsync_PopulatesRulePreview()
+    {
+        var vm = CreateVm();
+        var channel = MakeChannel(joined: true);
+        var ruleId = Guid.NewGuid();
+
+        _api.Setup(a => a.GetChannelRulesAsync(channel.Id, It.IsAny<string>()))
+            .ReturnsAsync(new ChannelRuleListResponse
+            {
+                Rules = new List<ChannelRuleResponse>
+                {
+                    new() { Id = ruleId, ChannelId = channel.Id, Name = "Test Rule", Site = "*", IsEnforced = true, RulesJson = "[]" }
+                }
+            });
+
+        await vm.LoadChannelRulesAsync(channel);
+
+        Assert.Single(channel.RulePreview);
+        Assert.Equal(ruleId, channel.RulePreview[0].Id);
+        Assert.Equal("Test Rule", channel.RulePreview[0].Name);
+        Assert.True(channel.RulePreview[0].IsEnforced);
+    }
+
+    [Fact]
+    public async Task LoadChannelRulesAsync_TogglesLoadingFlag()
+    {
+        var vm = CreateVm();
+        var channel = MakeChannel(joined: true);
+
+        _api.Setup(a => a.GetChannelRulesAsync(It.IsAny<Guid>(), It.IsAny<string>()))
+            .ReturnsAsync(new ChannelRuleListResponse { Rules = new() });
+
+        await vm.LoadChannelRulesAsync(channel);
+
+        // IsLoadingPreview ends false regardless of success
+        Assert.False(channel.IsLoadingPreview);
+    }
+
+    [Fact]
+    public async Task LoadChannelRulesAsync_ApiFailure_DoesNotThrow()
+    {
+        var vm = CreateVm();
+        var channel = MakeChannel(joined: true);
+
+        _api.Setup(a => a.GetChannelRulesAsync(It.IsAny<Guid>(), It.IsAny<string>()))
+            .ThrowsAsync(new HttpRequestException("offline"));
+
+        // Should swallow internally so the dialog can still render with an empty list.
+        await vm.LoadChannelRulesAsync(channel);
+        Assert.False(channel.IsLoadingPreview);
+        Assert.Empty(channel.RulePreview);
+    }
+
+    [Fact]
+    public void ShowChannelDetailsCommand_Exists()
+    {
+        // The dialog itself requires an STA host; we just verify the command is wired.
+        var vm = CreateVm();
+        Assert.NotNull(vm.ShowChannelDetailsCommand);
+    }
+
+    [Fact]
+    public void ShowChannelDetailsCommand_NullChannel_NoOp()
+    {
+        var vm = CreateVm();
+        // Won't open a dialog when channel is null.
+        var task = vm.ShowChannelDetailsCommand.ExecuteAsync(null);
+        Assert.True(task.IsCompleted);
     }
 }
 

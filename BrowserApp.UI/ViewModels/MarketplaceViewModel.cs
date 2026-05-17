@@ -98,7 +98,7 @@ public partial class MarketplaceViewModel : ObservableObject
             {
                 IsOffline = true;
                 StatusMessage = "Marketplace server is offline.";
-                Application.Current.Dispatcher.Invoke(() =>
+                UiThread.Invoke(() =>
                 {
                     Rules.Clear();
                     _allRules.Clear();
@@ -116,7 +116,7 @@ public partial class MarketplaceViewModel : ObservableObject
             {
                 var installedIds = await GetInstalledMarketplaceIdsAsync();
 
-                Application.Current.Dispatcher.Invoke(() =>
+                UiThread.Invoke(() =>
                 {
                     Rules.Clear();
                     foreach (var rule in response.Rules)
@@ -166,7 +166,7 @@ public partial class MarketplaceViewModel : ObservableObject
             if (response == null || response.Rules.Count == 0) return;
 
             var installedIds = await GetInstalledMarketplaceIdsAsync();
-            Application.Current.Dispatcher.Invoke(() =>
+            UiThread.Invoke(() =>
             {
                 foreach (var rule in response.Rules)
                 {
@@ -213,7 +213,7 @@ public partial class MarketplaceViewModel : ObservableObject
             if (response == null) return;
 
             var installedIds = await GetInstalledMarketplaceIdsAsync();
-            Application.Current.Dispatcher.Invoke(() =>
+            UiThread.Invoke(() =>
             {
                 Rules.Clear();
                 _allRules.Clear();
@@ -329,7 +329,7 @@ public partial class MarketplaceViewModel : ObservableObject
 
     private void FilterRules()
     {
-        Application.Current.Dispatcher.Invoke(() =>
+        UiThread.Invoke(() =>
         {
             Rules.Clear();
 

@@ -88,7 +88,7 @@ public partial class ChannelsViewModel : ObservableObject
             var joined = await _syncService.GetJoinedChannelsAsync();
             var joinedList = joined.ToList();
 
-            Application.Current.Dispatcher.Invoke(() =>
+            UiThread.Invoke(() =>
             {
                 // Backward compat: populate old collections
                 AvailableChannels.Clear();
@@ -282,7 +282,7 @@ public partial class ChannelsViewModel : ObservableObject
             var rulesResponse = await _apiClient.GetChannelRulesAsync(channel.Id, Username);
             if (rulesResponse != null)
             {
-                Application.Current.Dispatcher.Invoke(() =>
+                UiThread.Invoke(() =>
                 {
                     channel.RulePreview.Clear();
                     foreach (var rule in rulesResponse.Rules)
@@ -429,7 +429,7 @@ public partial class ChannelsViewModel : ObservableObject
                 var channel = _allChannels.FirstOrDefault(c => c.Id == rule.ChannelId);
                 if (channel != null)
                 {
-                    Application.Current.Dispatcher.Invoke(() => channel.RulePreview.Remove(rule));
+                    UiThread.Invoke(() => channel.RulePreview.Remove(rule));
                 }
                 StatusMessage = "Rule removed from channel.";
             }
@@ -476,7 +476,7 @@ public partial class ChannelsViewModel : ObservableObject
 
     private void FilterChannels()
     {
-        Application.Current.Dispatcher.Invoke(() =>
+        UiThread.Invoke(() =>
         {
             Channels.Clear();
             var filtered = _allChannels.AsEnumerable();
@@ -498,7 +498,7 @@ public partial class ChannelsViewModel : ObservableObject
 
     private void FilterAvailableChannels()
     {
-        Application.Current.Dispatcher.Invoke(() =>
+        UiThread.Invoke(() =>
         {
             AvailableChannels.Clear();
             var filtered = string.IsNullOrWhiteSpace(SearchFilter)

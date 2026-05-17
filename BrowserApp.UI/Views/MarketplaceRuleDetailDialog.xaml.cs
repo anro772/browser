@@ -41,7 +41,8 @@ public partial class MarketplaceRuleDetailDialog : FluentWindow, INotifyProperty
         };
     }
 
-    private static List<ActionBullet> BuildBullets(string rulesJson)
+    /// <summary>Public for unit testing; pure function over a RulesJson string.</summary>
+    public static List<ActionBullet> BuildBullets(string rulesJson)
     {
         var bullets = new List<ActionBullet>();
         if (string.IsNullOrWhiteSpace(rulesJson))

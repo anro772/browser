@@ -58,6 +58,78 @@ public class CountToVisibilityConverterTests
         var result = _converter.Convert("not an int", typeof(Visibility), null!, CultureInfo.InvariantCulture);
         Assert.Equal(Visibility.Collapsed, result);
     }
+
+    // Inverse polarity added in the workspace QOL sweep so empty-state and "show when populated"
+    // patterns can both use the same converter. ConverterParameter="Invert" flips it.
+    [Theory]
+    [InlineData(0, Visibility.Collapsed)]
+    [InlineData(1, Visibility.Visible)]
+    [InlineData(50, Visibility.Visible)]
+    public void Convert_WithInvertParameter_ReturnsInversePolarity(int count, Visibility expected)
+    {
+        var result = _converter.Convert(count, typeof(Visibility), "Invert", CultureInfo.InvariantCulture);
+        Assert.Equal(expected, result);
+    }
+
+    [Fact]
+    public void Convert_InvertIsCaseInsensitive()
+    {
+        Assert.Equal(Visibility.Visible, _converter.Convert(5, typeof(Visibility), "invert", CultureInfo.InvariantCulture));
+        Assert.Equal(Visibility.Visible, _converter.Convert(5, typeof(Visibility), "INVERT", CultureInfo.InvariantCulture));
+    }
+
+    [Fact]
+    public void Convert_UnknownParameter_DoesNotInvert()
+    {
+        // Unknown parameter shouldn't accidentally trigger invert.
+        Assert.Equal(Visibility.Collapsed, _converter.Convert(5, typeof(Visibility), "Weird", CultureInfo.InvariantCulture));
+    }
+}
+
+public class NullToVisibilityConverterTests
+{
+    private readonly NullToVisibilityConverter _converter = new();
+
+    [Fact]
+    public void Convert_Null_ReturnsCollapsed()
+    {
+        var result = _converter.Convert(null!, typeof(Visibility), null!, CultureInfo.InvariantCulture);
+        Assert.Equal(Visibility.Collapsed, result);
+    }
+
+    [Fact]
+    public void Convert_NonNullObject_ReturnsVisible()
+    {
+        var result = _converter.Convert(new object(), typeof(Visibility), null!, CultureInfo.InvariantCulture);
+        Assert.Equal(Visibility.Visible, result);
+    }
+
+    [Theory]
+    [InlineData("", Visibility.Collapsed)]
+    [InlineData("hello", Visibility.Visible)]
+    [InlineData("   ", Visibility.Visible)]  // whitespace is non-empty
+    public void Convert_String_TreatsEmptyAsAbsent(string input, Visibility expected)
+    {
+        var result = _converter.Convert(input, typeof(Visibility), null!, CultureInfo.InvariantCulture);
+        Assert.Equal(expected, result);
+    }
+
+    [Theory]
+    [InlineData(null, Visibility.Visible)]
+    [InlineData("", Visibility.Visible)]
+    [InlineData("present", Visibility.Collapsed)]
+    public void Convert_WithInvertParameter_FlipsPolarity(string? input, Visibility expected)
+    {
+        var result = _converter.Convert(input!, typeof(Visibility), "Invert", CultureInfo.InvariantCulture);
+        Assert.Equal(expected, result);
+    }
+
+    [Fact]
+    public void ConvertBack_Throws()
+    {
+        Assert.Throws<NotSupportedException>(() =>
+            _converter.ConvertBack(Visibility.Visible, typeof(object), null!, CultureInfo.InvariantCulture));
+    }
 }
 
 public class PercentToWidthConverterTests
