@@ -110,6 +110,16 @@ public partial class RuleManagerViewModel : ObservableObject
         _ruleEngine = ruleEngine;
         _marketplaceApiClient = marketplaceApiClient;
         _settingsService = settingsService;
+
+        // Refresh the visible list whenever the engine reloads — e.g. after a marketplace
+        // install or channel sync writes new rows to the rule repository. Without this the
+        // user had to restart the app for new rules to appear in the Rules workspace.
+        _ruleEngine.RulesReloaded += OnRuleEngineRulesReloaded;
+    }
+
+    private void OnRuleEngineRulesReloaded(object? sender, EventArgs e)
+    {
+        _ = LoadRulesAsync();
     }
 
     [RelayCommand]
@@ -125,16 +135,10 @@ public partial class RuleManagerViewModel : ObservableObject
             var entities = await repository.GetAllAsync();
             var ruleItems = entities.Select(e => new RuleItemViewModel(e)).ToList();
 
-            UiThread.Invoke(() =>
-            {
-                Rules.Clear();
-                foreach (var item in ruleItems)
-                {
-                    Rules.Add(item);
-                }
-                _allRules = Rules.ToList();
-                UpdateStats();
-            });
+            // Set the master list, then re-apply current source/search/sort so a reload
+            // triggered by marketplace install or channel sync doesn't wipe the user's view.
+            _allRules = ruleItems;
+            FilterRules();
         }
         catch (Exception ex)
         {
@@ -623,9 +627,6 @@ public partial class RuleItemViewModel : ObservableObject
         "ai" => "AI",
         _ => Source
     };
-
-    // Placeholder until per-rule hit counts are plumbed; design uses "—" for unknown.
-    public string HitsDisplay => "—";
 
     public string UpdatedDisplay
     {

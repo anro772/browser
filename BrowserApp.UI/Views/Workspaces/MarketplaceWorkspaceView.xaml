@@ -14,8 +14,10 @@
             <Setter Property="CornerRadius" Value="8"/>
             <Setter Property="Padding" Value="14"/>
             <Setter Property="Margin" Value="0,0,12,12"/>
-            <!-- Anchor each card to the top of its UniformGrid cell so cards size to
-                 their content, not to the tallest sibling. Sparse rows look right. -->
+            <!-- Fixed height so cards in the same row line up regardless of how long the
+                 description or tag set is. Inner content stays anchored top via the grid;
+                 the description's MaxHeight+WordEllipsis already truncates overflow. -->
+            <Setter Property="Height" Value="186"/>
             <Setter Property="VerticalAlignment" Value="Top"/>
             <Style.Triggers>
                 <Trigger Property="IsMouseOver" Value="True">
@@ -337,7 +339,7 @@
                                     <Grid.RowDefinitions>
                                         <RowDefinition Height="Auto"/>
                                         <RowDefinition Height="Auto"/>
-                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="*"/>
                                         <RowDefinition Height="Auto"/>
                                     </Grid.RowDefinitions>
 

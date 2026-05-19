@@ -4,6 +4,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Web.WebView2.Core;
@@ -152,12 +153,60 @@ public partial class MainWindow : FluentWindow
         Loaded += MainWindow_Loaded;
     }
 
-    private void OnMainViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    private async void OnMainViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
         if (e.PropertyName == nameof(MainViewModel.IsWorkspaceOpen))
         {
+            // Capture before OnActiveTabChanged hides the WebView2 — once it's hidden
+            // the underlying browser surface stops compositing and the capture returns
+            // black. Awaiting here also avoids a one-frame flash of empty backdrop.
+            if (_viewModel.IsWorkspaceOpen)
+            {
+                await CapturePageSnapshotAsync();
+            }
+            else
+            {
+                PageSnapshot.Source = null;
+            }
+
             // Re-apply active tab visibility when workspace mode toggles.
             OnActiveTabChanged(this, _tabStrip.ActiveTab);
+        }
+    }
+
+    /// <summary>
+    /// Grabs a PNG of the current tab's WebView2 and shows it under the workspace scrim.
+    /// Fails-silent: an empty / not-yet-navigated tab just leaves the snapshot null and
+    /// the scrim falls back to solid dark — same as the old behaviour.
+    /// </summary>
+    private async Task CapturePageSnapshotAsync()
+    {
+        try
+        {
+            var tab = _tabStrip.ActiveTab;
+            var coreWeb = tab?.WebView?.CoreWebView2;
+            if (coreWeb == null)
+            {
+                PageSnapshot.Source = null;
+                return;
+            }
+
+            using var stream = new MemoryStream();
+            await coreWeb.CapturePreviewAsync(CoreWebView2CapturePreviewImageFormat.Png, stream);
+            stream.Position = 0;
+
+            var bmp = new BitmapImage();
+            bmp.BeginInit();
+            bmp.CacheOption = BitmapCacheOption.OnLoad;
+            bmp.StreamSource = stream;
+            bmp.EndInit();
+            bmp.Freeze();
+            PageSnapshot.Source = bmp;
+        }
+        catch (Exception ex)
+        {
+            ErrorLogger.LogError("Failed to capture page snapshot for workspace overlay", ex);
+            PageSnapshot.Source = null;
         }
     }
 
@@ -513,6 +562,27 @@ public partial class MainWindow : FluentWindow
         else if (e.Key == Key.Return && SuggestionsListBox.SelectedItem is AutocompleteSuggestion suggestion)
         {
             _viewModel.AcceptSuggestionCommand.Execute(suggestion);
+            e.Handled = true;
+        }
+    }
+
+    // Chrome-style: first click into an unfocused address bar selects the whole URL
+    // so the user can immediately type or copy. The two-handler pattern is the canonical
+    // WPF workaround — without PreviewMouseLeftButtonDown intercepting the click, the
+    // caret would land mid-URL and the SelectAll would be undone before the mouse-up.
+    private void AddressBar_GotKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e)
+    {
+        if (sender is System.Windows.Controls.TextBox tb)
+        {
+            tb.SelectAll();
+        }
+    }
+
+    private void AddressBar_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is System.Windows.Controls.TextBox tb && !tb.IsKeyboardFocusWithin)
+        {
+            tb.Focus();
             e.Handled = true;
         }
     }

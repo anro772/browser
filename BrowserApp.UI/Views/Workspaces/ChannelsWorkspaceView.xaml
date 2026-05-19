@@ -178,10 +178,13 @@
                                     </TextBlock>
                                     <TextBlock FontSize="11" Margin="0,2,0,0"
                                                TextTrimming="CharacterEllipsis"
+                                               ToolTip="{Binding CreatedTooltip}"
                                                Foreground="{DynamicResource TextFillColorTertiaryBrush}">
                                         <Run Text="{Binding DisplayInfo, Mode=OneWay}"/>
                                         <Run Text=" · "/>
                                         <Run Text="{Binding OwnerDisplay, Mode=OneWay}"/>
+                                        <Run Text=" · "/>
+                                        <Run Text="{Binding CreatedDisplay, Mode=OneWay}"/>
                                     </TextBlock>
                                 </StackPanel>
 

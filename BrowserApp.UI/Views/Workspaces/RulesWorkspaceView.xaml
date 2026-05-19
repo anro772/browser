@@ -204,8 +204,7 @@
                 <ColumnDefinition Width="40"/>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="130"/>
-                <ColumnDefinition Width="70"/>
-                <ColumnDefinition Width="70"/>
+                <ColumnDefinition Width="110"/>
                 <ColumnDefinition Width="28"/>
             </Grid.ColumnDefinitions>
             <Button Grid.Column="2"
@@ -280,20 +279,15 @@
                 </StackPanel>
             </Button>
 
-            <TextBlock Grid.Column="4" Text="HITS / 7D"
-                       FontSize="10" FontWeight="SemiBold"
-                       TextAlignment="Right"
-                       Foreground="{DynamicResource TextFillColorTertiaryBrush}"/>
-
-            <Button Grid.Column="5"
+            <Button Grid.Column="4"
                     Background="Transparent" BorderThickness="0" Padding="0"
                     Cursor="Hand"
                     HorizontalContentAlignment="Left"
-                    Margin="8,0,0,0"
+                    ToolTip="When the rule was last modified"
                     Command="{Binding SetSortCommand}"
                     CommandParameter="Updated">
                 <StackPanel Orientation="Horizontal">
-                    <TextBlock Text="UPDATED" FontSize="10" FontWeight="SemiBold"
+                    <TextBlock Text="LAST UPDATED" FontSize="10" FontWeight="SemiBold"
                                Foreground="{DynamicResource TextFillColorTertiaryBrush}"/>
                     <TextBlock FontSize="10" Margin="4,0,0,0"
                                Foreground="{StaticResource AccentLightBrush}">
@@ -374,8 +368,7 @@
                                         <ColumnDefinition Width="40"/>
                                         <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="130"/>
-                                        <ColumnDefinition Width="70"/>
-                                        <ColumnDefinition Width="70"/>
+                                        <ColumnDefinition Width="110"/>
                                         <ColumnDefinition Width="28"/>
                                     </Grid.ColumnDefinitions>
 
@@ -460,24 +453,16 @@
                                         </TextBlock.Style>
                                     </TextBlock>
 
-                                    <!-- 5 · Hits / 7d ("—" placeholder until per-rule counts ship) -->
+                                    <!-- 5 · Updated (relative time) -->
                                     <TextBlock Grid.Column="4"
-                                               Text="{Binding HitsDisplay}"
-                                               FontSize="12"
-                                               TextAlignment="Right"
-                                               VerticalAlignment="Center"
-                                               Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
-
-                                    <!-- 6 · Updated (relative time) -->
-                                    <TextBlock Grid.Column="5"
                                                Text="{Binding UpdatedDisplay}"
                                                FontSize="11"
                                                VerticalAlignment="Center"
-                                               Margin="8,0,0,0"
+                                               ToolTip="When the rule was last modified"
                                                Foreground="{DynamicResource TextFillColorTertiaryBrush}"/>
 
-                                    <!-- 7 · More menu (edit / publish / delete tucked away) -->
-                                    <ui:Button Grid.Column="6"
+                                    <!-- 6 · More menu (edit / publish / delete tucked away) -->
+                                    <ui:Button Grid.Column="5"
                                                ToolTip="More"
                                                Padding="4"
                                                Background="Transparent"

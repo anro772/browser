@@ -217,7 +217,9 @@
                                  CaretBrush="{DynamicResource TextFillColorPrimaryBrush}"
                                  VerticalAlignment="Center"
                                  PreviewKeyDown="AddressBar_PreviewKeyDown"
-                                 LostFocus="AddressBar_LostFocus">
+                                 LostFocus="AddressBar_LostFocus"
+                                 GotKeyboardFocus="AddressBar_GotKeyboardFocus"
+                                 PreviewMouseLeftButtonDown="AddressBar_PreviewMouseLeftButtonDown">
                             <TextBox.InputBindings>
                                 <KeyBinding Key="Return" Command="{Binding NavigateCommand}"/>
                             </TextBox.InputBindings>
@@ -237,17 +239,50 @@
                     <Border Background="{StaticResource BgSurfaceBrush}"
                             BorderBrush="{StaticResource BorderBrush}"
                             BorderThickness="1"
-                            CornerRadius="0,0,8,8"
-                            MaxHeight="320">
+                            CornerRadius="0,0,10,10"
+                            MaxHeight="480"
+                            Padding="0,4">
                         <ListBox x:Name="SuggestionsListBox"
                                  ItemsSource="{Binding Suggestions}"
                                  SelectedItem="{Binding SelectedSuggestion}"
                                  Background="Transparent"
                                  BorderThickness="0"
+                                 ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                                  SelectionChanged="SuggestionsListBox_SelectionChanged">
+                            <ListBox.ItemContainerStyle>
+                                <!-- Full-width row hover/selection + subtle separator between rows -->
+                                <Style TargetType="ListBoxItem">
+                                    <Setter Property="Padding" Value="0"/>
+                                    <Setter Property="Margin" Value="0"/>
+                                    <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                                    <Setter Property="Background" Value="Transparent"/>
+                                    <Setter Property="BorderThickness" Value="0"/>
+                                    <Setter Property="Cursor" Value="Hand"/>
+                                    <Setter Property="Template">
+                                        <Setter.Value>
+                                            <ControlTemplate TargetType="ListBoxItem">
+                                                <Border x:Name="ItemBd"
+                                                        Background="{TemplateBinding Background}"
+                                                        BorderBrush="{StaticResource BorderSubtleBrush}"
+                                                        BorderThickness="0,0,0,1">
+                                                    <ContentPresenter/>
+                                                </Border>
+                                                <ControlTemplate.Triggers>
+                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                        <Setter TargetName="ItemBd" Property="Background" Value="{StaticResource BgSurfaceHoverBrush}"/>
+                                                    </Trigger>
+                                                    <Trigger Property="IsSelected" Value="True">
+                                                        <Setter TargetName="ItemBd" Property="Background" Value="{StaticResource AccentSubtleBrush}"/>
+                                                    </Trigger>
+                                                </ControlTemplate.Triggers>
+                                            </ControlTemplate>
+                                        </Setter.Value>
+                                    </Setter>
+                                </Style>
+                            </ListBox.ItemContainerStyle>
                             <ListBox.ItemTemplate>
                                 <DataTemplate>
-                                    <Grid Margin="8,6">
+                                    <Grid Margin="12,9">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="Auto"/>
                                             <ColumnDefinition Width="*"/>
@@ -258,22 +293,59 @@
                                         </Grid.RowDefinitions>
 
                                         <ui:SymbolIcon Grid.Column="0" Grid.RowSpan="2"
-                                                       Symbol="Globe24"
                                                        FontSize="16"
-                                                       Margin="0,0,8,0"
-                                                       VerticalAlignment="Center"
-                                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                                       Margin="0,0,12,0"
+                                                       VerticalAlignment="Center">
+                                            <ui:SymbolIcon.Style>
+                                                <!-- Icon + colour reflect the row's source so glance-scanning works -->
+                                                <Style TargetType="ui:SymbolIcon">
+                                                    <Setter Property="Symbol" Value="Globe24"/>
+                                                    <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding Source}" Value="search">
+                                                            <Setter Property="Symbol" Value="Search24"/>
+                                                            <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding Source}" Value="history">
+                                                            <Setter Property="Symbol" Value="History24"/>
+                                                            <Setter Property="Foreground" Value="{StaticResource AccentLightBrush}"/>
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding Source}" Value="bookmark">
+                                                            <Setter Property="Symbol" Value="Star24"/>
+                                                            <Setter Property="Foreground" Value="{StaticResource MarketOriginBrush}"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </ui:SymbolIcon.Style>
+                                        </ui:SymbolIcon>
 
                                         <TextBlock Grid.Column="1" Grid.Row="0"
                                                    Text="{Binding Title}"
                                                    FontSize="13"
+                                                   FontWeight="Medium"
                                                    Foreground="{DynamicResource TextFillColorPrimaryBrush}"
                                                    TextTrimming="CharacterEllipsis"/>
                                         <TextBlock Grid.Column="1" Grid.Row="1"
-                                                   Text="{Binding Url}"
+                                                   Text="{Binding DisplayDescription}"
                                                    FontSize="11"
-                                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                                                   TextTrimming="CharacterEllipsis"/>
+                                                   Margin="0,2,0,0"
+                                                   TextTrimming="CharacterEllipsis">
+                                            <TextBlock.Style>
+                                                <!-- History/bookmark rows show their URL in accent so links pop;
+                                                     search rows keep the muted "Search Google" hint subtle. -->
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="Foreground" Value="{DynamicResource TextFillColorTertiaryBrush}"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding Source}" Value="history">
+                                                            <Setter Property="Foreground" Value="{StaticResource AccentLightBrush}"/>
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding Source}" Value="bookmark">
+                                                            <Setter Property="Foreground" Value="{StaticResource AccentLightBrush}"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
                                     </Grid>
                                 </DataTemplate>
                             </ListBox.ItemTemplate>
@@ -356,6 +428,18 @@
 
                 <!-- WebView2 Content Host -->
                 <Grid Grid.Row="2" x:Name="WebViewHost"/>
+
+                <!-- Frozen page snapshot shown while the Tools workspace is open.
+                     WebView2 is a windowed HWND so semi-transparent WPF overlays
+                     can't render over it (airspace). We hide the live WebView and
+                     swap in this Image so the scrim's dim tint sits over the page
+                     instead of solid black. -->
+                <Image Grid.Row="2"
+                       x:Name="PageSnapshot"
+                       Stretch="UniformToFill"
+                       StretchDirection="Both"
+                       Panel.ZIndex="5"
+                       Visibility="{Binding IsWorkspaceOpen, Converter={StaticResource BoolToVisibility}}"/>
 
                 <!-- New Tab Page Overlay -->
                 <ContentControl Grid.Row="2"
@@ -465,10 +549,11 @@
                  all six workspace views regardless of content density. -->
             <Border x:Name="WorkspaceOverlay"
                     Grid.ColumnSpan="2"
-                    Width="1280"
-                    Height="820"
-                    HorizontalAlignment="Center"
-                    VerticalAlignment="Center"
+                    HorizontalAlignment="Stretch"
+                    VerticalAlignment="Stretch"
+                    Margin="64,40,64,56"
+                    MaxWidth="1700"
+                    MaxHeight="1080"
                     Panel.ZIndex="30"
                     Style="{StaticResource WorkspaceOverlayAnimatedStyle}"
                     Visibility="{Binding IsWorkspaceOpen, Converter={StaticResource BoolToVisibility}}">

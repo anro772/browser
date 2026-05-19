@@ -25,6 +25,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private readonly ProfileSelectorViewModel? _profileSelectorViewModel;
     private readonly SettingsService? _settingsService;
     private readonly ExtensionService? _extensionService;
+    private readonly SearchSuggestionsService? _searchSuggestions;
     private bool _isDisposed;
     private DispatcherTimer? _debounceTimer;
     private CancellationTokenSource? _autocompleteCts;
@@ -100,7 +101,8 @@ public partial class MainViewModel : ObservableObject, IDisposable
         BookmarkViewModel bookmarkViewModel,
         SettingsService? settingsService = null,
         ProfileSelectorViewModel? profileSelectorViewModel = null,
-        ExtensionService? extensionService = null)
+        ExtensionService? extensionService = null,
+        SearchSuggestionsService? searchSuggestions = null)
     {
         _searchEngineService = searchEngineService;
         _historyRepository = historyRepository;
@@ -110,12 +112,15 @@ public partial class MainViewModel : ObservableObject, IDisposable
         _settingsService = settingsService;
         _profileSelectorViewModel = profileSelectorViewModel;
         _extensionService = extensionService;
+        _searchSuggestions = searchSuggestions;
 
         // Subscribe to active tab changes
         _tabStrip.ActiveTabChanged += OnActiveTabChanged;
 
-        // Setup debounce timer for autocomplete (Bug 10: named handler for proper cleanup)
-        _debounceTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(200) };
+        // Setup debounce timer for autocomplete (Bug 10: named handler for proper cleanup).
+        // Kept tight so typing feels live — UpdateSuggestionsAsync renders local DB hits
+        // immediately on the first await and then patches in Google results when they arrive.
+        _debounceTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(10) };
         _debounceTimer.Tick += OnDebounceTimerTick;
 
         // Restore the bookmarks-bar visibility from persisted settings.
@@ -334,19 +339,24 @@ public partial class MainViewModel : ObservableObject, IDisposable
 
         try
         {
+            // Phase 1: local DB hits — fast, render immediately so the popup never feels stalled.
             using var scope = _scopeFactory.CreateScope();
             var historyRepo = scope.ServiceProvider.GetRequiredService<IBrowsingHistoryRepository>();
             var bookmarkRepo = scope.ServiceProvider.GetRequiredService<IBookmarkRepository>();
+
+            // Kick off the Google call in parallel so it overlaps the DB read.
+            var searchTask = _searchSuggestions?.GetAsync(query, cancellationToken)
+                              ?? Task.FromResult<IReadOnlyList<string>>(Array.Empty<string>());
 
             var historyTask = historyRepo.SearchWithCountAsync(query, 5);
             var bookmarkTask = bookmarkRepo.GetAllAsync();
 
             await Task.WhenAll(historyTask, bookmarkTask);
-
-            // Bug 6: Check cancellation before updating UI
             if (cancellationToken.IsCancellationRequested) return;
 
-            var historySuggestions = (await historyTask).Select(h => new AutocompleteSuggestion
+            string lowerQuery = query.ToLowerInvariant();
+
+            var historySuggestions = historyTask.Result.Select(h => new AutocompleteSuggestion
             {
                 Url = h.Url,
                 Title = h.Title ?? h.Url,
@@ -354,8 +364,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
                 VisitCount = h.VisitCount
             });
 
-            string lowerQuery = query.ToLowerInvariant();
-            var bookmarkSuggestions = (await bookmarkTask)
+            var bookmarkSuggestions = bookmarkTask.Result
                 .Where(b => b.Url.Contains(lowerQuery, StringComparison.OrdinalIgnoreCase) ||
                            b.Title.Contains(lowerQuery, StringComparison.OrdinalIgnoreCase))
                 .Take(3)
@@ -367,24 +376,40 @@ public partial class MainViewModel : ObservableObject, IDisposable
                     VisitCount = 0
                 });
 
-            var merged = historySuggestions
+            var localMerged = historySuggestions
                 .Concat(bookmarkSuggestions)
                 .GroupBy(s => s.Url)
                 .Select(g => g.OrderByDescending(s => s.VisitCount).First())
                 .OrderByDescending(s => s.VisitCount)
-                .Take(8)
+                .Take(5)
                 .ToList();
 
-            // Bug 6: Check cancellation again before mutating the collection
+            // Render local-only first.
+            ApplySuggestions(localMerged);
+
+            // Phase 2: merge Google when it arrives.
+            var googleResults = await searchTask;
             if (cancellationToken.IsCancellationRequested) return;
 
-            Suggestions.Clear();
-            foreach (var s in merged)
-            {
-                Suggestions.Add(s);
-            }
+            var localTitles = new HashSet<string>(
+                localMerged.Select(s => s.Title),
+                StringComparer.OrdinalIgnoreCase);
 
-            IsSuggestionsOpen = Suggestions.Count > 0;
+            var searchSuggestions = googleResults
+                .Where(s => !localTitles.Contains(s))
+                .Take(Math.Max(0, 8 - localMerged.Count))
+                .Select(s => new AutocompleteSuggestion
+                {
+                    Url = _searchEngineService.GetNavigationUrl(s),
+                    Title = s,
+                    Source = "search",
+                    VisitCount = 0
+                })
+                .ToList();
+
+            if (searchSuggestions.Count == 0) return; // nothing new to add
+
+            ApplySuggestions(localMerged.Concat(searchSuggestions));
         }
         catch (OperationCanceledException)
         {
@@ -396,13 +421,23 @@ public partial class MainViewModel : ObservableObject, IDisposable
         }
     }
 
+    private void ApplySuggestions(IEnumerable<AutocompleteSuggestion> items)
+    {
+        Suggestions.Clear();
+        foreach (var s in items) Suggestions.Add(s);
+        IsSuggestionsOpen = Suggestions.Count > 0;
+    }
+
     [RelayCommand]
     private void AcceptSuggestion(AutocompleteSuggestion? suggestion)
     {
         if (suggestion == null) return;
 
         _suppressSuggestions = true;
-        AddressBarText = suggestion.Url;
+        // For search suggestions, show the query (not the Google URL) in the bar — the page
+        // navigation will overwrite it with the canonical results URL once loaded. Matches
+        // Chrome's "briefly see the query you clicked" feedback.
+        AddressBarText = suggestion.Source == "search" ? suggestion.Title : suggestion.Url;
         _suppressSuggestions = false;
         IsSuggestionsOpen = false;
 

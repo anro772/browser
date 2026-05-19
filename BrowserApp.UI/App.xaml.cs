@@ -198,6 +198,9 @@ public partial class App : Application
         // Core Services - SearchEngine is Singleton so setting persists
         services.AddSingleton<ISearchEngineService, SearchEngineService>();
 
+        // Address-bar autocomplete enrichment — Google complete API
+        services.AddSingleton<SearchSuggestionsService>();
+
         // Phase 3: Rule System Services
         services.AddSingleton<IRuleEngine>(sp => new RuleEngine(
             sp.GetRequiredService<IServiceScopeFactory>(),

@@ -603,6 +603,23 @@ public partial class UnifiedChannelViewModel : ObservableObject
         }
     }
 
+    /// <summary>Relative-time display for when the channel was created (e.g. "3d old").</summary>
+    public string CreatedDisplay
+    {
+        get
+        {
+            var delta = DateTime.UtcNow - CreatedAt;
+            if (delta.TotalMinutes < 60) return "just created";
+            if (delta.TotalHours < 24) return $"{(int)delta.TotalHours}h old";
+            if (delta.TotalDays < 30) return $"{(int)delta.TotalDays}d old";
+            if (delta.TotalDays < 365) return $"{(int)(delta.TotalDays / 30)}mo old";
+            return $"{(int)(delta.TotalDays / 365)}y old";
+        }
+    }
+
+    /// <summary>Absolute creation timestamp for tooltips (full date · time).</summary>
+    public string CreatedTooltip => $"Created {CreatedAt.ToLocalTime():g}";
+
     public UnifiedChannelViewModel(ChannelResponse response, ChannelMembershipDto? membership = null)
     {
         Id = response.Id;
