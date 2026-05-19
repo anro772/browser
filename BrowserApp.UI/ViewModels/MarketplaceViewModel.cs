@@ -363,6 +363,11 @@ public partial class MarketplaceViewModel : ObservableObject
         TopRule = _allRules
             .OrderByDescending(r => r.DownloadCount)
             .FirstOrDefault();
+
+        // Mark the top rule so its grid card carries the gold bookmark while the rest
+        // get a neutral accent — gives the recommended pack a visual hook in the grid.
+        foreach (var r in _allRules) r.IsRecommended = false;
+        if (TopRule != null) TopRule.IsRecommended = true;
     }
 
     private void RebuildAvailableTags()
@@ -410,6 +415,9 @@ public partial class MarketplaceRuleItemViewModel : ObservableObject
 
     [ObservableProperty]
     private bool _isInstalled;
+
+    [ObservableProperty]
+    private bool _isRecommended;
 
     public MarketplaceRuleItemViewModel(RuleResponse response)
     {

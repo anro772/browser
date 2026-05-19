@@ -46,8 +46,10 @@ public class BlockingService : IBlockingService
                 lock (_statsLock)
                 {
                     _blockedCount++;
-                    // Estimate bytes saved (use content-length or default estimate)
-                    _bytesSaved += request.Size ?? 5000; // Default 5KB estimate
+                    // request.Size is null at this point (response not yet seen); fall back to the
+                    // per-resource-type estimate so the dashboard byte total matches what gets written
+                    // into the NetworkLog row by RequestInterceptor. Without this they diverged ~5x.
+                    _bytesSaved += request.Size ?? BlockedSizeEstimator.Estimate(request.ResourceType, request.Url);
                 }
 
                 ErrorLogger.LogInfo($"BLOCKED: {request.Url} by rule: {result.BlockedByRuleName}");

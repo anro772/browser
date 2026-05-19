@@ -245,17 +245,17 @@ public class RequestInterceptor : IRequestInterceptor
 
                     var htmlStream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(html));
                     e.Response = _coreWebView2!.Environment.CreateWebResourceResponse(
-                        htmlStream, 403, "Blocked", "Content-Type: text/html; charset=utf-8");
+                        htmlStream, 403, "Blocked", "Content-Type: text/html; charset=utf-8\nX-Browserapp-Blocked: 1");
                 }
                 else
                 {
                     var stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes($"Blocked by {blockReason}"));
                     e.Response = _coreWebView2!.Environment.CreateWebResourceResponse(
-                        stream, 403, "Blocked", "Content-Type: text/plain");
+                        stream, 403, "Blocked", "Content-Type: text/plain\nX-Browserapp-Blocked: 1");
                 }
 
                 // Estimate size savings based on resource type (industry-standard approach)
-                var estimatedSize = EstimateBlockedResourceSize(request.ResourceType, request.Url);
+                var estimatedSize = BlockedSizeEstimator.Estimate(request.ResourceType, request.Url);
 
                 // Create a new request object with blocking info
                 request = new NetworkRequest
@@ -288,11 +288,19 @@ public class RequestInterceptor : IRequestInterceptor
 
         try
         {
+            var headers = e.Response.Headers;
+
+            // Skip responses we synthesized ourselves in OnWebResourceRequested. Setting e.Response
+            // there still causes WebView2 to fire WebResourceResponseReceived for the stub, which
+            // would log the blocked request again as WasBlocked=false and pollute counts and bytes.
+            if (headers.Contains("X-Browserapp-Blocked"))
+            {
+                return;
+            }
+
             // Get Content-Length header for size
             long? size = null;
             string? contentType = null;
-
-            var headers = e.Response.Headers;
 
             // Try to get content length
             if (headers.Contains("Content-Length"))
@@ -390,42 +398,4 @@ public class RequestInterceptor : IRequestInterceptor
         return "Other";
     }
 
-    /// <summary>
-    /// Estimates the size of a blocked resource based on resource type and URL patterns.
-    /// Uses industry-standard averages similar to uBlock Origin's approach.
-    /// </summary>
-    private static long EstimateBlockedResourceSize(string resourceType, string url)
-    {
-        var lowerUrl = url.ToLowerInvariant();
-
-        return resourceType switch
-        {
-            // Scripts: Typically 50-150 KB (ads, trackers, analytics)
-            "Script" => lowerUrl.Contains("analytics") || lowerUrl.Contains("tracking") ? 80_000 : 100_000,
-
-            // Images: Banner ads, tracking pixels
-            "Image" => lowerUrl.Contains("pixel") || lowerUrl.Contains("beacon") ? 1_000 : 50_000,
-
-            // Video ads (largest)
-            "Media" => 500_000,
-
-            // Stylesheets: Ad styling
-            "Stylesheet" => 20_000,
-
-            // XHR/Fetch: Tracking beacons, ad requests
-            "XHR" or "Fetch" => 5_000,
-
-            // Fonts: Rarely blocked, but estimate if they are
-            "Font" => 30_000,
-
-            // Documents: Pop-ups, redirects
-            "Document" => 50_000,
-
-            // WebSocket: Real-time tracking
-            "WebSocket" => 10_000,
-
-            // Everything else: Conservative estimate
-            _ => 25_000
-        };
-    }
 }

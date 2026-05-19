@@ -118,12 +118,15 @@ public class BlockingServiceTests
     }
 
     [Fact]
-    public void ShouldBlockRequest_WhenBlockedWithNoSize_UsesDefaultEstimate()
+    public void ShouldBlockRequest_WhenBlockedWithNoSize_UsesPerTypeEstimate()
     {
-        // Arrange
+        // Arrange — Script blocked with no Content-Length available: estimator should yield
+        // 100 KB (the per-type default for "Script") rather than the legacy 5 KB fallback. This
+        // is the dashboard byte total path; without it, the dashboard understated bytes-saved.
         var requestNoSize = new NetworkRequest
         {
-            Url = "https://tracker.com/pixel.gif",
+            Url = "https://tracker.com/script.js",
+            ResourceType = "Script",
             Size = null
         };
         var blockResult = RuleEvaluationResult.Block("rule-1", "Block Trackers");
@@ -136,7 +139,7 @@ public class BlockingServiceTests
         _sut.ShouldBlockRequest(requestNoSize, "https://example.com");
 
         // Assert
-        _sut.GetBytesSaved().Should().Be(5000); // Default 5KB estimate
+        _sut.GetBytesSaved().Should().Be(100_000);
     }
 
     [Fact]

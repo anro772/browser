@@ -225,22 +225,36 @@
                        Margin="0,0,10,0"
                        Foreground="{DynamicResource TextFillColorTertiaryBrush}"/>
             <ScrollViewer Grid.Column="1"
-                          HorizontalScrollBarVisibility="Auto"
+                          HorizontalScrollBarVisibility="Hidden"
                           VerticalScrollBarVisibility="Disabled">
                 <ItemsControl ItemsSource="{Binding AvailableTags}">
                     <ItemsControl.ItemsPanel>
                         <ItemsPanelTemplate>
-                            <StackPanel Orientation="Horizontal"/>
+                            <WrapPanel Orientation="Horizontal"/>
                         </ItemsPanelTemplate>
                     </ItemsControl.ItemsPanel>
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
                             <Button Content="{Binding}"
                                     Tag="{Binding}"
-                                    Command="{Binding DataContext.ShowRuleDetailsCommand, Source={x:Reference MarketRoot}, FallbackValue={x:Null}}"
                                     Click="TagChip_Click">
                                 <Button.Style>
-                                    <Style TargetType="Button" BasedOn="{StaticResource FilterChipButtonStyle}"/>
+                                    <Style TargetType="Button" BasedOn="{StaticResource FilterChipButtonStyle}">
+                                        <Style.Triggers>
+                                            <DataTrigger Value="True">
+                                                <DataTrigger.Binding>
+                                                    <MultiBinding Converter="{StaticResource StringEqToBool}">
+                                                        <Binding Path="."/>
+                                                        <Binding Path="DataContext.SelectedTag"
+                                                                 RelativeSource="{RelativeSource AncestorType=UserControl}"/>
+                                                    </MultiBinding>
+                                                </DataTrigger.Binding>
+                                                <Setter Property="Background" Value="{StaticResource AccentSubtleBrush}"/>
+                                                <Setter Property="BorderBrush" Value="{StaticResource AccentBorderBrush}"/>
+                                                <Setter Property="Foreground" Value="{StaticResource AccentLightBrush}"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
                                 </Button.Style>
                             </Button>
                         </DataTemplate>
@@ -337,14 +351,36 @@
                                         <Border Grid.Column="0"
                                                 Width="36" Height="36"
                                                 CornerRadius="8"
-                                                Background="#1AE6A23C"
-                                                BorderBrush="#3DE6A23C"
                                                 BorderThickness="1"
                                                 Margin="0,0,10,0">
-                                            <Path Fill="{StaticResource MarketOriginBrush}"
-                                                  Data="M 0,0 L 14,0 L 14,20 L 7,15 L 0,20 Z"
+                                            <Border.Style>
+                                                <!-- Non-recommended cards get a neutral accent so the
+                                                     gold bookmark stays exclusive to the editor's pick. -->
+                                                <Style TargetType="Border">
+                                                    <Setter Property="Background" Value="{StaticResource AccentSubtleBrush}"/>
+                                                    <Setter Property="BorderBrush" Value="{StaticResource AccentBorderBrush}"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding IsRecommended}" Value="True">
+                                                            <Setter Property="Background" Value="#1AE6A23C"/>
+                                                            <Setter Property="BorderBrush" Value="#3DE6A23C"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Border.Style>
+                                            <Path Data="M 0,0 L 14,0 L 14,20 L 7,15 L 0,20 Z"
                                                   HorizontalAlignment="Center"
-                                                  VerticalAlignment="Center"/>
+                                                  VerticalAlignment="Center">
+                                                <Path.Style>
+                                                    <Style TargetType="Path">
+                                                        <Setter Property="Fill" Value="{StaticResource AccentLightBrush}"/>
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding IsRecommended}" Value="True">
+                                                                <Setter Property="Fill" Value="{StaticResource MarketOriginBrush}"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Path.Style>
+                                            </Path>
                                         </Border>
 
                                         <StackPanel Grid.Column="1" VerticalAlignment="Center">

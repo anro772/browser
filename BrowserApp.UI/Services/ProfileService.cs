@@ -62,8 +62,39 @@ public class ProfileService
             MigrateExistingDataToDefaultProfile(defaultProfile);
         }
 
-        // Determine active profile
-        _activeProfile = LoadActiveProfile() ?? _profiles.First(p => p.IsDefault);
+        // Determine active profile. Be defensive: if profiles.json was hand-edited or a
+        // profile got deleted while active_profile.txt still pointed to it, LoadActiveProfile()
+        // returns null. If no profile in the list is flagged IsDefault (also a fixable corruption),
+        // fall back to the first profile. If the list is somehow empty, mint a fresh default.
+        _activeProfile = LoadActiveProfile()
+                      ?? _profiles.FirstOrDefault(p => p.IsDefault)
+                      ?? _profiles.FirstOrDefault();
+
+        if (_activeProfile == null)
+        {
+            ErrorLogger.LogInfo("[ProfileService] No profiles found during init — minting fresh Default.");
+            _activeProfile = new BrowserProfile
+            {
+                Name = "Default",
+                Color = "#7C6AEF",
+                IsDefault = true,
+                CreatedAt = DateTime.UtcNow
+            };
+            _profiles.Add(_activeProfile);
+            SaveProfiles();
+        }
+        else if (!_profiles.Any(p => p.IsDefault))
+        {
+            // Promote the active profile to Default so future launches don't trip the
+            // same recovery branch.
+            _activeProfile.IsDefault = true;
+            SaveProfiles();
+            ErrorLogger.LogInfo($"[ProfileService] No default profile found — promoted '{_activeProfile.Name}' to default.");
+        }
+
+        // Persist the active-profile pointer so a stale guid in active_profile.txt
+        // gets corrected on this launch (otherwise the recovery would repeat every start).
+        SaveActiveProfile(_activeProfile);
 
         // Ensure profile directory exists
         Directory.CreateDirectory(GetProfileDataPath(_activeProfile));
