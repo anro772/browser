@@ -1,5 +1,6 @@
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using BrowserApp.UI.ViewModels;
 
 namespace BrowserApp.UI.Views;
@@ -40,17 +41,17 @@ public partial class PrivacyDashboardView : UserControl
         await _viewModel.RefreshStatsCommand.ExecuteAsync(null);
     }
 
-    private void ViewRulesButton_Click(object sender, RoutedEventArgs e)
+    private void ViewRulesButton_Click(object sender, MouseButtonEventArgs e)
     {
         ViewRulesRequested?.Invoke(this, EventArgs.Empty);
     }
 
-    private void MarketplaceButton_Click(object sender, RoutedEventArgs e)
+    private void MarketplaceButton_Click(object sender, MouseButtonEventArgs e)
     {
         MarketplaceRequested?.Invoke(this, EventArgs.Empty);
     }
 
-    private void ChannelsButton_Click(object sender, RoutedEventArgs e)
+    private void ChannelsButton_Click(object sender, MouseButtonEventArgs e)
     {
         ChannelsRequested?.Invoke(this, EventArgs.Empty);
     }

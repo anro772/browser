@@ -26,6 +26,14 @@ public class FilterListService : IFilterListService, IDisposable
     private readonly List<string> _globalCosmeticSelectors = new();
     private readonly object _lock = new();
     private volatile bool _isLoaded;
+    private volatile bool _isEnabled = true;
+
+    /// <inheritdoc/>
+    public bool IsEnabled
+    {
+        get => _isEnabled;
+        set => _isEnabled = value;
+    }
 
     public FilterListService()
     {
@@ -103,7 +111,7 @@ public class FilterListService : IFilterListService, IDisposable
 
     public bool ShouldBlock(string requestUrl, string? pageUrl, string resourceType)
     {
-        if (!_isLoaded || string.IsNullOrEmpty(requestUrl))
+        if (!_isLoaded || !_isEnabled || string.IsNullOrEmpty(requestUrl))
             return false;
 
         try

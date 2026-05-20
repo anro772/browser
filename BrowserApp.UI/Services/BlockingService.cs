@@ -76,6 +76,25 @@ public class BlockingService : IBlockingService
         }
     }
 
+    public void RecordExternalBlock(NetworkRequest request)
+    {
+        lock (_statsLock)
+        {
+            _detectedCount++;
+            _blockedCount++;
+            _bytesSaved += request.Size ?? BlockedSizeEstimator.Estimate(request.ResourceType, request.Url);
+        }
+
+        try
+        {
+            RequestBlocked?.Invoke(this, request);
+        }
+        catch (Exception evtEx)
+        {
+            Debug.WriteLine($"[BlockingService] RequestBlocked handler error: {evtEx.Message}");
+        }
+    }
+
     public int GetBlockedCount()
     {
         lock (_statsLock)

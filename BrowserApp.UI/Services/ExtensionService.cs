@@ -3,6 +3,7 @@ using System.IO.Compression;
 using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Web.WebView2.Core;
+using BrowserApp.Core.Interfaces;
 using BrowserApp.Data.Entities;
 using BrowserApp.Data.Interfaces;
 
@@ -12,6 +13,7 @@ public class ExtensionService
 {
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly SettingsService? _settingsService;
+    private readonly IFilterListService? _filterListService;
     private CoreWebView2Profile? _profile;
     private bool _profileReady;
 
@@ -23,10 +25,14 @@ public class ExtensionService
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
         "BrowserApp", "Extensions");
 
-    public ExtensionService(IServiceScopeFactory scopeFactory, SettingsService? settingsService = null)
+    public ExtensionService(
+        IServiceScopeFactory scopeFactory,
+        SettingsService? settingsService = null,
+        IFilterListService? filterListService = null)
     {
         _scopeFactory = scopeFactory;
         _settingsService = settingsService;
+        _filterListService = filterListService;
     }
 
     /// <summary>
@@ -38,6 +44,14 @@ public class ExtensionService
 
     private void RaiseAdBlockerStateChanged(bool enabled)
     {
+        // Keep the included EasyList/EasyPrivacy network blocker in lockstep with the
+        // ABP extension toggle. Without this, FilterListService keeps blocking after the
+        // user turns the ad blocker off.
+        if (_filterListService != null)
+        {
+            _filterListService.IsEnabled = enabled;
+        }
+
         try { AdBlockerStateChanged?.Invoke(this, enabled); }
         catch (Exception ex) { ErrorLogger.LogError("[ExtensionService] AdBlockerStateChanged handler threw", ex); }
     }

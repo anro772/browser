@@ -52,7 +52,9 @@
 
         <!-- Download row data template -->
         <DataTemplate x:Key="DownloadRowTemplate">
-            <Border Style="{StaticResource DownloadRowStyle}">
+            <Border Style="{StaticResource DownloadRowStyle}"
+                    Cursor="Hand"
+                    MouseLeftButtonUp="DownloadRow_MouseLeftButtonUp">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
@@ -119,53 +121,16 @@
                         </StackPanel>
                     </StackPanel>
 
-                    <!-- Relative time, hidden on hover so the overflow menu can take its place -->
-                    <TextBlock Grid.Column="2"
-                               Text="{Binding Status}"
-                               FontSize="10.5" Margin="8,0,4,0"
-                               VerticalAlignment="Center"
-                               Foreground="{DynamicResource TextFillColorTertiaryBrush}">
-                        <TextBlock.Style>
-                            <Style TargetType="TextBlock">
-                                <Setter Property="Visibility" Value="Visible"/>
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=Border}, Path=IsMouseOver}" Value="True">
-                                        <Setter Property="Visibility" Value="Collapsed"/>
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </TextBlock.Style>
-                    </TextBlock>
-
-                    <!-- Overflow … menu — only visible on row hover -->
-                    <ui:Button Grid.Column="2"
-                               Icon="{ui:SymbolIcon MoreHorizontal24}"
-                               Width="28" Height="28" Padding="0" CornerRadius="14"
+                    <!-- Folder icon button — permanently visible, opens containing folder. -->
+                    <ui:Button x:Name="DownloadRowFolder" Grid.Column="2"
+                               Icon="{ui:SymbolIcon FolderOpen24}"
+                               Width="32" Height="32" Padding="0" CornerRadius="16"
                                Background="Transparent" BorderThickness="0"
                                Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                                VerticalAlignment="Center"
-                               ToolTip="More actions">
-                        <ui:Button.Style>
-                            <Style TargetType="ui:Button" BasedOn="{StaticResource {x:Type ui:Button}}">
-                                <Setter Property="Visibility" Value="Collapsed"/>
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=Border}, Path=IsMouseOver}" Value="True">
-                                        <Setter Property="Visibility" Value="Visible"/>
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </ui:Button.Style>
-                        <ui:Button.ContextMenu>
-                            <ContextMenu>
-                                <MenuItem Header="Open"
-                                          Command="{Binding DataContext.OpenFileCommand, RelativeSource={RelativeSource AncestorType=ListView}}"
-                                          CommandParameter="{Binding}"/>
-                                <MenuItem Header="Show in folder"
-                                          Command="{Binding DataContext.ShowInFolderCommand, RelativeSource={RelativeSource AncestorType=ListView}}"
-                                          CommandParameter="{Binding}"/>
-                            </ContextMenu>
-                        </ui:Button.ContextMenu>
-                    </ui:Button>
+                               ToolTip="Show in folder"
+                               Command="{Binding DataContext.ShowInFolderCommand, RelativeSource={RelativeSource AncestorType=ListView}}"
+                               CommandParameter="{Binding}"/>
                 </Grid>
             </Border>
         </DataTemplate>

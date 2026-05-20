@@ -21,7 +21,13 @@ public partial class NetworkMonitorViewModel : ObservableObject, IDisposable
 {
     private readonly INetworkLogger _networkLogger;
     private readonly TabStripViewModel _tabStrip;
+    private readonly IBlockingService _blockingService;
     private bool _isDisposed;
+
+    // DB-historical baseline (loaded once at startup). Live counters = baseline + BlockingService session counts.
+    private int _baselineTotal;
+    private int _baselineBlocked;
+    private long _baselineBytes;
 
     // Track the currently subscribed tab's interceptor
     private BrowserTabItem? _subscribedTab;
@@ -35,8 +41,13 @@ public partial class NetworkMonitorViewModel : ObservableObject, IDisposable
     // Running total of bytes saved from blocked requests (seeded from DB on startup)
     private long _totalBytesSaved;
 
+    /// <summary>Live, sidebar-scoped list — trimmed to the last <see cref="MaxDisplayedRequests"/> for fast rendering in the narrow panel.</summary>
     [ObservableProperty]
     private ObservableCollection<NetworkRequest> _requests = new();
+
+    /// <summary>Full history list — populated on demand by the expanded modal via <see cref="LoadAllRequestsAsyncCommand"/>.</summary>
+    [ObservableProperty]
+    private ObservableCollection<NetworkRequest> _allRequests = new();
 
     [ObservableProperty]
     private NetworkRequestFilter _selectedFilter = NetworkRequestFilter.All;
@@ -56,14 +67,25 @@ public partial class NetworkMonitorViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private NetworkRequest? _selectedRequest;
 
-    private const int MaxDisplayedRequests = 500;
+    /// <summary>Search filter applied to <see cref="AllRequests"/> in the expanded modal — matches URL/host substring.</summary>
+    [ObservableProperty]
+    private string _searchQuery = string.Empty;
+
+    /// <summary>Number of rows currently visible in <see cref="AllRequests"/> after the search filter — used by the modal footer.</summary>
+    [ObservableProperty]
+    private int _filteredAllRequestsCount;
+
+    private const int MaxDisplayedRequests = 100;
+    private const int MaxAllRequestsRows = 5000;
 
     public NetworkMonitorViewModel(
         INetworkLogger networkLogger,
-        TabStripViewModel tabStrip)
+        TabStripViewModel tabStrip,
+        IBlockingService blockingService)
     {
         _networkLogger = networkLogger;
         _tabStrip = tabStrip;
+        _blockingService = blockingService;
 
         // Subscribe to active tab changes to wire up per-tab interceptors
         _tabStrip.ActiveTabChanged += OnActiveTabChanged;
@@ -116,7 +138,9 @@ public partial class NetworkMonitorViewModel : ObservableObject, IDisposable
     }
 
     /// <summary>
-    /// Loads initial statistics from the database on startup.
+    /// Loads initial statistics from the database on startup. The DB totals become the baseline
+    /// that we add the live BlockingService session counters onto — that way the dashboard and
+    /// the monitor track the same source of truth for the per-session delta.
     /// </summary>
     private async Task LoadInitialStatsAsync()
     {
@@ -126,16 +150,30 @@ public partial class NetworkMonitorViewModel : ObservableObject, IDisposable
 
             Application.Current?.Dispatcher.Invoke(() =>
             {
+                _baselineTotal = stats.TotalRequests;
+                _baselineBlocked = stats.BlockedRequests;
+                _baselineBytes = stats.TotalBytes;
                 _totalBytesSaved = stats.TotalBytes;
-                TotalRequests = stats.TotalRequests;
-                BlockedCount = stats.BlockedRequests;
-                DataSaved = stats.FormattedDataSaved;
+                SyncCountersFromBlockingService();
             });
         }
         catch (Exception ex)
         {
             System.Diagnostics.Debug.WriteLine($"Initial stats load error: {ex.Message}");
         }
+    }
+
+    /// <summary>
+    /// Pulls the live session counters from <see cref="IBlockingService"/> and adds them to the
+    /// DB-historical baseline. Called on the dispatcher whenever the displayed numbers should refresh.
+    /// </summary>
+    private void SyncCountersFromBlockingService()
+    {
+        TotalRequests = _baselineTotal + _blockingService.GetDetectedCount();
+        BlockedCount = _baselineBlocked + _blockingService.GetBlockedCount();
+        var bytes = _baselineBytes + _blockingService.GetBytesSaved();
+        _totalBytesSaved = bytes;
+        DataSaved = FormatBytes(bytes);
     }
 
     /// <summary>
@@ -152,54 +190,88 @@ public partial class NetworkMonitorViewModel : ObservableObject, IDisposable
 
     /// <summary>
     /// Flushes pending requests to the UI in batches.
-    /// Called by timer every 250ms to provide smooth updates even under high load.
+    /// Called by timer every 250ms. Always re-syncs counters from BlockingService so the
+    /// header reflects blocks happening on other tabs even when the active-tab interceptor
+    /// has no pending events.
     /// </summary>
     private void FlushPendingRequests(object? sender, EventArgs e)
     {
-        if (_pendingRequests.IsEmpty)
-            return;
-
-        // Dequeue up to BatchSize requests
         var batch = new List<NetworkRequest>();
         while (batch.Count < BatchSize && _pendingRequests.TryDequeue(out var request))
         {
             batch.Add(request);
         }
 
-        if (batch.Count == 0)
-            return;
-
         // Update UI on background priority to avoid blocking user interactions
         Application.Current?.Dispatcher.InvokeAsync(() =>
         {
-            long newBytes = 0;
             foreach (var request in batch)
             {
-                // Add to top of list
+                // Sidebar: trimmed live view.
                 Requests.Insert(0, request);
-
-                // Update stats
-                TotalRequests++;
-                if (request.WasBlocked)
-                {
-                    BlockedCount++;
-                    if (request.Size.HasValue)
-                        newBytes += request.Size.Value;
-                }
+                // Expanded modal: full live view (capped at MaxAllRequestsRows so memory doesn't grow unbounded).
+                AllRequests.Insert(0, request);
             }
 
-            if (newBytes > 0)
-            {
-                _totalBytesSaved += newBytes;
-                DataSaved = FormatBytes(_totalBytesSaved);
-            }
+            // Stats now come from BlockingService (singleton, sees every block across all tabs),
+            // not from this VM's per-tab interceptor subscription. That keeps the network monitor
+            // and the privacy dashboard in lockstep — both read the same counters.
+            SyncCountersFromBlockingService();
 
-            // Trim old entries to prevent memory issues
+            // Trim sidebar list aggressively — it's narrow and we want snappy redraws.
             while (Requests.Count > MaxDisplayedRequests)
             {
                 Requests.RemoveAt(Requests.Count - 1);
             }
+            // Trim expanded list loosely — it's a roomy modal but we still want a memory ceiling.
+            while (AllRequests.Count > MaxAllRequestsRows)
+            {
+                AllRequests.RemoveAt(AllRequests.Count - 1);
+            }
         }, DispatcherPriority.Background);
+    }
+
+    /// <summary>
+    /// Loads the full request history from the database into <see cref="AllRequests"/>.
+    /// Called by the expanded monitor on open so the modal shows everything (the sidebar's
+    /// <see cref="Requests"/> is capped at the most recent 100 for performance).
+    /// </summary>
+    [RelayCommand]
+    private async Task LoadAllRequestsAsync()
+    {
+        await ApplyFilterToAllAsync(SelectedFilter.ToString());
+    }
+
+    /// <summary>
+    /// Applies the selected filter to <see cref="AllRequests"/> only — used by the expanded
+    /// modal so filter chips there don't disturb the sidebar's live <see cref="Requests"/> stream.
+    /// </summary>
+    [RelayCommand]
+    private async Task ApplyFilterToAllAsync(string filterName)
+    {
+        if (Enum.TryParse<NetworkRequestFilter>(filterName, out var filter))
+        {
+            SelectedFilter = filter;
+        }
+
+        try
+        {
+            var currentHost = GetCurrentPageHost();
+            var filtered = await _networkLogger.GetFilteredRequestsAsync(SelectedFilter, currentHost);
+
+            Application.Current?.Dispatcher.Invoke(() =>
+            {
+                AllRequests.Clear();
+                foreach (var request in filtered.Take(MaxAllRequestsRows))
+                {
+                    AllRequests.Add(request);
+                }
+            });
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Apply modal filter error: {ex.Message}");
+        }
     }
 
     /// <summary>
@@ -278,11 +350,16 @@ public partial class NetworkMonitorViewModel : ObservableObject, IDisposable
         if (result == MessageBoxResult.Yes)
         {
             await _networkLogger.ClearAllAsync();
+            _blockingService.ResetStats(); // Keep the dashboard counters in lockstep.
 
             Application.Current?.Dispatcher.Invoke(() =>
             {
+                _baselineTotal = 0;
+                _baselineBlocked = 0;
+                _baselineBytes = 0;
                 _totalBytesSaved = 0;
                 Requests.Clear();
+                AllRequests.Clear();
                 TotalRequests = 0;
                 BlockedCount = 0;
                 DataSaved = "0 B";
@@ -330,7 +407,8 @@ public partial class NetworkMonitorViewModel : ObservableObject, IDisposable
     }
 
     /// <summary>
-    /// Refreshes stats from the database.
+    /// Refreshes the DB-historical baseline, then re-syncs the displayed counters from the
+    /// BlockingService session counters.
     /// </summary>
     [RelayCommand]
     private async Task RefreshStatsAsync()
@@ -341,10 +419,10 @@ public partial class NetworkMonitorViewModel : ObservableObject, IDisposable
 
             Application.Current?.Dispatcher.Invoke(() =>
             {
-                _totalBytesSaved = stats.TotalBytes;
-                TotalRequests = stats.TotalRequests;
-                BlockedCount = stats.BlockedRequests;
-                DataSaved = stats.FormattedDataSaved;
+                _baselineTotal = stats.TotalRequests;
+                _baselineBlocked = stats.BlockedRequests;
+                _baselineBytes = stats.TotalBytes;
+                SyncCountersFromBlockingService();
             });
         }
         catch (Exception ex)

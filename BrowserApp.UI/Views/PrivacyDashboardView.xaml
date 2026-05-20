@@ -20,6 +20,17 @@
              d:DataContext="{d:DesignInstance vm:PrivacyDashboardViewModel}"
              Loaded="OnLoaded">
 
+    <UserControl.Resources>
+        <Style x:Key="QuickActionTileStyle" TargetType="Border">
+            <Setter Property="Background" Value="Transparent"/>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="{StaticResource BgSurfaceHoverBrush}"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+    </UserControl.Resources>
+
     <ScrollViewer VerticalScrollBarVisibility="Auto"
                   Style="{StaticResource FadeInOnLoadModern}">
         <StackPanel Margin="8">
@@ -259,83 +270,58 @@
                     <Border Background="{StaticResource BgElevatedBrush}"
                             BorderBrush="{StaticResource BorderSubtleBrush}"
                             BorderThickness="1" CornerRadius="10" Padding="4">
-                        <UniformGrid Columns="3" Rows="1">
-                            <Button x:Name="ViewRulesButton" Click="ViewRulesButton_Click"
-                                    Background="Transparent" BorderThickness="0" Cursor="Hand"
-                                    Padding="6,9" Margin="0">
-                                <Button.Template>
-                                    <ControlTemplate TargetType="Button">
-                                        <Border x:Name="B" Background="Transparent" CornerRadius="7" Padding="{TemplateBinding Padding}"
-                                                HorizontalAlignment="Stretch">
-                                            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-                                                <ui:SymbolIcon Symbol="Shield24" FontSize="16"
-                                                               Foreground="{StaticResource AccentLightBrush}"
-                                                               HorizontalAlignment="Center"/>
-                                                <TextBlock Text="Rules" FontSize="11.5"
-                                                           FontWeight="Medium" Margin="0,4,0,0"
-                                                           HorizontalAlignment="Center"
-                                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
-                                            </StackPanel>
-                                        </Border>
-                                        <ControlTemplate.Triggers>
-                                            <Trigger Property="IsMouseOver" Value="True">
-                                                <Setter TargetName="B" Property="Background" Value="{StaticResource BgSurfaceHoverBrush}"/>
-                                            </Trigger>
-                                        </ControlTemplate.Triggers>
-                                    </ControlTemplate>
-                                </Button.Template>
-                            </Button>
-                            <Button x:Name="MarketplaceButton" Click="MarketplaceButton_Click"
-                                    Background="Transparent" BorderThickness="0" Cursor="Hand"
-                                    Padding="6,9" Margin="0">
-                                <Button.Template>
-                                    <ControlTemplate TargetType="Button">
-                                        <Border x:Name="B" Background="Transparent" CornerRadius="7" Padding="{TemplateBinding Padding}"
-                                                HorizontalAlignment="Stretch">
-                                            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-                                                <ui:SymbolIcon Symbol="BuildingShop24" FontSize="16"
-                                                               Foreground="{StaticResource AccentLightBrush}"
-                                                               HorizontalAlignment="Center"/>
-                                                <TextBlock Text="Market" FontSize="11.5"
-                                                           FontWeight="Medium" Margin="0,4,0,0"
-                                                           HorizontalAlignment="Center"
-                                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
-                                            </StackPanel>
-                                        </Border>
-                                        <ControlTemplate.Triggers>
-                                            <Trigger Property="IsMouseOver" Value="True">
-                                                <Setter TargetName="B" Property="Background" Value="{StaticResource BgSurfaceHoverBrush}"/>
-                                            </Trigger>
-                                        </ControlTemplate.Triggers>
-                                    </ControlTemplate>
-                                </Button.Template>
-                            </Button>
-                            <Button x:Name="ChannelsButton" Click="ChannelsButton_Click"
-                                    Background="Transparent" BorderThickness="0" Cursor="Hand"
-                                    Padding="6,9" Margin="0">
-                                <Button.Template>
-                                    <ControlTemplate TargetType="Button">
-                                        <Border x:Name="B" Background="Transparent" CornerRadius="7" Padding="{TemplateBinding Padding}"
-                                                HorizontalAlignment="Stretch">
-                                            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-                                                <ui:SymbolIcon Symbol="PeopleTeam24" FontSize="16"
-                                                               Foreground="{StaticResource AccentLightBrush}"
-                                                               HorizontalAlignment="Center"/>
-                                                <TextBlock Text="Channels" FontSize="11.5"
-                                                           FontWeight="Medium" Margin="0,4,0,0"
-                                                           HorizontalAlignment="Center"
-                                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
-                                            </StackPanel>
-                                        </Border>
-                                        <ControlTemplate.Triggers>
-                                            <Trigger Property="IsMouseOver" Value="True">
-                                                <Setter TargetName="B" Property="Background" Value="{StaticResource BgSurfaceHoverBrush}"/>
-                                            </Trigger>
-                                        </ControlTemplate.Triggers>
-                                    </ControlTemplate>
-                                </Button.Template>
-                            </Button>
-                        </UniformGrid>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Border Grid.Column="0" x:Name="ViewRulesTile"
+                                    CornerRadius="7" Cursor="Hand"
+                                    HorizontalAlignment="Stretch"
+                                    MouseLeftButtonUp="ViewRulesButton_Click"
+                                    Style="{StaticResource QuickActionTileStyle}">
+                                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Margin="6,9">
+                                    <ui:SymbolIcon Symbol="Shield24" FontSize="16"
+                                                   Foreground="{StaticResource AccentLightBrush}"
+                                                   HorizontalAlignment="Center"/>
+                                    <TextBlock Text="Rules" FontSize="11.5"
+                                               FontWeight="Medium" Margin="0,4,0,0"
+                                               HorizontalAlignment="Center"
+                                               Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                </StackPanel>
+                            </Border>
+                            <Border Grid.Column="1" x:Name="MarketplaceTile"
+                                    CornerRadius="7" Cursor="Hand"
+                                    HorizontalAlignment="Stretch"
+                                    MouseLeftButtonUp="MarketplaceButton_Click"
+                                    Style="{StaticResource QuickActionTileStyle}">
+                                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Margin="6,9">
+                                    <ui:SymbolIcon Symbol="BuildingShop24" FontSize="16"
+                                                   Foreground="{StaticResource AccentLightBrush}"
+                                                   HorizontalAlignment="Center"/>
+                                    <TextBlock Text="Market" FontSize="11.5"
+                                               FontWeight="Medium" Margin="0,4,0,0"
+                                               HorizontalAlignment="Center"
+                                               Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                </StackPanel>
+                            </Border>
+                            <Border Grid.Column="2" x:Name="ChannelsTile"
+                                    CornerRadius="7" Cursor="Hand"
+                                    HorizontalAlignment="Stretch"
+                                    MouseLeftButtonUp="ChannelsButton_Click"
+                                    Style="{StaticResource QuickActionTileStyle}">
+                                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Margin="6,9">
+                                    <ui:SymbolIcon Symbol="PeopleTeam24" FontSize="16"
+                                                   Foreground="{StaticResource AccentLightBrush}"
+                                                   HorizontalAlignment="Center"/>
+                                    <TextBlock Text="Channels" FontSize="11.5"
+                                               FontWeight="Medium" Margin="0,4,0,0"
+                                               HorizontalAlignment="Center"
+                                               Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                </StackPanel>
+                            </Border>
+                        </Grid>
                     </Border>
                 </StackPanel>
             </Border>

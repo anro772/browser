@@ -14,7 +14,26 @@ public class NetworkRequest
     public long? Size { get; init; }
     public bool WasBlocked { get; init; }
     public string? BlockedByRuleId { get; init; }
+
+    /// <summary>
+    /// Human-readable label for what blocked this request — the custom rule name, the filter list
+    /// name ("EasyList/EasyPrivacy"), or a content-policy category. Used by the expanded monitor's
+    /// "Blocked by" column and detail pane.
+    /// </summary>
+    public string? BlockedByRule { get; init; }
+
+    /// <summary>
+    /// The actual pattern/host that matched when blocking. Optional — only populated for filter
+    /// list and rule blocks where we know the matching pattern.
+    /// </summary>
+    public string? BlockedByPattern { get; init; }
+
     public DateTime Timestamp { get; init; } = DateTime.UtcNow;
+
+    /// <summary>
+    /// Formatted local timestamp used by the expanded monitor's detail pane.
+    /// </summary>
+    public string TimestampDisplay => Timestamp.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss");
 
     /// <summary>
     /// Gets the host/domain from the URL.

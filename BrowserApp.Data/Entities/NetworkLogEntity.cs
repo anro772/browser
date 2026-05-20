@@ -15,5 +15,12 @@ public class NetworkLogEntity
     public long? Size { get; set; }
     public bool WasBlocked { get; set; }
     public string? BlockedByRuleId { get; set; }
+
+    /// <summary>Human-readable label for what blocked this request (e.g. "EasyList/EasyPrivacy", "Custom rule"). Nullable.</summary>
+    public string? BlockedByRule { get; set; }
+
+    /// <summary>Pattern/host that matched the block, when known.</summary>
+    public string? BlockedByPattern { get; set; }
+
     public DateTime Timestamp { get; set; } = DateTime.UtcNow;
 }

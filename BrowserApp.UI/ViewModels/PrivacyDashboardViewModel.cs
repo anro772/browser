@@ -21,6 +21,10 @@ public partial class PrivacyDashboardViewModel : ObservableObject, IDisposable
     private readonly SettingsService _settingsService;
     private readonly IBlockingService _blockingService;
     private readonly DispatcherTimer? _refreshTimer;
+    // Lightweight live-counter polling — runs continuously at 500ms. The expensive DB refresh
+    // (_refreshTimer above) only runs on blocking events. Without this poll, DetectedThisSession
+    // drifts behind the network monitor because allowed-but-detected requests don't raise events.
+    private readonly DispatcherTimer? _liveCountersTimer;
     private readonly EventHandler<PrivacyMode> _privacyModeChangedHandler;
     private readonly EventHandler<NetworkRequest> _requestBlockedHandler;
     private bool _disposed;
@@ -69,6 +73,10 @@ public partial class PrivacyDashboardViewModel : ObservableObject, IDisposable
         {
             _refreshTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(500) };
             _refreshTimer.Tick += OnRefreshTimerTick;
+
+            _liveCountersTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(500) };
+            _liveCountersTimer.Tick += OnLiveCountersTick;
+            _liveCountersTimer.Start();
         }
 
         _privacyModeChangedHandler = (_, mode) =>
@@ -103,6 +111,23 @@ public partial class PrivacyDashboardViewModel : ObservableObject, IDisposable
     }
 
     /// <summary>
+    /// Polls the in-memory BlockingService counters every 500ms so that allowed-but-detected
+    /// requests (which don't raise RequestBlocked) still tick the Detected number. Without this
+    /// the dashboard's Detected silently drifts behind the network monitor's Total.
+    /// </summary>
+    private void OnLiveCountersTick(object? sender, EventArgs e)
+    {
+        var blocked = _blockingService.GetBlockedCount();
+        var detected = _blockingService.GetDetectedCount();
+        var bytes = _blockingService.GetBytesSaved();
+
+        if (BlockedThisSession != blocked) BlockedThisSession = blocked;
+        if (DetectedThisSession != detected) DetectedThisSession = detected;
+        var formatted = FormatBytes(bytes);
+        if (DataSaved != formatted) DataSaved = formatted;
+    }
+
+    /// <summary>
     /// Restarts the debounced refresh timer. Called whenever a blocking event arrives;
     /// repeated calls within the interval window collapse to a single refresh.
     /// </summary>
@@ -128,6 +153,12 @@ public partial class PrivacyDashboardViewModel : ObservableObject, IDisposable
         {
             _refreshTimer.Stop();
             _refreshTimer.Tick -= OnRefreshTimerTick;
+        }
+
+        if (_liveCountersTimer != null)
+        {
+            _liveCountersTimer.Stop();
+            _liveCountersTimer.Tick -= OnLiveCountersTick;
         }
 
         GC.SuppressFinalize(this);
@@ -260,6 +291,10 @@ public partial class PrivacyDashboardViewModel : ObservableObject, IDisposable
                 using var scope = _scopeFactory.CreateScope();
                 var networkLogRepository = scope.ServiceProvider.GetRequiredService<INetworkLogRepository>();
                 await networkLogRepository.ClearAllAsync();
+
+                // Also zero the BlockingService session counters so the network monitor
+                // (which reads the same counters) snaps to 0 at the same time.
+                _blockingService.ResetStats();
 
                 // Refresh stats to show zeroed values
                 await RefreshStatsAsync();

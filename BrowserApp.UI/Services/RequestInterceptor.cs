@@ -138,7 +138,10 @@ public class RequestInterceptor : IRequestInterceptor
 
             // Check if request should be blocked
             bool shouldBlock = false;
+            bool blockedByFilterList = false;
             string? blockedByRuleId = null;
+            string? blockedByRuleName = null;
+            string? blockedByPattern = null;
             string? blockReason = null;
 
             // Never block first-party document/navigation requests (the page itself).
@@ -175,6 +178,10 @@ public class RequestInterceptor : IRequestInterceptor
                     blockReason = evaluation.BlockedByCategory != null
                         ? $"Content Policy ({evaluation.BlockedByCategory})"
                         : $"Custom Rule {evaluation.BlockedByRuleId}";
+                    blockedByRuleName = evaluation.BlockedByCategory != null
+                        ? $"Policy: {evaluation.BlockedByCategory}"
+                        : (evaluation.BlockedByRuleName ?? "Custom rule");
+                    blockedByPattern = evaluation.BlockedByRuleName;
                     System.Diagnostics.Debug.WriteLine($"[RequestInterceptor] Blocked by {blockReason}: {request.Url}");
                 }
 
@@ -219,7 +226,14 @@ public class RequestInterceptor : IRequestInterceptor
                     if (_filterListService.ShouldBlock(request.Url, currentPageUrl, request.ResourceType))
                     {
                         shouldBlock = true;
+                        blockedByFilterList = true;
                         blockReason = "Filter List (EasyList/EasyPrivacy)";
+                        blockedByRuleName = "Included ABP";
+                        // Best-effort: surface the host that matched. We don't know the exact filter
+                        // expression without instrumenting FilterListService.ShouldBlock, but the host
+                        // is what most blocks key on.
+                        try { blockedByPattern = new Uri(request.Url).Host; }
+                        catch { blockedByPattern = null; }
                         ErrorLogger.LogInfo($"BLOCKED: {request.Url} by {blockReason}");
                     }
                 }
@@ -266,12 +280,22 @@ public class RequestInterceptor : IRequestInterceptor
                     Timestamp = request.Timestamp,
                     WasBlocked = true,
                     BlockedByRuleId = blockedByRuleId,
+                    BlockedByRule = blockedByRuleName,
+                    BlockedByPattern = blockedByPattern,
                     Size = estimatedSize,
                     StatusCode = 403
                 };
 
                 // Only fire event for blocked requests (non-blocked logged in OnWebResourceResponseReceived)
                 RequestCaptured?.Invoke(this, request);
+
+                // FilterListService blocks don't go through BlockingService.ShouldBlockRequest,
+                // so the dashboard's session counters would never see them. Record the block here
+                // so PrivacyDashboard's blocked/detected/bytes-saved stay in sync with the monitor.
+                if (blockedByFilterList && _blockingService != null)
+                {
+                    _blockingService.RecordExternalBlock(request);
+                }
             }
             // Note: Non-blocked requests are logged in OnWebResourceResponseReceived with full response data
         }

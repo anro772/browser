@@ -37,6 +37,7 @@
                  ShowInTaskbar="True"
                  ExtendsContentIntoTitleBar="True"
                  ResizeMode="CanResize"
+                 Loaded="OnLoaded"
                  d:DataContext="{d:DesignInstance vm:NetworkMonitorViewModel}">
 
     <ui:FluentWindow.Resources>
@@ -166,19 +167,19 @@
                 <ScrollViewer Grid.Column="0" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
                     <StackPanel Orientation="Horizontal">
                         <Button Content="All"      Style="{StaticResource ExpFilterChipStyle}"
-                                Command="{Binding ApplyFilterCommand}" CommandParameter="All"/>
+                                Command="{Binding ApplyFilterToAllCommand}" CommandParameter="All"/>
                         <Button Content="Blocked"  Style="{StaticResource ExpFilterChipStyle}"
-                                Command="{Binding ApplyFilterCommand}" CommandParameter="Blocked"/>
+                                Command="{Binding ApplyFilterToAllCommand}" CommandParameter="Blocked"/>
                         <Button Content="3rd Party" Style="{StaticResource ExpFilterChipStyle}"
-                                Command="{Binding ApplyFilterCommand}" CommandParameter="ThirdParty"/>
+                                Command="{Binding ApplyFilterToAllCommand}" CommandParameter="ThirdParty"/>
                         <Button Content="Scripts"  Style="{StaticResource ExpFilterChipStyle}"
-                                Command="{Binding ApplyFilterCommand}" CommandParameter="Scripts"/>
+                                Command="{Binding ApplyFilterToAllCommand}" CommandParameter="Scripts"/>
                         <Button Content="Images"   Style="{StaticResource ExpFilterChipStyle}"
-                                Command="{Binding ApplyFilterCommand}" CommandParameter="Images"/>
+                                Command="{Binding ApplyFilterToAllCommand}" CommandParameter="Images"/>
                         <Button Content="XHR"      Style="{StaticResource ExpFilterChipStyle}"
-                                Command="{Binding ApplyFilterCommand}" CommandParameter="XHR"/>
+                                Command="{Binding ApplyFilterToAllCommand}" CommandParameter="XHR"/>
                         <Button Content="Fonts"    Style="{StaticResource ExpFilterChipStyle}"
-                                Command="{Binding ApplyFilterCommand}" CommandParameter="Fonts"/>
+                                Command="{Binding ApplyFilterToAllCommand}" CommandParameter="Fonts"/>
                     </StackPanel>
                 </ScrollViewer>
                 <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="12,0,0,0">
@@ -204,12 +205,27 @@
                 <ColumnDefinition Width="380"/>
             </Grid.ColumnDefinitions>
 
-            <!-- Main request grid -->
+            <!-- Main request grid + search + footer -->
             <Border Grid.Column="0" Margin="20,16,10,20"
                     Background="{StaticResource BgSurfaceBrush}"
                     BorderBrush="{StaticResource BorderSubtleBrush}" BorderThickness="1"
                     CornerRadius="12" Padding="2">
-                <DataGrid ItemsSource="{Binding Requests}"
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Search box -->
+                    <Border Grid.Row="0" Padding="10,8,10,6">
+                        <ui:TextBox PlaceholderText="Search by URL or host..."
+                                    Text="{Binding SearchQuery, UpdateSourceTrigger=PropertyChanged}"
+                                    Icon="{ui:SymbolIcon Search24}"/>
+                    </Border>
+
+                    <DataGrid Grid.Row="1" x:Name="RequestsGrid"
+                              ItemsSource="{Binding AllRequests}"
                           SelectedItem="{Binding SelectedRequest}"
                           AutoGenerateColumns="False" IsReadOnly="True"
                           HeadersVisibility="Column" GridLinesVisibility="None"
@@ -280,6 +296,24 @@
                                             Width="80"/>
                     </DataGrid.Columns>
                 </DataGrid>
+
+                    <!-- Status footer — "Showing N of M" -->
+                    <Border Grid.Row="2" BorderBrush="{StaticResource BorderSubtleBrush}"
+                            BorderThickness="0,1,0,0" Padding="12,8">
+                        <TextBlock FontSize="11.5"
+                                   Foreground="{DynamicResource TextFillColorTertiaryBrush}">
+                            <Run Text="Showing"/>
+                            <Run Text="{Binding FilteredAllRequestsCount, Mode=OneWay}"
+                                 FontWeight="SemiBold"
+                                 Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                            <Run Text="of"/>
+                            <Run Text="{Binding AllRequests.Count, Mode=OneWay}"
+                                 FontWeight="SemiBold"
+                                 Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                            <Run Text="requests"/>
+                        </TextBlock>
+                    </Border>
+                </Grid>
             </Border>
 
             <!-- Detail pane -->

@@ -42,6 +42,14 @@ public interface IBlockingService
     long GetBytesSaved();
 
     /// <summary>
+    /// Records a block that was performed outside <see cref="ShouldBlockRequest"/> — typically
+    /// by FilterListService (EasyList/EasyPrivacy) inside the request interceptor. Increments
+    /// session counters and raises <see cref="RequestBlocked"/> so the privacy dashboard sees
+    /// the block. Without this hook FilterListService blocks only show up in the network monitor.
+    /// </summary>
+    void RecordExternalBlock(NetworkRequest request);
+
+    /// <summary>
     /// Resets the session statistics.
     /// </summary>
     void ResetStats();

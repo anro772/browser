@@ -231,6 +231,8 @@ public class NetworkLogger : INetworkLogger
             Size = request.Size,
             WasBlocked = request.WasBlocked,
             BlockedByRuleId = request.BlockedByRuleId,
+            BlockedByRule = request.BlockedByRule,
+            BlockedByPattern = request.BlockedByPattern,
             Timestamp = request.Timestamp
         };
     }
@@ -250,6 +252,8 @@ public class NetworkLogger : INetworkLogger
             Size = entity.Size,
             WasBlocked = entity.WasBlocked,
             BlockedByRuleId = entity.BlockedByRuleId,
+            BlockedByRule = entity.BlockedByRule,
+            BlockedByPattern = entity.BlockedByPattern,
             Timestamp = entity.Timestamp
         };
     }
