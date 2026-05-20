@@ -313,6 +313,23 @@ public partial class NetworkMonitorViewModel : ObservableObject, IDisposable
     }
 
     /// <summary>
+    /// Opens the expanded Network Monitor window. Reuses this VM as the window's DataContext.
+    /// </summary>
+    [RelayCommand]
+    private void OpenExpandedMonitor()
+    {
+        Application.Current?.Dispatcher.Invoke(() =>
+        {
+            var window = new Views.NetworkMonitorExpandedView
+            {
+                DataContext = this,
+                Owner = Application.Current.MainWindow
+            };
+            window.Show();
+        });
+    }
+
+    /// <summary>
     /// Refreshes stats from the database.
     /// </summary>
     [RelayCommand]

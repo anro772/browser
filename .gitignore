@@ -138,3 +138,4 @@ docs/PROJECT_CONTEXT.md
 *.sql
 nul
 browser-profiles
+.design-handoff/

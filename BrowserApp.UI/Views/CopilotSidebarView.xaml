@@ -1,3 +1,26 @@
+<!--
+  Views/CopilotSidebarView.xaml — visual redesign + UX upgrades.
+
+  Bindings preserved verbatim:
+    Messages{Role, Content, Timestamp, IsStreaming}, UserInput,
+    IsGenerating, IsOllamaConnected, SelectedModel, AvailableModels,
+    ConnectionStatus, IncludePageContext, AttachScreenshotOnNext,
+    CurrentPageTitle, CurrentPageUrl, HasActivePage,
+    CheckConnectionCommand, LoadModelsCommand, SendMessageCommand,
+    StopGenerationCommand, ClearChatCommand, ToggleAttachScreenshotCommand,
+    ToggleIncludePageContextCommand.
+  Code-behind handlers preserved: OnLoaded, ChatInput_PreviewKeyDown.
+
+  New bindings to wire on the VM (additive — view renders gracefully if missing):
+    - SuggestedPrompts        (IEnumerable<SuggestedPrompt> — surfaces in empty state)
+    - SuggestedPrompt.Label   (string)
+    - SuggestedPrompt.Glyph   (ui:SymbolRegular value — e.g. "Document24", "Shield24",
+                                "Hash24", "Translate24")
+    - UseSuggestedPromptCommand  (RelayCommand<SuggestedPrompt> — fills UserInput
+                                  and sends)
+    - HasMessages             (bool — true when Messages.Count > 0; drives empty-vs-chat)
+    - OpenOllamaInstructionsCommand  (link in the disconnected state)
+-->
 <UserControl x:Class="BrowserApp.UI.Views.CopilotSidebarView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -6,98 +29,178 @@
              xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
              xmlns:vm="clr-namespace:BrowserApp.UI.ViewModels"
              mc:Ignorable="d"
-             d:DesignHeight="700"
-             d:DesignWidth="380"
+             d:DesignHeight="800" d:DesignWidth="380"
              d:DataContext="{d:DesignInstance vm:CopilotSidebarViewModel}"
              Loaded="OnLoaded">
 
     <UserControl.Resources>
-        <!-- User message bubble style: right-aligned, accent tint -->
+
+        <!-- Bouncing-dots streaming indicator (3 dots, staggered scale animation). -->
+        <Style x:Key="BounceDotStyle" TargetType="Ellipse">
+            <Setter Property="Width" Value="5"/>
+            <Setter Property="Height" Value="5"/>
+            <Setter Property="Fill" Value="{StaticResource AccentLightBrush}"/>
+            <Setter Property="Margin" Value="0,0,3,0"/>
+            <Setter Property="RenderTransformOrigin" Value="0.5,0.5"/>
+            <Setter Property="RenderTransform">
+                <Setter.Value>
+                    <ScaleTransform ScaleX="0.5" ScaleY="0.5"/>
+                </Setter.Value>
+            </Setter>
+            <Setter Property="Opacity" Value="0.4"/>
+        </Style>
+        <Storyboard x:Key="BounceDotsStoryboard" RepeatBehavior="Forever">
+            <DoubleAnimationUsingKeyFrames Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)" Duration="0:0:1.2">
+                <LinearDoubleKeyFrame KeyTime="0:0:0" Value="0.5"/>
+                <LinearDoubleKeyFrame KeyTime="0:0:0.4" Value="1"/>
+                <LinearDoubleKeyFrame KeyTime="0:0:0.8" Value="0.5"/>
+                <LinearDoubleKeyFrame KeyTime="0:0:1.2" Value="0.5"/>
+            </DoubleAnimationUsingKeyFrames>
+            <DoubleAnimationUsingKeyFrames Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)" Duration="0:0:1.2">
+                <LinearDoubleKeyFrame KeyTime="0:0:0" Value="0.5"/>
+                <LinearDoubleKeyFrame KeyTime="0:0:0.4" Value="1"/>
+                <LinearDoubleKeyFrame KeyTime="0:0:0.8" Value="0.5"/>
+                <LinearDoubleKeyFrame KeyTime="0:0:1.2" Value="0.5"/>
+            </DoubleAnimationUsingKeyFrames>
+            <DoubleAnimationUsingKeyFrames Storyboard.TargetProperty="Opacity" Duration="0:0:1.2">
+                <LinearDoubleKeyFrame KeyTime="0:0:0" Value="0.4"/>
+                <LinearDoubleKeyFrame KeyTime="0:0:0.4" Value="1"/>
+                <LinearDoubleKeyFrame KeyTime="0:0:0.8" Value="0.4"/>
+                <LinearDoubleKeyFrame KeyTime="0:0:1.2" Value="0.4"/>
+            </DoubleAnimationUsingKeyFrames>
+        </Storyboard>
+
+        <!-- User message bubble — softer 12px radius, 4px tail corner -->
         <DataTemplate x:Key="UserMessageTemplate">
-            <Grid Margin="40,4,8,4" HorizontalAlignment="Right">
+            <Grid Margin="40,5,8,5" HorizontalAlignment="Right">
                 <Border Background="{StaticResource AccentSubtleBrush}"
-                        BorderBrush="{StaticResource AccentBorderBrush}"
-                        BorderThickness="1"
-                        CornerRadius="12,12,2,12"
-                        Padding="12,8"
-                        MaxWidth="300">
+                        BorderBrush="{StaticResource AccentBorderBrush}" BorderThickness="1"
+                        CornerRadius="12,12,4,12"
+                        Padding="13,10" MaxWidth="300">
                     <StackPanel>
-                        <TextBlock Text="{Binding Content}"
-                                   TextWrapping="Wrap"
-                                   FontSize="13"
-                                   LineHeight="19"
+                        <TextBlock Text="{Binding Content}" TextWrapping="Wrap"
+                                   FontSize="13" LineHeight="19"
                                    Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
                         <TextBlock Text="{Binding Timestamp, StringFormat='{}{0:HH:mm}'}"
-                                   FontSize="10"
-                                   Foreground="{DynamicResource TextFillColorTertiaryBrush}"
+                                   FontSize="10" Margin="0,5,0,0"
                                    HorizontalAlignment="Right"
-                                   Margin="0,4,0,0"/>
+                                   Foreground="{DynamicResource TextFillColorTertiaryBrush}"/>
                     </StackPanel>
                 </Border>
             </Grid>
         </DataTemplate>
 
-        <!-- Assistant message bubble style: left-aligned, subtle surface -->
+        <!-- Assistant bubble — left-aligned, with avatar, streaming dots, code-block treatment. -->
         <DataTemplate x:Key="AssistantMessageTemplate">
-            <Grid Margin="8,4,40,4" HorizontalAlignment="Left">
+            <Grid Margin="8,5,40,5" HorizontalAlignment="Left">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
 
-                <!-- Avatar indicator -->
-                <Border Grid.Column="0"
-                        Width="24" Height="24"
-                        CornerRadius="12"
+                <Border Grid.Column="0" Width="24" Height="24" CornerRadius="12"
                         Background="{StaticResource AccentSubtleBrush}"
-                        VerticalAlignment="Top"
-                        Margin="0,2,8,0">
-                    <ui:SymbolIcon Symbol="Bot24"
-                                   FontSize="12"
-                                   Foreground="{StaticResource AccentBrush}"
-                                   HorizontalAlignment="Center"
-                                   VerticalAlignment="Center"/>
+                        BorderBrush="{StaticResource AccentBorderBrush}" BorderThickness="1"
+                        VerticalAlignment="Top" Margin="0,2,8,0">
+                    <ui:SymbolIcon Symbol="Bot24" FontSize="12"
+                                   Foreground="{StaticResource AccentLightBrush}"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
                 </Border>
 
                 <Border Grid.Column="1"
-                        Background="{DynamicResource ControlFillColorDefaultBrush}"
-                        BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
-                        BorderThickness="1"
-                        CornerRadius="12,12,12,2"
-                        Padding="12,8"
-                        MaxWidth="280">
+                        Background="{StaticResource BgSurfaceBrush}"
+                        BorderBrush="{StaticResource BorderSubtleBrush}" BorderThickness="1"
+                        CornerRadius="12,12,12,4"
+                        Padding="13,10" MaxWidth="280">
                     <StackPanel>
-                        <TextBlock Text="{Binding Content}"
-                                   TextWrapping="Wrap"
-                                   FontSize="13"
-                                   LineHeight="19"
-                                   Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
-
-                        <!-- Streaming indicator -->
-                        <StackPanel Orientation="Horizontal"
-                                    Margin="0,4,0,0"
+                        <!-- Streaming indicator: bouncing dots inline at the start of an in-progress bubble. -->
+                        <StackPanel Orientation="Horizontal" Margin="0,2,0,4"
                                     Visibility="{Binding IsStreaming, Converter={StaticResource BoolToVisibility}}">
-                            <ui:ProgressRing IsIndeterminate="True"
-                                             Width="12" Height="12"/>
-                            <TextBlock Text="Thinking..."
-                                       FontSize="10"
-                                       Foreground="{DynamicResource TextFillColorTertiaryBrush}"
-                                       Margin="6,0,0,0"
-                                       VerticalAlignment="Center"/>
+                            <Ellipse Style="{StaticResource BounceDotStyle}">
+                                <Ellipse.Triggers>
+                                    <EventTrigger RoutedEvent="Loaded">
+                                        <BeginStoryboard Storyboard="{StaticResource BounceDotsStoryboard}"/>
+                                    </EventTrigger>
+                                </Ellipse.Triggers>
+                            </Ellipse>
+                            <Ellipse Style="{StaticResource BounceDotStyle}">
+                                <Ellipse.Triggers>
+                                    <EventTrigger RoutedEvent="Loaded">
+                                        <BeginStoryboard>
+                                            <Storyboard BeginTime="0:0:0.16" RepeatBehavior="Forever">
+                                                <DoubleAnimationUsingKeyFrames Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)" Duration="0:0:1.2">
+                                                    <LinearDoubleKeyFrame KeyTime="0:0:0" Value="0.5"/>
+                                                    <LinearDoubleKeyFrame KeyTime="0:0:0.4" Value="1"/>
+                                                    <LinearDoubleKeyFrame KeyTime="0:0:0.8" Value="0.5"/>
+                                                    <LinearDoubleKeyFrame KeyTime="0:0:1.2" Value="0.5"/>
+                                                </DoubleAnimationUsingKeyFrames>
+                                                <DoubleAnimationUsingKeyFrames Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)" Duration="0:0:1.2">
+                                                    <LinearDoubleKeyFrame KeyTime="0:0:0" Value="0.5"/>
+                                                    <LinearDoubleKeyFrame KeyTime="0:0:0.4" Value="1"/>
+                                                    <LinearDoubleKeyFrame KeyTime="0:0:0.8" Value="0.5"/>
+                                                    <LinearDoubleKeyFrame KeyTime="0:0:1.2" Value="0.5"/>
+                                                </DoubleAnimationUsingKeyFrames>
+                                            </Storyboard>
+                                        </BeginStoryboard>
+                                    </EventTrigger>
+                                </Ellipse.Triggers>
+                            </Ellipse>
+                            <Ellipse Style="{StaticResource BounceDotStyle}">
+                                <Ellipse.Triggers>
+                                    <EventTrigger RoutedEvent="Loaded">
+                                        <BeginStoryboard>
+                                            <Storyboard BeginTime="0:0:0.32" RepeatBehavior="Forever">
+                                                <DoubleAnimationUsingKeyFrames Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)" Duration="0:0:1.2">
+                                                    <LinearDoubleKeyFrame KeyTime="0:0:0" Value="0.5"/>
+                                                    <LinearDoubleKeyFrame KeyTime="0:0:0.4" Value="1"/>
+                                                    <LinearDoubleKeyFrame KeyTime="0:0:0.8" Value="0.5"/>
+                                                    <LinearDoubleKeyFrame KeyTime="0:0:1.2" Value="0.5"/>
+                                                </DoubleAnimationUsingKeyFrames>
+                                                <DoubleAnimationUsingKeyFrames Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)" Duration="0:0:1.2">
+                                                    <LinearDoubleKeyFrame KeyTime="0:0:0" Value="0.5"/>
+                                                    <LinearDoubleKeyFrame KeyTime="0:0:0.4" Value="1"/>
+                                                    <LinearDoubleKeyFrame KeyTime="0:0:0.8" Value="0.5"/>
+                                                    <LinearDoubleKeyFrame KeyTime="0:0:1.2" Value="0.5"/>
+                                                </DoubleAnimationUsingKeyFrames>
+                                            </Storyboard>
+                                        </BeginStoryboard>
+                                    </EventTrigger>
+                                </Ellipse.Triggers>
+                            </Ellipse>
                         </StackPanel>
 
+                        <TextBlock Text="{Binding Content}" TextWrapping="Wrap"
+                                   FontSize="13" LineHeight="19"
+                                   Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+
+                        <!-- Sample code block treatment — apply this Border pattern wherever
+                             your renderer emits a code TextBlock. Includes a Copy button. -->
+                        <!--
+                        <Border Background="{StaticResource BgElevatedBrush}"
+                                BorderBrush="{StaticResource BorderSubtleBrush}" BorderThickness="1"
+                                CornerRadius="4" Padding="10,9" Margin="0,6,0,2">
+                            <Grid>
+                                <TextBlock FontFamily="JetBrains Mono, Consolas, monospace"
+                                           FontSize="11.5" Foreground="#C7CCE0"
+                                           Text="{Binding CodeText}"/>
+                                <ui:Button Icon="{ui:SymbolIcon Copy24}" Content="Copy"
+                                           Padding="6,2" FontSize="10"
+                                           HorizontalAlignment="Right" VerticalAlignment="Top"
+                                           Margin="0,-4,-4,0"
+                                           Command="{Binding CopyCodeCommand}"/>
+                            </Grid>
+                        </Border>
+                        -->
+
                         <TextBlock Text="{Binding Timestamp, StringFormat='{}{0:HH:mm}'}"
-                                   FontSize="10"
+                                   FontSize="10" Margin="0,5,0,0"
                                    Foreground="{DynamicResource TextFillColorTertiaryBrush}"
-                                   HorizontalAlignment="Left"
-                                   Margin="0,4,0,0"
                                    Visibility="{Binding IsStreaming, Converter={StaticResource BoolToVisibilityInverse}}"/>
                     </StackPanel>
                 </Border>
             </Grid>
         </DataTemplate>
 
-        <!-- Template selector via style triggers on ItemsControl -->
         <Style x:Key="ChatMessageContainerStyle" TargetType="ContentPresenter">
             <Setter Property="ContentTemplate" Value="{StaticResource AssistantMessageTemplate}"/>
             <Setter Property="Opacity" Value="0"/>
@@ -111,9 +214,9 @@
                     <BeginStoryboard>
                         <Storyboard>
                             <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)"
-                                             From="12" To="0" Duration="0:0:0.15"/>
+                                             From="12" To="0" Duration="0:0:0.18"/>
                             <DoubleAnimation Storyboard.TargetProperty="Opacity"
-                                             From="0" To="1" Duration="0:0:0.15"/>
+                                             From="0" To="1" Duration="0:0:0.18"/>
                         </Storyboard>
                     </BeginStoryboard>
                 </EventTrigger>
@@ -131,21 +234,14 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <!-- Header -->
+        <!-- ─────────── Header ─────────── -->
         <Border Grid.Row="0"
-                Background="{DynamicResource ControlFillColorDefaultBrush}"
-                BorderBrush="{StaticResource AccentBorderBrush}"
-                BorderThickness="0,0,0,1"
+                Background="{StaticResource BgElevatedBrush}"
+                BorderBrush="{StaticResource BorderSubtleBrush}" BorderThickness="0,0,0,1"
                 Padding="12,10">
-            <Grid>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                </Grid.RowDefinitions>
-
-                <!-- Title row -->
-                <Grid Grid.Row="0">
+            <StackPanel>
+                <!-- Title + status pill + … menu (replaces bare trash + model row) -->
+                <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="Auto"/>
@@ -153,119 +249,257 @@
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
 
-                    <TextBlock Grid.Column="0"
-                               Text="Copilot"
-                               FontSize="16"
-                               FontWeight="SemiBold"
+                    <TextBlock Grid.Column="0" Text="Copilot"
+                               FontSize="16" FontWeight="SemiBold"
                                Foreground="{DynamicResource TextFillColorPrimaryBrush}"
                                VerticalAlignment="Center"/>
 
-                    <!-- Connection status dot -->
-                    <Ellipse Grid.Column="1"
-                             Width="8" Height="8"
-                             Margin="8,0,0,0"
-                             VerticalAlignment="Center">
-                        <Ellipse.Style>
-                            <Style TargetType="Ellipse">
-                                <Setter Property="Fill" Value="{StaticResource ErrorBrush}"/>
+                    <!-- Inline status pill: green dot + model name when connected, red+Offline when not. -->
+                    <Border Grid.Column="1" Margin="9,0,0,0" Padding="7,2,9,2" CornerRadius="999"
+                            VerticalAlignment="Center">
+                        <Border.Style>
+                            <Style TargetType="Border">
+                                <Setter Property="Background" Value="#1A6EE7B7"/>
+                                <Setter Property="BorderBrush" Value="#446EE7B7"/>
+                                <Setter Property="BorderThickness" Value="1"/>
                                 <Style.Triggers>
-                                    <DataTrigger Binding="{Binding IsOllamaConnected}" Value="True">
-                                        <Setter Property="Fill" Value="{StaticResource SuccessBrush}"/>
+                                    <DataTrigger Binding="{Binding IsOllamaConnected}" Value="False">
+                                        <Setter Property="Background" Value="#18FCA5A5"/>
+                                        <Setter Property="BorderBrush" Value="#44FCA5A5"/>
                                     </DataTrigger>
                                 </Style.Triggers>
                             </Style>
-                        </Ellipse.Style>
-                    </Ellipse>
-
-                    <!-- Clear chat button -->
-                    <ui:Button Grid.Column="3"
-                               Icon="{ui:SymbolIcon Delete24}"
-                               ToolTip="Clear chat"
-                               Command="{Binding ClearChatCommand}"
-                               Appearance="Secondary"
-                               Padding="4"
-                               FontSize="14"/>
-                </Grid>
-
-                <!-- Model selector row -->
-                <Grid Grid.Row="1" Margin="0,8,0,0">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="*"/>
-                    </Grid.ColumnDefinitions>
-
-                    <TextBlock Grid.Column="0"
-                               Text="Model"
-                               FontSize="12"
-                               Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                               VerticalAlignment="Center"
-                               Margin="0,0,8,0"/>
-
-                    <ComboBox Grid.Column="1"
-                              ItemsSource="{Binding AvailableModels}"
-                              SelectedItem="{Binding SelectedModel}"
-                              FontSize="12"
-                              Height="34"
-                              Padding="8,2"
-                              VerticalContentAlignment="Center"
-                              HorizontalContentAlignment="Stretch"
-                              IsEnabled="{Binding IsOllamaConnected}"/>
-                </Grid>
-
-                <!-- Page-context chip: shows the current page and toggles whether the LLM sees it -->
-                <Grid Grid.Row="2"
-                      Margin="0,8,0,0"
-                      Visibility="{Binding HasActivePage, Converter={StaticResource BoolToVisibility}}">
-                    <ui:Button Command="{Binding ToggleIncludePageContextCommand}"
-                               HorizontalAlignment="Stretch"
-                               HorizontalContentAlignment="Left"
-                               ToolTip="{Binding CurrentPageUrl}"
-                               Padding="10,4">
-                        <ui:Button.Style>
-                            <Style TargetType="ui:Button" BasedOn="{StaticResource {x:Type ui:Button}}">
-                                <Setter Property="Appearance" Value="Secondary"/>
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding IncludePageContext}" Value="True">
-                                        <Setter Property="Appearance" Value="Primary"/>
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </ui:Button.Style>
+                        </Border.Style>
                         <StackPanel Orientation="Horizontal">
-                            <ui:SymbolIcon FontSize="13"
-                                           VerticalAlignment="Center"
-                                           Margin="0,0,6,0">
-                                <ui:SymbolIcon.Style>
-                                    <Style TargetType="ui:SymbolIcon">
-                                        <Setter Property="Symbol" Value="EyeOff24"/>
+                            <Ellipse Width="6" Height="6" VerticalAlignment="Center" Margin="0,0,5,0">
+                                <Ellipse.Style>
+                                    <Style TargetType="Ellipse">
+                                        <Setter Property="Fill" Value="{StaticResource SuccessBrush}"/>
                                         <Style.Triggers>
-                                            <DataTrigger Binding="{Binding IncludePageContext}" Value="True">
-                                                <Setter Property="Symbol" Value="Eye24"/>
+                                            <DataTrigger Binding="{Binding IsOllamaConnected}" Value="False">
+                                                <Setter Property="Fill" Value="{StaticResource ErrorBrush}"/>
                                             </DataTrigger>
                                         </Style.Triggers>
                                     </Style>
-                                </ui:SymbolIcon.Style>
-                            </ui:SymbolIcon>
-                            <TextBlock Text="{Binding CurrentPageTitle}"
-                                       FontSize="11"
-                                       TextTrimming="CharacterEllipsis"
-                                       MaxWidth="240"
-                                       VerticalAlignment="Center"/>
+                                </Ellipse.Style>
+                            </Ellipse>
+                            <TextBlock FontSize="10.5" FontWeight="SemiBold" VerticalAlignment="Center">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Foreground" Value="{StaticResource SuccessBrush}"/>
+                                        <Setter Property="Text" Value="{Binding SelectedModel, TargetNullValue='Ready', FallbackValue='Ready'}"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsOllamaConnected}" Value="False">
+                                                <Setter Property="Foreground" Value="{StaticResource ErrorBrush}"/>
+                                                <Setter Property="Text" Value="Offline"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
                         </StackPanel>
+                    </Border>
+
+                    <!-- … menu — Clear chat / New chat / model picker (replaces ComboBox row) -->
+                    <ui:Button Grid.Column="3"
+                               Icon="{ui:SymbolIcon MoreHorizontal24}"
+                               Style="{StaticResource GlassToolbarButtonStyle}"
+                               ToolTip="More">
+                        <ui:Button.ContextMenu>
+                            <ContextMenu>
+                                <MenuItem Header="Clear chat" Command="{Binding ClearChatCommand}"/>
+                                <MenuItem Header="New chat"   Command="{Binding ClearChatCommand}"/>
+                                <Separator/>
+                                <MenuItem Header="Switch model"
+                                          ItemsSource="{Binding AvailableModels}">
+                                    <MenuItem.ItemContainerStyle>
+                                        <Style TargetType="MenuItem">
+                                            <Setter Property="Header" Value="{Binding}"/>
+                                            <Setter Property="Command" Value="{Binding DataContext.LoadModelsCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"/>
+                                            <!-- Live VM should add a SelectModelCommand; LoadModelsCommand is a placeholder no-op. -->
+                                        </Style>
+                                    </MenuItem.ItemContainerStyle>
+                                </MenuItem>
+                                <Separator/>
+                                <MenuItem Header="Refresh models" Command="{Binding LoadModelsCommand}"/>
+                                <MenuItem Header="Check connection" Command="{Binding CheckConnectionCommand}"/>
+                            </ContextMenu>
+                        </ui:Button.ContextMenu>
                     </ui:Button>
                 </Grid>
-            </Grid>
+
+                <!-- Page-context chip — favicon-style avatar + truncated title -->
+                <Border Margin="0,10,0,0" Padding="10,8" CornerRadius="10"
+                        Visibility="{Binding HasActivePage, Converter={StaticResource BoolToVisibility}}"
+                        Cursor="Hand"
+                        ToolTip="{Binding CurrentPageUrl}">
+                    <Border.Style>
+                        <Style TargetType="Border">
+                            <Setter Property="Background" Value="{StaticResource BgGlassHeaderBrush}"/>
+                            <Setter Property="BorderBrush" Value="{StaticResource BorderSubtleBrush}"/>
+                            <Setter Property="BorderThickness" Value="1"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IncludePageContext}" Value="True">
+                                    <Setter Property="Background" Value="{StaticResource AccentGlowBrush}"/>
+                                    <Setter Property="BorderBrush" Value="{StaticResource AccentBorderBrush}"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Border.Style>
+                    <Border.InputBindings>
+                        <MouseBinding Gesture="LeftClick"
+                                      Command="{Binding ToggleIncludePageContextCommand}"/>
+                    </Border.InputBindings>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <!-- Favicon-style avatar (placeholder; wire a real favicon binding later) -->
+                        <Border Grid.Column="0" Width="22" Height="22" CornerRadius="6"
+                                Background="{StaticResource AccentBrush}" Margin="0,0,9,0">
+                            <ui:SymbolIcon Symbol="Globe24" FontSize="12" Foreground="#F1EEFF"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                            <TextBlock Text="Page context" FontSize="10.5"
+                                       Foreground="{DynamicResource TextFillColorTertiaryBrush}"/>
+                            <TextBlock Text="{Binding CurrentPageTitle}" FontSize="12" FontWeight="Medium"
+                                       TextTrimming="CharacterEllipsis"
+                                       Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                        </StackPanel>
+
+                        <ui:SymbolIcon Grid.Column="2" FontSize="13" VerticalAlignment="Center">
+                            <ui:SymbolIcon.Style>
+                                <Style TargetType="ui:SymbolIcon">
+                                    <Setter Property="Symbol" Value="EyeOff24"/>
+                                    <Setter Property="Foreground" Value="{DynamicResource TextFillColorTertiaryBrush}"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IncludePageContext}" Value="True">
+                                            <Setter Property="Symbol" Value="Eye24"/>
+                                            <Setter Property="Foreground" Value="{StaticResource AccentLightBrush}"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </ui:SymbolIcon.Style>
+                        </ui:SymbolIcon>
+                    </Grid>
+                </Border>
+            </StackPanel>
         </Border>
 
-        <!-- Chat area -->
+        <!-- ─────────── Body ─────────── -->
         <Grid Grid.Row="1">
-            <!-- Messages scroll area (visible when connected) -->
+
+            <!-- Empty state (connected, no messages yet) — friendly greeting + prompt chips. -->
+            <ScrollViewer VerticalScrollBarVisibility="Auto"
+                          Padding="14,18,14,12">
+                <ScrollViewer.Style>
+                    <Style TargetType="ScrollViewer">
+                        <Setter Property="Visibility" Value="Collapsed"/>
+                        <Style.Triggers>
+                            <MultiDataTrigger>
+                                <MultiDataTrigger.Conditions>
+                                    <Condition Binding="{Binding IsOllamaConnected}" Value="True"/>
+                                    <Condition Binding="{Binding Messages.Count}" Value="0"/>
+                                </MultiDataTrigger.Conditions>
+                                <Setter Property="Visibility" Value="Visible"/>
+                            </MultiDataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </ScrollViewer.Style>
+                <StackPanel>
+                    <StackPanel HorizontalAlignment="Center" Margin="0,4,0,18">
+                        <Border Width="48" Height="48" CornerRadius="24"
+                                Background="{StaticResource AccentGlowBrush}"
+                                BorderBrush="{StaticResource AccentBorderBrush}" BorderThickness="1"
+                                HorizontalAlignment="Center" Margin="0,0,0,10">
+                            <ui:SymbolIcon Symbol="Sparkle24" FontSize="22"
+                                           Foreground="{StaticResource AccentLightBrush}"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <TextBlock Text="How can I help?" FontSize="16" FontWeight="SemiBold"
+                                   HorizontalAlignment="Center"
+                                   Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                        <TextBlock Text="Ask anything about this page or your browsing."
+                                   FontSize="12" Margin="0,4,0,0"
+                                   HorizontalAlignment="Center" TextWrapping="Wrap" TextAlignment="Center"
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                    </StackPanel>
+
+                    <TextBlock Text="SUGGESTED" FontSize="10" FontWeight="SemiBold" Margin="2,0,0,6"
+                               Foreground="{DynamicResource TextFillColorTertiaryBrush}"/>
+
+                    <ItemsControl ItemsSource="{Binding SuggestedPrompts}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Button Margin="0,0,0,6" Padding="0"
+                                        HorizontalContentAlignment="Stretch"
+                                        Background="Transparent" BorderThickness="0" Cursor="Hand"
+                                        Command="{Binding DataContext.UseSuggestedPromptCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                        CommandParameter="{Binding}">
+                                    <Button.Template>
+                                        <ControlTemplate TargetType="Button">
+                                            <Border x:Name="ChipBorder"
+                                                    Background="{StaticResource BgGlassHeaderBrush}"
+                                                    BorderBrush="{StaticResource BorderSubtleBrush}" BorderThickness="1"
+                                                    CornerRadius="10" Padding="11,9">
+                                                <ContentPresenter/>
+                                            </Border>
+                                            <ControlTemplate.Triggers>
+                                                <Trigger Property="IsMouseOver" Value="True">
+                                                    <Setter TargetName="ChipBorder" Property="Background" Value="{StaticResource BgSurfaceHoverBrush}"/>
+                                                    <Setter TargetName="ChipBorder" Property="BorderBrush" Value="{StaticResource AccentBorderBrush}"/>
+                                                </Trigger>
+                                            </ControlTemplate.Triggers>
+                                        </ControlTemplate>
+                                    </Button.Template>
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <ui:SymbolIcon Grid.Column="0" Symbol="{Binding Glyph, FallbackValue=Sparkle24}"
+                                                       FontSize="13"
+                                                       Foreground="{DynamicResource TextFillColorTertiaryBrush}"
+                                                       VerticalAlignment="Center" Margin="0,0,9,0"/>
+                                        <TextBlock Grid.Column="1" Text="{Binding Label}"
+                                                   FontSize="12" FontWeight="Medium"
+                                                   VerticalAlignment="Center"
+                                                   Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                                    </Grid>
+                                </Button>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </ScrollViewer>
+
+            <!-- Chat (connected, has messages) -->
             <ScrollViewer x:Name="ChatScrollViewer"
                           VerticalScrollBarVisibility="Auto"
-                          HorizontalScrollBarVisibility="Disabled"
-                          Visibility="{Binding IsOllamaConnected, Converter={StaticResource BoolToVisibility}}">
+                          HorizontalScrollBarVisibility="Disabled">
+                <ScrollViewer.Style>
+                    <Style TargetType="ScrollViewer">
+                        <Setter Property="Visibility" Value="Collapsed"/>
+                        <Style.Triggers>
+                            <MultiDataTrigger>
+                                <MultiDataTrigger.Conditions>
+                                    <Condition Binding="{Binding IsOllamaConnected}" Value="True"/>
+                                </MultiDataTrigger.Conditions>
+                                <Setter Property="Visibility" Value="Visible"/>
+                            </MultiDataTrigger>
+                            <DataTrigger Binding="{Binding Messages.Count}" Value="0">
+                                <Setter Property="Visibility" Value="Collapsed"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </ScrollViewer.Style>
                 <ItemsControl ItemsSource="{Binding Messages}"
-                              Padding="0,8"
+                              Padding="0,10,0,6"
                               ItemContainerStyle="{StaticResource ChatMessageContainerStyle}">
                     <ItemsControl.ItemsPanel>
                         <ItemsPanelTemplate>
@@ -277,142 +511,126 @@
 
             <!-- Disconnected empty state -->
             <Border Visibility="{Binding IsOllamaConnected, Converter={StaticResource BoolToVisibilityInverse}}">
-                <StackPanel VerticalAlignment="Center"
-                            HorizontalAlignment="Center"
-                            Margin="24">
-
-                    <!-- Disconnected icon -->
-                    <Border Width="64" Height="64"
-                            CornerRadius="32"
-                            Background="{StaticResource AccentSubtleBrush}"
-                            HorizontalAlignment="Center"
-                            Margin="0,0,0,16">
-                        <ui:SymbolIcon Symbol="PlugDisconnected24"
-                                       FontSize="28"
-                                       Foreground="{DynamicResource TextFillColorTertiaryBrush}"
-                                       HorizontalAlignment="Center"
-                                       VerticalAlignment="Center"/>
+                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Margin="24">
+                    <Border Width="72" Height="72" CornerRadius="36"
+                            Background="#18FCA5A5"
+                            BorderBrush="#44FCA5A5" BorderThickness="1"
+                            HorizontalAlignment="Center" Margin="0,0,0,14">
+                        <ui:SymbolIcon Symbol="PlugDisconnected24" FontSize="28"
+                                       Foreground="{StaticResource ErrorBrush}"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </Border>
-
-                    <TextBlock Text="Ollama Not Connected"
-                               FontSize="15"
-                               FontWeight="SemiBold"
-                               Foreground="{DynamicResource TextFillColorPrimaryBrush}"
-                               HorizontalAlignment="Center"/>
-
-                    <TextBlock Text="Start Ollama to use the AI copilot.&#x0a;Install from ollama.com and run a model."
-                               FontSize="12"
-                               Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                               TextAlignment="Center"
-                               TextWrapping="Wrap"
-                               Margin="0,8,0,16"
-                               LineHeight="18"/>
-
-                    <ui:Button Content="Retry Connection"
+                    <TextBlock Text="Ollama isn't running"
+                               FontSize="15" FontWeight="SemiBold" HorizontalAlignment="Center"
+                               Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                    <TextBlock Text="The copilot needs a local Ollama server. Start the daemon&#x0a;or install it to chat with your local models."
+                               FontSize="12" TextAlignment="Center" TextWrapping="Wrap"
+                               HorizontalAlignment="Center" Margin="0,7,0,18" LineHeight="18"
+                               Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                    <ui:Button Content="Retry connection"
                                Icon="{ui:SymbolIcon ArrowSync24}"
                                Command="{Binding CheckConnectionCommand}"
                                Appearance="Primary"
+                               Style="{StaticResource PrimaryAccentUiButton}"
+                               Padding="14,7"
                                HorizontalAlignment="Center"/>
-
+                    <!-- "Open Ollama instructions" link under the primary CTA. -->
+                    <Button Margin="0,10,0,0" Background="Transparent" BorderThickness="0" Cursor="Hand"
+                            Padding="6,2"
+                            HorizontalAlignment="Center"
+                            Command="{Binding OpenOllamaInstructionsCommand}">
+                        <TextBlock Text="How to set up Ollama →"
+                                   FontSize="11.5"
+                                   Foreground="{StaticResource AccentLightBrush}"/>
+                    </Button>
                     <TextBlock Text="{Binding ConnectionStatus}"
-                               FontSize="11"
-                               Foreground="{DynamicResource TextFillColorTertiaryBrush}"
+                               FontSize="11" Margin="0,12,0,0"
                                HorizontalAlignment="Center"
-                               Margin="0,8,0,0"/>
+                               Foreground="{DynamicResource TextFillColorTertiaryBrush}"/>
                 </StackPanel>
             </Border>
         </Grid>
 
-        <!-- Input area (only visible when connected) -->
+        <!-- ─────────── Input pill ─────────── -->
         <Border Grid.Row="2"
                 Background="{StaticResource BgElevatedBrush}"
-                BorderBrush="{StaticResource BorderSubtleBrush}"
-                BorderThickness="0,1,0,0"
-                Padding="8"
+                BorderBrush="{StaticResource BorderSubtleBrush}" BorderThickness="0,1,0,0"
+                Padding="10"
                 Visibility="{Binding IsOllamaConnected, Converter={StaticResource BoolToVisibility}}">
-            <!-- Pill-shaped input container -->
+
             <Border Style="{StaticResource PillInputContainerStyle}">
                 <Grid>
                     <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
 
-                    <!-- Input TextBox (transparent, no border — pill provides chrome) -->
-                    <TextBox Grid.Column="0"
-                             x:Name="ChatInput"
+                    <!-- Screenshot button — INSIDE the pill, on the LEFT now. -->
+                    <ui:Button Grid.Column="0"
+                               Icon="{ui:SymbolIcon Camera24}"
+                               Command="{Binding ToggleAttachScreenshotCommand}"
+                               Width="30" Height="30" Padding="0" CornerRadius="15"
+                               Margin="2,0,0,0"
+                               Visibility="{Binding HasActivePage, Converter={StaticResource BoolToVisibility}}">
+                        <ui:Button.Style>
+                            <Style TargetType="ui:Button" BasedOn="{StaticResource {x:Type ui:Button}}">
+                                <Setter Property="Appearance" Value="Secondary"/>
+                                <Setter Property="ToolTip" Value="Attach a screenshot of the current page to the next message (needs a vision model like llava)"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding AttachScreenshotOnNext}" Value="True">
+                                        <Setter Property="Appearance" Value="Primary"/>
+                                        <Setter Property="ToolTip" Value="Screenshot will be attached to your next message — click to unarm"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </ui:Button.Style>
+                    </ui:Button>
+
+                    <!-- Text input — fades to read-only when generating. -->
+                    <TextBox Grid.Column="1" x:Name="ChatInput"
                              Text="{Binding UserInput, UpdateSourceTrigger=PropertyChanged}"
-                             FontSize="13"
-                             Padding="12,6"
-                             AcceptsReturn="False"
-                             TextWrapping="Wrap"
-                             MaxHeight="80"
+                             FontSize="13" Padding="10,7" AcceptsReturn="False"
+                             TextWrapping="Wrap" MaxHeight="80"
                              VerticalScrollBarVisibility="Auto"
-                             Background="Transparent"
-                             BorderThickness="0"
+                             Background="Transparent" BorderThickness="0"
                              Foreground="{DynamicResource TextFillColorPrimaryBrush}"
                              CaretBrush="{DynamicResource TextFillColorPrimaryBrush}"
                              VerticalAlignment="Center"
                              PreviewKeyDown="ChatInput_PreviewKeyDown">
                         <TextBox.Style>
                             <Style TargetType="TextBox">
+                                <Setter Property="Opacity" Value="1"/>
+                                <Setter Property="IsReadOnly" Value="False"/>
                                 <Style.Triggers>
                                     <Trigger Property="Text" Value="">
                                         <Setter Property="Tag" Value="Ask the copilot..."/>
                                     </Trigger>
+                                    <DataTrigger Binding="{Binding IsGenerating}" Value="True">
+                                        <Setter Property="IsReadOnly" Value="True"/>
+                                        <Setter Property="Opacity" Value="0.55"/>
+                                    </DataTrigger>
                                 </Style.Triggers>
                             </Style>
                         </TextBox.Style>
                     </TextBox>
 
-                    <!-- Embedded Send / Stop buttons inside the pill -->
-                    <StackPanel Grid.Column="1"
-                                Orientation="Horizontal"
-                                VerticalAlignment="Center"
-                                Margin="0,0,4,0">
-
-                        <!-- Screenshot toggle — Appearance shifts from Secondary → Primary when armed. Hidden when no active page. -->
-                        <ui:Button Icon="{ui:SymbolIcon Camera24}"
-                                   Command="{Binding ToggleAttachScreenshotCommand}"
-                                   Width="30" Height="30"
-                                   Padding="0"
-                                   CornerRadius="15"
-                                   Margin="0,0,4,0"
-                                   Visibility="{Binding HasActivePage, Converter={StaticResource BoolToVisibility}}">
-                            <ui:Button.Style>
-                                <Style TargetType="ui:Button" BasedOn="{StaticResource {x:Type ui:Button}}">
-                                    <Setter Property="Appearance" Value="Secondary"/>
-                                    <Setter Property="ToolTip" Value="Attach a screenshot of the current page to the next message (needs a vision model like llava)"/>
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding AttachScreenshotOnNext}" Value="True">
-                                            <Setter Property="Appearance" Value="Primary"/>
-                                            <Setter Property="ToolTip" Value="Screenshot will be attached to your next message — click to unarm"/>
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </ui:Button.Style>
-                        </ui:Button>
-
-                        <!-- Send button (circular, visible when not generating) -->
+                    <!-- Right side: Send (idle) ↔ Stop (generating), with smooth opacity transition -->
+                    <Grid Grid.Column="2" Margin="0,0,2,0">
                         <ui:Button Icon="{ui:SymbolIcon Send24}"
                                    ToolTip="Send message (Enter)"
                                    Command="{Binding SendMessageCommand}"
                                    Appearance="Primary"
-                                   Width="32" Height="32"
-                                   Padding="0"
-                                   CornerRadius="16"
+                                   Style="{StaticResource PrimaryAccentUiButton}"
+                                   Width="32" Height="32" Padding="0" CornerRadius="16"
                                    Visibility="{Binding IsGenerating, Converter={StaticResource BoolToVisibilityInverse}}"/>
-
-                        <!-- Stop button (circular, visible when generating) -->
                         <ui:Button Icon="{ui:SymbolIcon Stop24}"
                                    ToolTip="Stop generation"
                                    Command="{Binding StopGenerationCommand}"
                                    Appearance="Caution"
-                                   Width="32" Height="32"
-                                   Padding="0"
-                                   CornerRadius="16"
+                                   Width="32" Height="32" Padding="0" CornerRadius="16"
                                    Visibility="{Binding IsGenerating, Converter={StaticResource BoolToVisibility}}"/>
-                    </StackPanel>
+                    </Grid>
                 </Grid>
             </Border>
         </Border>

@@ -1,3 +1,13 @@
+<!--
+  Views/PrivacyDashboardView.xaml — visual redesign only.
+  Bindings preserved verbatim: PrivacyModeDisplay, PrivacyModeColor, PrivacyModeDescription,
+    DetectedThisSession, BlockedThisSession, DataSaved,
+    TopBlockedDomains{Domain, Count, Percentage},
+    ResourceTypeBreakdown{Type, Count, Percentage},
+    ResetStatsCommand, IsLoading.
+  Code-behind handlers preserved: OnLoaded, ViewRulesButton_Click, MarketplaceButton_Click, ChannelsButton_Click.
+  No new bindings introduced.
+-->
 <UserControl x:Class="BrowserApp.UI.Views.PrivacyDashboardView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -6,8 +16,7 @@
              xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
              xmlns:vm="clr-namespace:BrowserApp.UI.ViewModels"
              mc:Ignorable="d"
-             d:DesignHeight="600"
-             d:DesignWidth="350"
+             d:DesignHeight="800" d:DesignWidth="360"
              d:DataContext="{d:DesignInstance vm:PrivacyDashboardViewModel}"
              Loaded="OnLoaded">
 
@@ -16,163 +25,145 @@
         <StackPanel Margin="8">
 
             <!-- Header -->
-            <Border Style="{StaticResource PanelHeaderCardStyle}"
-                    Margin="0,0,0,8">
+            <Border Style="{StaticResource PanelHeaderCardStyle}" Margin="0,0,0,8">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
-
                     <StackPanel Grid.Column="0">
                         <TextBlock Text="Privacy Dashboard"
-                                   FontSize="16"
-                                   FontWeight="SemiBold"
+                                   FontSize="16" FontWeight="SemiBold"
                                    Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
                         <TextBlock Text="Your browsing protection overview"
-                                   FontSize="12"
-                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                                   Margin="0,4,0,0"/>
+                                   FontSize="12" Margin="0,3,0,0"
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                     </StackPanel>
-
-                    <StackPanel Grid.Column="1" Orientation="Horizontal">
-                        <ui:Button Icon="{ui:SymbolIcon ArrowReset24}"
-                                   Command="{Binding ResetStatsCommand}"
-                                   ToolTip="Reset all statistics"
-                                   Appearance="Secondary"
-                                   VerticalAlignment="Center"/>
-                    </StackPanel>
+                    <ui:Button Grid.Column="1"
+                               Icon="{ui:SymbolIcon ArrowReset24}"
+                               Command="{Binding ResetStatsCommand}"
+                               ToolTip="Reset all statistics"
+                               Style="{StaticResource GlassToolbarButtonStyle}"
+                               VerticalAlignment="Center"/>
                 </Grid>
             </Border>
 
-            <!-- Stats Cards -->
+            <!-- Hero "Mode" + three stat cards w/ accent strips -->
             <Grid Margin="0,0,0,8">
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="1.4*"/>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
 
-                <!-- Privacy Mode Card -->
+                <!-- Hero Mode — subtle accent glow via layered RadialGradientBrush, no shadow -->
                 <Border Grid.Column="0"
                         Background="{StaticResource BgGlassHeaderBrush}"
-                        CornerRadius="8"
-                        BorderBrush="{StaticResource BorderSubtleBrush}"
-                        BorderThickness="1"
-                        Padding="12"
-                        Margin="0,0,4,0"
+                        BorderBrush="{StaticResource AccentBorderBrush}"
+                        BorderThickness="1" CornerRadius="8"
+                        Padding="12" Margin="0,0,4,0"
                         ToolTip="{Binding PrivacyModeDescription}">
-                    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-                        <ui:SymbolIcon Symbol="Shield24"
-                                       FontSize="24"
-                                       Foreground="{Binding PrivacyModeColor}"
-                                       HorizontalAlignment="Center"/>
-                        <TextBlock Text="{Binding PrivacyModeDisplay}"
-                                   FontSize="14"
-                                   FontWeight="SemiBold"
-                                   HorizontalAlignment="Center"
-                                   Foreground="{DynamicResource TextFillColorPrimaryBrush}"
-                                   Margin="0,4,0,0"/>
-                        <TextBlock Text="Mode"
-                                   FontSize="10"
-                                   HorizontalAlignment="Center"
-                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
-                    </StackPanel>
+                    <Grid>
+                        <Border CornerRadius="8" IsHitTestVisible="False">
+                            <Border.Background>
+                                <RadialGradientBrush Center="0.3,0" GradientOrigin="0.3,0"
+                                                     RadiusX="1.2" RadiusY="0.8">
+                                    <GradientStop Color="#387C6AEF" Offset="0"/>
+                                    <GradientStop Color="#0A7C6AEF" Offset="0.6"/>
+                                    <GradientStop Color="#007C6AEF" Offset="1"/>
+                                </RadialGradientBrush>
+                            </Border.Background>
+                        </Border>
+                        <StackPanel VerticalAlignment="Center">
+                            <ui:SymbolIcon Symbol="Shield24" FontSize="20"
+                                           Foreground="{Binding PrivacyModeColor}"/>
+                            <TextBlock Text="{Binding PrivacyModeDisplay}"
+                                       FontSize="14" FontWeight="Bold"
+                                       Margin="0,6,0,2"
+                                       Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                            <TextBlock Text="MODE" FontSize="9.5" FontWeight="SemiBold"
+                                       Foreground="{DynamicResource TextFillColorTertiaryBrush}"/>
+                        </StackPanel>
+                    </Grid>
                 </Border>
 
-                <!-- Detected — total requests evaluated by BlockingService this session.
-                     Single-word labels keep all four cards readable at the narrower 4-col width. -->
-                <Border Grid.Column="1"
-                        Background="{StaticResource BgGlassHeaderBrush}"
-                        CornerRadius="8"
-                        BorderBrush="{StaticResource BorderSubtleBrush}"
-                        BorderThickness="1"
-                        Padding="6,12"
-                        Margin="2,0"
-                        ToolTip="Requests evaluated this session — should match the network monitor count.">
-                    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-                        <TextBlock Text="{Binding DetectedThisSession}"
-                                   FontSize="18"
-                                   FontWeight="Bold"
-                                   HorizontalAlignment="Center"
-                                   Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
-                        <TextBlock Text="Detected"
-                                   FontSize="10"
-                                   HorizontalAlignment="Center"
-                                   TextWrapping="Wrap"
-                                   TextAlignment="Center"
-                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
-                    </StackPanel>
+                <!-- Detected -->
+                <Border Grid.Column="1" Background="{StaticResource BgGlassHeaderBrush}"
+                        BorderBrush="{StaticResource BorderSubtleBrush}" BorderThickness="1"
+                        CornerRadius="8" Padding="10,12,8,10" Margin="2,0"
+                        ToolTip="Requests evaluated this session.">
+                    <Grid>
+                        <Border Width="3" HorizontalAlignment="Left" Margin="-10,2,0,2"
+                                CornerRadius="2" Background="{StaticResource AccentBrush}"/>
+                        <StackPanel VerticalAlignment="Center" Margin="6,0,0,0">
+                            <TextBlock Text="{Binding DetectedThisSession}"
+                                       FontSize="22" FontWeight="Bold"
+                                       Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                            <TextBlock Text="DETECTED" FontSize="9.5" FontWeight="SemiBold"
+                                       Margin="0,4,0,0"
+                                       Foreground="{DynamicResource TextFillColorTertiaryBrush}"/>
+                        </StackPanel>
+                    </Grid>
                 </Border>
 
-                <!-- Blocked this session -->
-                <Border Grid.Column="2"
-                        Background="{StaticResource BgGlassHeaderBrush}"
-                        CornerRadius="8"
-                        BorderBrush="{StaticResource BorderSubtleBrush}"
-                        BorderThickness="1"
-                        Padding="6,12"
-                        Margin="2,0"
-                        ToolTip="Requests blocked this session.">
-                    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-                        <TextBlock Text="{Binding BlockedThisSession}"
-                                   FontSize="18"
-                                   FontWeight="Bold"
-                                   HorizontalAlignment="Center"
-                                   Foreground="{StaticResource ErrorBrush}"/>
-                        <TextBlock Text="Blocked"
-                                   FontSize="10"
-                                   HorizontalAlignment="Center"
-                                   TextWrapping="Wrap"
-                                   TextAlignment="Center"
-                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
-                    </StackPanel>
+                <!-- Blocked -->
+                <Border Grid.Column="2" Background="{StaticResource BgGlassHeaderBrush}"
+                        BorderBrush="{StaticResource BorderSubtleBrush}" BorderThickness="1"
+                        CornerRadius="8" Padding="10,12,8,10" Margin="2,0">
+                    <Grid>
+                        <Border Width="3" HorizontalAlignment="Left" Margin="-10,2,0,2"
+                                CornerRadius="2" Background="{StaticResource ErrorBrush}"/>
+                        <StackPanel VerticalAlignment="Center" Margin="6,0,0,0">
+                            <TextBlock Text="{Binding BlockedThisSession}"
+                                       FontSize="22" FontWeight="Bold"
+                                       Foreground="{StaticResource ErrorBrush}"/>
+                            <TextBlock Text="BLOCKED" FontSize="9.5" FontWeight="SemiBold"
+                                       Margin="0,4,0,0"
+                                       Foreground="{DynamicResource TextFillColorTertiaryBrush}"/>
+                        </StackPanel>
+                    </Grid>
                 </Border>
 
-                <!-- Data Saved Card -->
-                <Border Grid.Column="3"
-                        Background="{StaticResource BgGlassHeaderBrush}"
-                        CornerRadius="8"
-                        BorderBrush="{StaticResource BorderSubtleBrush}"
-                        BorderThickness="1"
-                        Padding="6,12"
-                        Margin="4,0,0,0"
-                        ToolTip="Estimated bytes saved this session.">
-                    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-                        <TextBlock Text="{Binding DataSaved}"
-                                   FontSize="18"
-                                   FontWeight="Bold"
-                                   HorizontalAlignment="Center"
-                                   Foreground="{StaticResource SuccessBrush}"/>
-                        <TextBlock Text="Saved"
-                                   FontSize="10"
-                                   HorizontalAlignment="Center"
-                                   TextWrapping="Wrap"
-                                   TextAlignment="Center"
-                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
-                    </StackPanel>
+                <!-- Saved -->
+                <Border Grid.Column="3" Background="{StaticResource BgGlassHeaderBrush}"
+                        BorderBrush="{StaticResource BorderSubtleBrush}" BorderThickness="1"
+                        CornerRadius="8" Padding="10,12,8,10" Margin="4,0,0,0">
+                    <Grid>
+                        <Border Width="3" HorizontalAlignment="Left" Margin="-10,2,0,2"
+                                CornerRadius="2" Background="{StaticResource SuccessBrush}"/>
+                        <StackPanel VerticalAlignment="Center" Margin="6,0,0,0">
+                            <TextBlock Text="{Binding DataSaved}"
+                                       FontSize="20" FontWeight="Bold"
+                                       Foreground="{StaticResource SuccessBrush}"/>
+                            <TextBlock Text="SAVED" FontSize="9.5" FontWeight="SemiBold"
+                                       Margin="0,4,0,0"
+                                       Foreground="{DynamicResource TextFillColorTertiaryBrush}"/>
+                        </StackPanel>
+                    </Grid>
                 </Border>
             </Grid>
 
-            <!-- Top Blocked Domains -->
-            <Border Background="{StaticResource BgSurfaceBrush}"
-                    CornerRadius="8"
-                    BorderBrush="{StaticResource BorderSubtleBrush}"
-                    BorderThickness="1"
-                    Padding="12"
-                    Margin="0,0,0,8">
+            <!-- Top Blocked Domains — softer rounded bars on red-tinted track -->
+            <Border Style="{StaticResource PanelBodyCardStyle}" Margin="0,0,0,8">
                 <StackPanel>
-                    <TextBlock Text="Top Blocked Domains"
-                               FontSize="14"
-                               FontWeight="SemiBold"
-                               Foreground="{DynamicResource TextFillColorPrimaryBrush}"
-                               Margin="0,0,0,12"/>
+                    <Grid Margin="0,0,0,10">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="Top Blocked Domains"
+                                   FontSize="13" FontWeight="SemiBold"
+                                   Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                        <TextBlock Grid.Column="1" Text="SESSION" FontSize="10"
+                                   FontWeight="SemiBold" VerticalAlignment="Center"
+                                   Foreground="{DynamicResource TextFillColorTertiaryBrush}"/>
+                    </Grid>
 
                     <ItemsControl ItemsSource="{Binding TopBlockedDomains}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <Grid Margin="0,0,0,8">
+                                <Grid Margin="0,0,0,9">
                                     <Grid.RowDefinitions>
                                         <RowDefinition Height="Auto"/>
                                         <RowDefinition Height="Auto"/>
@@ -181,28 +172,21 @@
                                         <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
-
                                     <TextBlock Grid.Row="0" Grid.Column="0"
                                                Text="{Binding Domain}"
                                                FontSize="12"
-                                               Foreground="{DynamicResource TextFillColorPrimaryBrush}"
-                                               TextTrimming="CharacterEllipsis"/>
+                                               TextTrimming="CharacterEllipsis"
+                                               Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
                                     <TextBlock Grid.Row="0" Grid.Column="1"
                                                Text="{Binding Count}"
-                                               FontSize="12"
-                                               FontWeight="SemiBold"
-                                               Foreground="{StaticResource ErrorBrush}"
-                                               Margin="8,0,0,0"/>
-
-                                    <!-- Progress Bar -->
+                                               FontSize="11.5" FontWeight="SemiBold"
+                                               Margin="8,0,0,0"
+                                               Foreground="{StaticResource ErrorBrush}"/>
                                     <Border Grid.Row="1" Grid.ColumnSpan="2"
-                                            Background="{DynamicResource ControlFillColorSecondaryBrush}"
-                                            CornerRadius="2"
-                                            Height="4"
-                                            Margin="0,4,0,0">
+                                            Background="#18FCA5A5"
+                                            CornerRadius="2" Height="4" Margin="0,5,0,0">
                                         <Border Background="{StaticResource ErrorBrush}"
-                                                CornerRadius="2"
-                                                HorizontalAlignment="Left"
+                                                CornerRadius="2" HorizontalAlignment="Left"
                                                 Width="{Binding Percentage, Converter={StaticResource PercentToWidth}}"/>
                                     </Border>
                                 </Grid>
@@ -210,120 +194,154 @@
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
 
-                    <!-- Empty State -->
                     <TextBlock Text="No blocked domains yet"
-                               FontSize="12"
+                               FontSize="12" HorizontalAlignment="Center"
                                Foreground="{DynamicResource TextFillColorTertiaryBrush}"
-                               HorizontalAlignment="Center"
                                Visibility="{Binding TopBlockedDomains.Count, Converter={StaticResource CountToVisibility}}"/>
                 </StackPanel>
             </Border>
 
-            <!-- Resource Type Breakdown -->
-            <Border Background="{StaticResource BgSurfaceBrush}"
-                    CornerRadius="8"
-                    BorderBrush="{StaticResource BorderSubtleBrush}"
-                    BorderThickness="1"
-                    Padding="12"
-                    Margin="0,0,0,8">
+            <!-- Request Types — accent-tinted track, 4px bar -->
+            <Border Style="{StaticResource PanelBodyCardStyle}" Margin="0,0,0,8">
                 <StackPanel>
-                    <TextBlock Text="Request Types"
-                               FontSize="14"
-                               FontWeight="SemiBold"
-                               Foreground="{DynamicResource TextFillColorPrimaryBrush}"
-                               Margin="0,0,0,12"/>
-
+                    <Grid Margin="0,0,0,10">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="Request Types"
+                                   FontSize="13" FontWeight="SemiBold"
+                                   Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                        <TextBlock Grid.Column="1" Text="BY VOLUME" FontSize="10"
+                                   FontWeight="SemiBold" VerticalAlignment="Center"
+                                   Foreground="{DynamicResource TextFillColorTertiaryBrush}"/>
+                    </Grid>
                     <ItemsControl ItemsSource="{Binding ResourceTypeBreakdown}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <Grid Margin="0,0,0,6">
+                                <Grid Margin="0,0,0,7">
                                     <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="70"/>
+                                        <ColumnDefinition Width="68"/>
                                         <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="40"/>
+                                        <ColumnDefinition Width="36"/>
                                     </Grid.ColumnDefinitions>
-
-                                    <TextBlock Grid.Column="0"
-                                               Text="{Binding Type}"
-                                               FontSize="11"
+                                    <TextBlock Grid.Column="0" Text="{Binding Type}"
+                                               FontSize="11" VerticalAlignment="Center"
                                                Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
-
-                                    <!-- Progress Bar -->
-                                    <Border Grid.Column="1"
-                                            Background="{DynamicResource ControlFillColorSecondaryBrush}"
-                                            CornerRadius="2"
-                                            Height="8"
-                                            Margin="8,0">
+                                    <Border Grid.Column="1" Background="#187C6AEF"
+                                            CornerRadius="2" Height="4" Margin="8,0"
+                                            VerticalAlignment="Center">
                                         <Border Background="{StaticResource AccentBrush}"
-                                                CornerRadius="2"
-                                                HorizontalAlignment="Left"
+                                                CornerRadius="2" HorizontalAlignment="Left"
                                                 Width="{Binding Percentage, Converter={StaticResource PercentToWidth}}"/>
                                     </Border>
-
-                                    <TextBlock Grid.Column="2"
-                                               Text="{Binding Count}"
-                                               FontSize="11"
-                                               Foreground="{DynamicResource TextFillColorTertiaryBrush}"
-                                               HorizontalAlignment="Right"/>
+                                    <TextBlock Grid.Column="2" Text="{Binding Count}"
+                                               FontSize="11" HorizontalAlignment="Right"
+                                               VerticalAlignment="Center"
+                                               Foreground="{DynamicResource TextFillColorTertiaryBrush}"/>
                                 </Grid>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
-
-                    <!-- Empty State -->
                     <TextBlock Text="No request data yet"
-                               FontSize="12"
+                               FontSize="12" HorizontalAlignment="Center"
                                Foreground="{DynamicResource TextFillColorTertiaryBrush}"
-                               HorizontalAlignment="Center"
                                Visibility="{Binding ResourceTypeBreakdown.Count, Converter={StaticResource CountToVisibility}}"/>
                 </StackPanel>
             </Border>
 
-            <!-- Quick Actions -->
-            <Border Background="{StaticResource BgSurfaceBrush}"
-                    CornerRadius="8"
-                    BorderBrush="{StaticResource BorderSubtleBrush}"
-                    BorderThickness="1"
-                    Padding="12">
+            <!-- Quick Actions — segmented icon+label tile row -->
+            <Border Style="{StaticResource PanelBodyCardStyle}" Padding="10">
                 <StackPanel>
-                    <TextBlock Text="Quick Actions"
-                               FontSize="14"
-                               FontWeight="SemiBold"
-                               Foreground="{DynamicResource TextFillColorPrimaryBrush}"
-                               Margin="0,0,0,12"/>
-
-                    <UniformGrid Columns="3" Rows="1">
-                        <ui:Button x:Name="ViewRulesButton"
-                                   Content="Rules"
-                                   Icon="{ui:SymbolIcon Shield24}"
-                                   Appearance="Secondary"
-                                   HorizontalAlignment="Stretch"
-                                   Margin="0,0,4,0"
-                                   Click="ViewRulesButton_Click"/>
-                        <ui:Button x:Name="MarketplaceButton"
-                                   Content="Market"
-                                   Icon="{ui:SymbolIcon BuildingShop24}"
-                                   Appearance="Secondary"
-                                   HorizontalAlignment="Stretch"
-                                   Margin="2,0"
-                                   Click="MarketplaceButton_Click"/>
-                        <ui:Button x:Name="ChannelsButton"
-                                   Content="Channels"
-                                   Icon="{ui:SymbolIcon PeopleTeam24}"
-                                   Appearance="Secondary"
-                                   HorizontalAlignment="Stretch"
-                                   Margin="4,0,0,0"
-                                   Click="ChannelsButton_Click"/>
-                    </UniformGrid>
+                    <TextBlock Text="QUICK ACTIONS" FontSize="10" FontWeight="SemiBold"
+                               Margin="2,0,0,8"
+                               Foreground="{DynamicResource TextFillColorTertiaryBrush}"/>
+                    <Border Background="{StaticResource BgElevatedBrush}"
+                            BorderBrush="{StaticResource BorderSubtleBrush}"
+                            BorderThickness="1" CornerRadius="10" Padding="4">
+                        <UniformGrid Columns="3" Rows="1">
+                            <Button x:Name="ViewRulesButton" Click="ViewRulesButton_Click"
+                                    Background="Transparent" BorderThickness="0" Cursor="Hand"
+                                    Padding="6,9" Margin="0">
+                                <Button.Template>
+                                    <ControlTemplate TargetType="Button">
+                                        <Border x:Name="B" Background="Transparent" CornerRadius="7" Padding="{TemplateBinding Padding}"
+                                                HorizontalAlignment="Stretch">
+                                            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                                                <ui:SymbolIcon Symbol="Shield24" FontSize="16"
+                                                               Foreground="{StaticResource AccentLightBrush}"
+                                                               HorizontalAlignment="Center"/>
+                                                <TextBlock Text="Rules" FontSize="11.5"
+                                                           FontWeight="Medium" Margin="0,4,0,0"
+                                                           HorizontalAlignment="Center"
+                                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                            </StackPanel>
+                                        </Border>
+                                        <ControlTemplate.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter TargetName="B" Property="Background" Value="{StaticResource BgSurfaceHoverBrush}"/>
+                                            </Trigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </Button.Template>
+                            </Button>
+                            <Button x:Name="MarketplaceButton" Click="MarketplaceButton_Click"
+                                    Background="Transparent" BorderThickness="0" Cursor="Hand"
+                                    Padding="6,9" Margin="0">
+                                <Button.Template>
+                                    <ControlTemplate TargetType="Button">
+                                        <Border x:Name="B" Background="Transparent" CornerRadius="7" Padding="{TemplateBinding Padding}"
+                                                HorizontalAlignment="Stretch">
+                                            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                                                <ui:SymbolIcon Symbol="BuildingShop24" FontSize="16"
+                                                               Foreground="{StaticResource AccentLightBrush}"
+                                                               HorizontalAlignment="Center"/>
+                                                <TextBlock Text="Market" FontSize="11.5"
+                                                           FontWeight="Medium" Margin="0,4,0,0"
+                                                           HorizontalAlignment="Center"
+                                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                            </StackPanel>
+                                        </Border>
+                                        <ControlTemplate.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter TargetName="B" Property="Background" Value="{StaticResource BgSurfaceHoverBrush}"/>
+                                            </Trigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </Button.Template>
+                            </Button>
+                            <Button x:Name="ChannelsButton" Click="ChannelsButton_Click"
+                                    Background="Transparent" BorderThickness="0" Cursor="Hand"
+                                    Padding="6,9" Margin="0">
+                                <Button.Template>
+                                    <ControlTemplate TargetType="Button">
+                                        <Border x:Name="B" Background="Transparent" CornerRadius="7" Padding="{TemplateBinding Padding}"
+                                                HorizontalAlignment="Stretch">
+                                            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                                                <ui:SymbolIcon Symbol="PeopleTeam24" FontSize="16"
+                                                               Foreground="{StaticResource AccentLightBrush}"
+                                                               HorizontalAlignment="Center"/>
+                                                <TextBlock Text="Channels" FontSize="11.5"
+                                                           FontWeight="Medium" Margin="0,4,0,0"
+                                                           HorizontalAlignment="Center"
+                                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                            </StackPanel>
+                                        </Border>
+                                        <ControlTemplate.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter TargetName="B" Property="Background" Value="{StaticResource BgSurfaceHoverBrush}"/>
+                                            </Trigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </Button.Template>
+                            </Button>
+                        </UniformGrid>
+                    </Border>
                 </StackPanel>
             </Border>
 
-            <!-- Loading Overlay -->
-            <ui:ProgressRing IsIndeterminate="True"
-                             Width="40"
-                             Height="40"
-                             VerticalAlignment="Center"
-                             HorizontalAlignment="Center"
+            <ui:ProgressRing IsIndeterminate="True" Width="40" Height="40"
+                             HorizontalAlignment="Center" VerticalAlignment="Center"
                              Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisibility}}"/>
         </StackPanel>
     </ScrollViewer>

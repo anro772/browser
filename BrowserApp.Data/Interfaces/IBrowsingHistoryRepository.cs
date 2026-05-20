@@ -30,6 +30,11 @@ public interface IBrowsingHistoryRepository
     Task ClearAllAsync();
 
     /// <summary>
+    /// Deletes a single history entry by id. No-op if the id is missing.
+    /// </summary>
+    Task DeleteAsync(int id);
+
+    /// <summary>
     /// Gets the most frequently visited sites (by visit count), grouped by domain.
     /// </summary>
     Task<IEnumerable<FrequentSite>> GetFrequentSitesAsync(int count);

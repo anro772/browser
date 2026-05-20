@@ -63,6 +63,15 @@ public partial class CopilotSidebarViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private bool _hasActivePage;
 
+    [ObservableProperty]
+    private ObservableCollection<SuggestedPrompt> _suggestedPrompts = new()
+    {
+        new SuggestedPrompt { Label = "Summarize this page", Glyph = "Document24", PromptText = "Summarize this page in 3 bullet points." },
+        new SuggestedPrompt { Label = "Find trackers on this site", Glyph = "Shield24", PromptText = "Are there any privacy concerns or trackers on this page?" },
+        new SuggestedPrompt { Label = "Generate a blocking rule", Glyph = "Hash24", PromptText = "Suggest a blocking rule for the trackers on this site." },
+        new SuggestedPrompt { Label = "Translate this page", Glyph = "Translate24", PromptText = "Translate the visible text on this page to English." }
+    };
+
     public CopilotSidebarViewModel(IOllamaClient ollamaClient)
         : this(ollamaClient, null, null)
     {
@@ -218,6 +227,34 @@ public partial class CopilotSidebarViewModel : ObservableObject, IDisposable
         catch (Exception ex)
         {
             ErrorLogger.LogError("Failed to load Ollama models", ex);
+        }
+    }
+
+    [RelayCommand]
+    private async Task UseSuggestedPromptAsync(SuggestedPrompt? prompt)
+    {
+        if (prompt == null) return;
+        UserInput = prompt.PromptText;
+        if (SendMessageCommand.CanExecute(null))
+        {
+            await SendMessageAsync();
+        }
+    }
+
+    [RelayCommand]
+    private void OpenOllamaInstructions()
+    {
+        try
+        {
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = "https://ollama.com/download",
+                UseShellExecute = true
+            });
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Open Ollama instructions error: {ex.Message}");
         }
     }
 

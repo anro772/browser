@@ -58,6 +58,15 @@ public class BrowsingHistoryRepository : IBrowsingHistoryRepository
     }
 
     /// <inheritdoc/>
+    public async Task DeleteAsync(int id)
+    {
+        var entity = await _context.BrowsingHistory.FindAsync(id);
+        if (entity == null) return;
+        _context.BrowsingHistory.Remove(entity);
+        await _context.SaveChangesAsync();
+    }
+
+    /// <inheritdoc/>
     public async Task<IEnumerable<FrequentSite>> GetFrequentSitesAsync(int count)
     {
         // EF Core-safe: only use simple aggregation in SQL

@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.IO;
 using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -7,12 +8,14 @@ using Microsoft.Extensions.DependencyInjection;
 using BrowserApp.Data.Entities;
 using BrowserApp.Data.Interfaces;
 using BrowserApp.UI.Models;
+using BrowserApp.UI.Services;
 
 namespace BrowserApp.UI.ViewModels;
 
 public partial class DownloadManagerViewModel : ObservableObject
 {
     private readonly IServiceScopeFactory _scopeFactory;
+    private readonly SettingsService _settingsService;
 
     [ObservableProperty]
     private ObservableCollection<DownloadItemModel> _downloads = new();
@@ -20,9 +23,59 @@ public partial class DownloadManagerViewModel : ObservableObject
     [ObservableProperty]
     private bool _isLoading;
 
-    public DownloadManagerViewModel(IServiceScopeFactory scopeFactory)
+    public DownloadManagerViewModel(IServiceScopeFactory scopeFactory, SettingsService settingsService)
     {
         _scopeFactory = scopeFactory;
+        _settingsService = settingsService;
+    }
+
+    private string ResolveDownloadFolder()
+    {
+        var path = _settingsService.DefaultDownloadPath;
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads");
+        }
+        return path;
+    }
+
+    [RelayCommand]
+    private void ChooseDownloadFolder()
+    {
+        try
+        {
+            var dialog = new Microsoft.Win32.OpenFolderDialog
+            {
+                Title = "Choose default download folder",
+                InitialDirectory = ResolveDownloadFolder()
+            };
+            if (dialog.ShowDialog() == true)
+            {
+                _settingsService.DefaultDownloadPath = dialog.FolderName;
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Choose download folder error: {ex.Message}");
+        }
+    }
+
+    [RelayCommand]
+    private void OpenDownloadsFolder()
+    {
+        try
+        {
+            var folder = ResolveDownloadFolder();
+            if (!Directory.Exists(folder))
+            {
+                Directory.CreateDirectory(folder);
+            }
+            Process.Start("explorer.exe", folder);
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Open downloads folder error: {ex.Message}");
+        }
     }
 
     [RelayCommand]

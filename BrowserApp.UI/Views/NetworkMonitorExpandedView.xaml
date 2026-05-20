@@ -1,0 +1,471 @@
+<!--
+  Views/NetworkMonitorExpandedView.xaml — NEW FILE.
+  Expanded "open in window" version of the Network Monitor. Binds to the SAME
+  NetworkMonitorViewModel (the parent passes its instance via DataContext).
+  Wire opening from NetworkMonitorView's new OpenExpandedMonitorCommand.
+
+  Bindings reused from NetworkMonitorViewModel:
+    TotalRequests, BlockedCount, DataSaved, IsMonitoringEnabled,
+    Requests{ResourceType, Host, ShortUrl, Url, StatusCode, FormattedSize,
+             WasBlocked, BlockedByRule, Initiator}, SelectedRequest,
+    SelectedFilter, ApplyFilterCommand, ClearAllCommand, ExportToCsvCommand.
+
+  New (additive) bindings on NetworkRequest the detail pane reads:
+    - Method            (string, "GET" / "POST" …)
+    - Initiator         (string, host or document URL that triggered the request)
+    - BlockedByRule     (string, rule attribution e.g. "EasyList · ads")
+    - BlockedByPattern  (string, the actual rule pattern)
+    - TimestampDisplay  (string, formatted local time)
+  Where any are missing the row renders a "—" placeholder.
+
+  Window style: ModernDialogWindowStyle (already defined in SurfaceStyles.xaml).
+-->
+<ui:FluentWindow x:Class="BrowserApp.UI.Views.NetworkMonitorExpandedView"
+                 xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                 xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+                 xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+                 xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+                 xmlns:vm="clr-namespace:BrowserApp.UI.ViewModels"
+                 xmlns:converters="clr-namespace:BrowserApp.UI.Converters"
+                 mc:Ignorable="d"
+                 Style="{StaticResource ModernDialogWindowStyle}"
+                 Title="Network Monitor"
+                 Width="1100" Height="740"
+                 MinWidth="880" MinHeight="560"
+                 WindowStartupLocation="CenterScreen"
+                 ShowInTaskbar="True"
+                 ExtendsContentIntoTitleBar="True"
+                 ResizeMode="CanResize"
+                 d:DataContext="{d:DesignInstance vm:NetworkMonitorViewModel}">
+
+    <ui:FluentWindow.Resources>
+        <Style x:Key="ExpFilterChipStyle" TargetType="Button" BasedOn="{StaticResource FilterChipButtonStyle}">
+            <Setter Property="Padding" Value="12,6"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Style.Triggers>
+                <DataTrigger Value="True">
+                    <DataTrigger.Binding>
+                        <MultiBinding Converter="{StaticResource ChipActiveConverter}">
+                            <Binding RelativeSource="{RelativeSource Self}" Path="CommandParameter"/>
+                            <Binding Path="DataContext.SelectedFilter" RelativeSource="{RelativeSource AncestorType=Window}"/>
+                        </MultiBinding>
+                    </DataTrigger.Binding>
+                    <Setter Property="Background" Value="{StaticResource AccentSubtleBrush}"/>
+                    <Setter Property="BorderBrush" Value="{StaticResource AccentBorderBrush}"/>
+                    <Setter Property="Foreground" Value="{StaticResource AccentLightBrush}"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style x:Key="ExpNetRowStyle" TargetType="DataGridRow">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="MinHeight" Value="46"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="DataGridRow">
+                        <Border x:Name="RowBorder" Background="{TemplateBinding Background}"
+                                CornerRadius="6" Padding="0,1">
+                            <Grid>
+                                <Border x:Name="Stripe" Width="3" HorizontalAlignment="Left"
+                                        Margin="2,5" CornerRadius="2" Background="Transparent"/>
+                                <DataGridCellsPresenter ItemsPanel="{TemplateBinding ItemsPanel}"/>
+                            </Grid>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <DataTrigger Binding="{Binding WasBlocked}" Value="True">
+                                <Setter TargetName="RowBorder" Property="Background" Value="#14FCA5A5"/>
+                                <Setter TargetName="Stripe" Property="Background" Value="{StaticResource ErrorBrush}"/>
+                            </DataTrigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="RowBorder" Property="Background" Value="{StaticResource BgSurfaceHoverBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="RowBorder" Property="Background" Value="{StaticResource AccentSubtleBrush}"/>
+                                <Setter TargetName="Stripe" Property="Background" Value="{StaticResource AccentBrush}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="DetailKvKey" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="11.5"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextFillColorTertiaryBrush}"/>
+        </Style>
+        <Style x:Key="DetailKvVal" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="Medium"/>
+            <Setter Property="TextAlignment" Value="Right"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+        </Style>
+        <Style x:Key="DetailEyebrow" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="10"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Margin" Value="0,16,0,8"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextFillColorTertiaryBrush}"/>
+        </Style>
+    </ui:FluentWindow.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Title bar — provides drag + minimize + maximize + close glyphs -->
+        <ui:TitleBar Grid.Row="0"
+                     Title="Network Monitor"
+                     ShowMinimize="True"
+                     ShowMaximize="True"
+                     ShowClose="True"/>
+
+        <!-- Top bar — title + monitor toggle + counts -->
+        <Border Grid.Row="1" Padding="20,16,20,12"
+                Background="{StaticResource BgElevatedBrush}"
+                BorderBrush="{StaticResource BorderSubtleBrush}" BorderThickness="0,0,0,1">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel Grid.Column="0">
+                    <TextBlock Text="Network Monitor"
+                               FontSize="20" FontWeight="SemiBold"
+                               Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                    <TextBlock FontSize="12" Margin="0,3,0,0"
+                               Foreground="{DynamicResource TextFillColorSecondaryBrush}">
+                        <Run Text="{Binding TotalRequests, Mode=OneWay}"/>
+                        <Run Text="captured ·"/>
+                        <Run Text="{Binding BlockedCount, Mode=OneWay}" Foreground="{StaticResource ErrorBrush}"/>
+                        <Run Text="blocked ·"/>
+                        <Run Text="{Binding DataSaved, Mode=OneWay}" Foreground="{StaticResource SuccessBrush}"/>
+                        <Run Text="saved"/>
+                    </TextBlock>
+                </StackPanel>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Text="Monitoring" FontSize="12" VerticalAlignment="Center" Margin="0,0,8,0"
+                               Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                    <ui:ToggleSwitch IsChecked="{Binding IsMonitoringEnabled}" VerticalAlignment="Center"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- Filters strip + actions -->
+        <Border Grid.Row="2" Padding="20,12,20,12"
+                BorderBrush="{StaticResource BorderSubtleBrush}" BorderThickness="0,0,0,1">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <ScrollViewer Grid.Column="0" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+                    <StackPanel Orientation="Horizontal">
+                        <Button Content="All"      Style="{StaticResource ExpFilterChipStyle}"
+                                Command="{Binding ApplyFilterCommand}" CommandParameter="All"/>
+                        <Button Content="Blocked"  Style="{StaticResource ExpFilterChipStyle}"
+                                Command="{Binding ApplyFilterCommand}" CommandParameter="Blocked"/>
+                        <Button Content="3rd Party" Style="{StaticResource ExpFilterChipStyle}"
+                                Command="{Binding ApplyFilterCommand}" CommandParameter="ThirdParty"/>
+                        <Button Content="Scripts"  Style="{StaticResource ExpFilterChipStyle}"
+                                Command="{Binding ApplyFilterCommand}" CommandParameter="Scripts"/>
+                        <Button Content="Images"   Style="{StaticResource ExpFilterChipStyle}"
+                                Command="{Binding ApplyFilterCommand}" CommandParameter="Images"/>
+                        <Button Content="XHR"      Style="{StaticResource ExpFilterChipStyle}"
+                                Command="{Binding ApplyFilterCommand}" CommandParameter="XHR"/>
+                        <Button Content="Fonts"    Style="{StaticResource ExpFilterChipStyle}"
+                                Command="{Binding ApplyFilterCommand}" CommandParameter="Fonts"/>
+                    </StackPanel>
+                </ScrollViewer>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="12,0,0,0">
+                    <ui:Button Content="Clear"
+                               Icon="{ui:SymbolIcon Delete24}"
+                               Command="{Binding ClearAllCommand}"
+                               Appearance="Secondary"
+                               Padding="10,5" Margin="0,0,6,0"/>
+                    <ui:Button Content="Export CSV"
+                               Icon="{ui:SymbolIcon Save24}"
+                               Command="{Binding ExportToCsvCommand}"
+                               Appearance="Primary"
+                               Style="{StaticResource PrimaryAccentUiButton}"
+                               Padding="10,5"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- Body: grid + detail pane (split into 1*/380px) -->
+        <Grid Grid.Row="3">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="380"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Main request grid -->
+            <Border Grid.Column="0" Margin="20,16,10,20"
+                    Background="{StaticResource BgSurfaceBrush}"
+                    BorderBrush="{StaticResource BorderSubtleBrush}" BorderThickness="1"
+                    CornerRadius="12" Padding="2">
+                <DataGrid ItemsSource="{Binding Requests}"
+                          SelectedItem="{Binding SelectedRequest}"
+                          AutoGenerateColumns="False" IsReadOnly="True"
+                          HeadersVisibility="Column" GridLinesVisibility="None"
+                          CanUserAddRows="False" CanUserDeleteRows="False"
+                          SelectionMode="Single"
+                          VirtualizingPanel.IsVirtualizing="True"
+                          VirtualizingPanel.VirtualizationMode="Recycling"
+                          EnableRowVirtualization="True"
+                          Background="Transparent" BorderThickness="0"
+                          RowHeight="48" FontSize="12.5"
+                          RowStyle="{StaticResource ExpNetRowStyle}"
+                          ColumnHeaderStyle="{StaticResource ThemedDataGridColumnHeader}"
+                          CellStyle="{StaticResource ThemedDataGridCell}">
+                    <DataGrid.Columns>
+                        <DataGridTemplateColumn Header="Type" Width="92">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <Border CornerRadius="4" Padding="7,2" Margin="8,0"
+                                            Background="{Binding ResourceType, Converter={StaticResource ResourceTypeToColor}}"
+                                            HorizontalAlignment="Left" VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding ResourceType}"
+                                                   FontSize="10.5" FontWeight="Bold"
+                                                   Foreground="#0F1320"/>
+                                    </Border>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+
+                        <DataGridTemplateColumn Header="URL" Width="*">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <StackPanel Margin="4,2" VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding Host}" FontSize="12.5" FontWeight="SemiBold"
+                                                   Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                                                   TextTrimming="CharacterEllipsis"/>
+                                        <TextBlock Text="{Binding ShortUrl}" FontSize="11" Margin="0,1,0,0"
+                                                   Foreground="{DynamicResource TextFillColorTertiaryBrush}"
+                                                   TextTrimming="CharacterEllipsis"/>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+
+                        <DataGridTextColumn Header="Initiator"
+                                            Binding="{Binding Initiator, TargetNullValue='—'}"
+                                            Width="200"/>
+
+                        <DataGridTemplateColumn Header="Status" Width="74">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                        <Ellipse Width="6" Height="6" Margin="0,0,5,0"
+                                                 Fill="{Binding StatusCode, Converter={StaticResource StatusCodeToColor}}"/>
+                                        <TextBlock Text="{Binding StatusCode, TargetNullValue='—'}"
+                                                   FontSize="11.5"
+                                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+
+                        <DataGridTextColumn Header="Blocked by"
+                                            Binding="{Binding BlockedByRule, TargetNullValue='—'}"
+                                            Width="140"/>
+
+                        <DataGridTextColumn Header="Size"
+                                            Binding="{Binding FormattedSize}"
+                                            Width="80"/>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </Border>
+
+            <!-- Detail pane -->
+            <Border Grid.Column="1" Margin="0,16,20,20"
+                    Background="{StaticResource BgElevatedBrush}"
+                    BorderBrush="{StaticResource BorderSubtleBrush}" BorderThickness="1"
+                    CornerRadius="12">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="18,16,18,18">
+                    <StackPanel>
+                        <!-- When nothing is selected -->
+                        <StackPanel HorizontalAlignment="Center" Margin="0,40,0,0">
+                            <StackPanel.Style>
+                                <Style TargetType="StackPanel">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding SelectedRequest}" Value="{x:Null}">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </StackPanel.Style>
+                            <ui:SymbolIcon Symbol="ArrowExportRtl24" FontSize="36"
+                                           Foreground="{DynamicResource TextFillColorTertiaryBrush}"
+                                           HorizontalAlignment="Center"/>
+                            <TextBlock Text="Select a request"
+                                       FontSize="13" FontWeight="SemiBold"
+                                       Margin="0,10,0,3" HorizontalAlignment="Center"
+                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                            <TextBlock Text="Pick any row to inspect its URL, status, and headers."
+                                       FontSize="11.5" TextAlignment="Center" TextWrapping="Wrap"
+                                       Foreground="{DynamicResource TextFillColorTertiaryBrush}"
+                                       Margin="20,0,20,0"/>
+                        </StackPanel>
+
+                        <!-- Detail content (visible when a row is selected) -->
+                        <StackPanel Visibility="{Binding SelectedRequest, Converter={StaticResource NullToVisibilityInverse}, FallbackValue=Visible}"
+                                    DataContext="{Binding SelectedRequest}">
+                            <!-- Header row: type pill + title -->
+                            <Grid Margin="0,0,0,12">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <Border Grid.Column="0" CornerRadius="4" Padding="7,2"
+                                        Background="{Binding ResourceType, Converter={StaticResource ResourceTypeToColor}}"
+                                        VerticalAlignment="Center" Margin="0,0,10,0">
+                                    <TextBlock Text="{Binding ResourceType}" FontSize="10.5" FontWeight="Bold"
+                                               Foreground="#0F1320"/>
+                                </Border>
+                                <TextBlock Grid.Column="1" Text="Request detail" FontSize="13" FontWeight="SemiBold"
+                                           VerticalAlignment="Center"
+                                           Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                            </Grid>
+
+                            <!-- Blocked-by attribution -->
+                            <Border Background="#14FCA5A5"
+                                    BorderBrush="#33FCA5A5" BorderThickness="1"
+                                    CornerRadius="8" Padding="11,9" Margin="0,0,0,12"
+                                    Visibility="{Binding WasBlocked, Converter={StaticResource BoolToVisibility}}">
+                                <StackPanel>
+                                    <StackPanel Orientation="Horizontal">
+                                        <ui:SymbolIcon Symbol="ShieldError24" FontSize="13"
+                                                       Foreground="{StaticResource ErrorBrush}"
+                                                       VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                        <TextBlock Text="Blocked" FontSize="12" FontWeight="SemiBold"
+                                                   Foreground="{StaticResource ErrorBrush}"
+                                                   VerticalAlignment="Center"/>
+                                        <TextBlock Text=" · " VerticalAlignment="Center"
+                                                   Foreground="{StaticResource ErrorBrush}"/>
+                                        <TextBlock Text="{Binding BlockedByRule, FallbackValue='Unknown rule'}"
+                                                   FontSize="12" FontWeight="SemiBold"
+                                                   Foreground="{StaticResource ErrorBrush}"
+                                                   VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                    <TextBlock Margin="0,4,0,0" FontSize="11"
+                                               Foreground="{DynamicResource TextFillColorSecondaryBrush}">
+                                        <Run Text="Pattern:"/>
+                                        <Run Text="{Binding BlockedByPattern, FallbackValue='—'}"
+                                             FontFamily="JetBrains Mono, Consolas, monospace"
+                                             Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                                    </TextBlock>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- URL block (monospace, selectable) -->
+                            <Border Background="{StaticResource BgSurfaceBrush}"
+                                    BorderBrush="{StaticResource BorderSubtleBrush}" BorderThickness="1"
+                                    CornerRadius="6" Padding="11,9" Margin="0,0,0,4">
+                                <TextBox Text="{Binding Url, Mode=OneWay}"
+                                         IsReadOnly="True" Background="Transparent" BorderThickness="0"
+                                         FontFamily="JetBrains Mono, Consolas, monospace"
+                                         FontSize="11.5" TextWrapping="Wrap"
+                                         Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                            </Border>
+
+                            <!-- Summary key-values -->
+                            <TextBlock Text="SUMMARY" Style="{StaticResource DetailEyebrow}"/>
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <Grid.Resources>
+                                    <Style TargetType="Border" x:Key="KvRow">
+                                        <Setter Property="BorderBrush" Value="{StaticResource BorderSubtleBrush}"/>
+                                        <Setter Property="BorderThickness" Value="0,0,0,1"/>
+                                        <Setter Property="Padding" Value="0,7"/>
+                                    </Style>
+                                </Grid.Resources>
+                                <!-- Method -->
+                                <Border Grid.Row="0" Grid.Column="0" Style="{StaticResource KvRow}">
+                                    <TextBlock Text="Method" Style="{StaticResource DetailKvKey}"/>
+                                </Border>
+                                <Border Grid.Row="0" Grid.Column="1" Style="{StaticResource KvRow}">
+                                    <TextBlock Text="{Binding Method, FallbackValue='GET'}" Style="{StaticResource DetailKvVal}"/>
+                                </Border>
+                                <!-- Status -->
+                                <Border Grid.Row="1" Grid.Column="0" Style="{StaticResource KvRow}">
+                                    <TextBlock Text="Status" Style="{StaticResource DetailKvKey}"/>
+                                </Border>
+                                <Border Grid.Row="1" Grid.Column="1" Style="{StaticResource KvRow}">
+                                    <TextBlock Text="{Binding StatusCode, TargetNullValue='— (blocked)'}"
+                                               Style="{StaticResource DetailKvVal}"/>
+                                </Border>
+                                <!-- Type -->
+                                <Border Grid.Row="2" Grid.Column="0" Style="{StaticResource KvRow}">
+                                    <TextBlock Text="Resource type" Style="{StaticResource DetailKvKey}"/>
+                                </Border>
+                                <Border Grid.Row="2" Grid.Column="1" Style="{StaticResource KvRow}">
+                                    <TextBlock Text="{Binding ResourceType}" Style="{StaticResource DetailKvVal}"/>
+                                </Border>
+                                <!-- Size -->
+                                <Border Grid.Row="3" Grid.Column="0" Style="{StaticResource KvRow}">
+                                    <TextBlock Text="Size" Style="{StaticResource DetailKvKey}"/>
+                                </Border>
+                                <Border Grid.Row="3" Grid.Column="1" Style="{StaticResource KvRow}">
+                                    <TextBlock Text="{Binding FormattedSize}" Style="{StaticResource DetailKvVal}"/>
+                                </Border>
+                                <!-- Initiator -->
+                                <Border Grid.Row="4" Grid.Column="0" Style="{StaticResource KvRow}">
+                                    <TextBlock Text="Initiator" Style="{StaticResource DetailKvKey}"/>
+                                </Border>
+                                <Border Grid.Row="4" Grid.Column="1" Style="{StaticResource KvRow}">
+                                    <TextBlock Text="{Binding Initiator, FallbackValue='—'}" Style="{StaticResource DetailKvVal}"/>
+                                </Border>
+                                <!-- Time -->
+                                <Border Grid.Row="5" Grid.Column="0" Padding="0,7">
+                                    <TextBlock Text="Time" Style="{StaticResource DetailKvKey}"/>
+                                </Border>
+                                <Border Grid.Row="5" Grid.Column="1" Padding="0,7">
+                                    <TextBlock Text="{Binding TimestampDisplay, FallbackValue='—'}"
+                                               Style="{StaticResource DetailKvVal}"/>
+                                </Border>
+                            </Grid>
+
+                            <!-- Headers placeholder -->
+                            <TextBlock Text="REQUEST HEADERS" Style="{StaticResource DetailEyebrow}"/>
+                            <Border Background="{StaticResource BgSurfaceBrush}"
+                                    BorderBrush="{StaticResource BorderSubtleBrush}" BorderThickness="1"
+                                    CornerRadius="6" Padding="14">
+                                <TextBlock Text="Headers will appear here once captured"
+                                           FontSize="11.5" TextAlignment="Center"
+                                           Foreground="{DynamicResource TextFillColorTertiaryBrush}"/>
+                            </Border>
+
+                            <!-- Timing placeholder -->
+                            <TextBlock Text="TIMING" Style="{StaticResource DetailEyebrow}"/>
+                            <Border Background="{StaticResource BgSurfaceBrush}"
+                                    BorderBrush="{StaticResource BorderSubtleBrush}" BorderThickness="1"
+                                    CornerRadius="6" Padding="14">
+                                <TextBlock Text="Waterfall timing will render here"
+                                           FontSize="11.5" TextAlignment="Center"
+                                           Foreground="{DynamicResource TextFillColorTertiaryBrush}"/>
+                            </Border>
+                        </StackPanel>
+                    </StackPanel>
+                </ScrollViewer>
+            </Border>
+        </Grid>
+    </Grid>
+</ui:FluentWindow>

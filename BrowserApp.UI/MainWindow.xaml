@@ -453,7 +453,7 @@
 
             <!-- Sidebar Panel with Icon Strip -->
             <Border Grid.Column="1"
-                    Width="400"
+                    Width="440"
                     Background="{StaticResource BgElevatedBrush}"
                     BorderBrush="{StaticResource BorderSubtleBrush}"
                     BorderThickness="1,0,0,0"

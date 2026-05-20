@@ -155,6 +155,48 @@ public partial class HistoryViewModel : ObservableObject
         return Task.CompletedTask;
     }
 
+    [RelayCommand]
+    private async Task OpenInNewTabAsync(HistoryEntryDisplay? entry)
+    {
+        if (entry == null || string.IsNullOrEmpty(entry.Url)) return;
+        await _tabStrip.NewTabAsync(entry.Url);
+    }
+
+    [RelayCommand]
+    private void CopyUrl(HistoryEntryDisplay? entry)
+    {
+        if (entry == null || string.IsNullOrEmpty(entry.Url)) return;
+        try
+        {
+            System.Windows.Clipboard.SetText(entry.Url);
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Copy URL error: {ex.Message}");
+        }
+    }
+
+    [RelayCommand]
+    private async Task DeleteEntryAsync(HistoryEntryDisplay? entry)
+    {
+        if (entry == null) return;
+        try
+        {
+            using var scope = _scopeFactory.CreateScope();
+            var repo = scope.ServiceProvider.GetRequiredService<IBrowsingHistoryRepository>();
+            await repo.DeleteAsync(entry.Entity.Id);
+
+            Application.Current?.Dispatcher.Invoke(() =>
+            {
+                HistoryEntries.Remove(entry);
+            });
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Delete history entry error: {ex.Message}");
+        }
+    }
+
     /// <summary>
     /// Clears all browsing history.
     /// </summary>
