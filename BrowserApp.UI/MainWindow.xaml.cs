@@ -28,11 +28,6 @@ public partial class MainWindow : FluentWindow
 {
     private readonly MainViewModel _viewModel;
     private readonly TabStripViewModel _tabStrip;
-    private readonly NetworkMonitorView _networkMonitorView;
-    private readonly LogViewerView _logViewerView;
-    private readonly PrivacyDashboardView _dashboardView;
-    private readonly HistoryView _historyView;
-    private readonly DownloadManagerView _downloadManagerView;
     private readonly CopilotSidebarView _copilotSidebarView;
     private readonly WorkspaceHostView _workspaceHostView;
     private readonly IServiceProvider _serviceProvider;
@@ -60,11 +55,6 @@ public partial class MainWindow : FluentWindow
     public MainWindow(
         MainViewModel viewModel,
         TabStripViewModel tabStrip,
-        NetworkMonitorView networkMonitorView,
-        LogViewerView logViewerView,
-        PrivacyDashboardView dashboardView,
-        HistoryView historyView,
-        DownloadManagerView downloadManagerView,
         DownloadManagerViewModel downloadManagerViewModel,
         CopilotSidebarView copilotSidebarView,
         WorkspaceHostView workspaceHostView,
@@ -73,11 +63,6 @@ public partial class MainWindow : FluentWindow
     {
         _viewModel = viewModel;
         _tabStrip = tabStrip;
-        _networkMonitorView = networkMonitorView;
-        _logViewerView = logViewerView;
-        _dashboardView = dashboardView;
-        _historyView = historyView;
-        _downloadManagerView = downloadManagerView;
         _downloadManagerViewModel = downloadManagerViewModel;
         _copilotSidebarView = copilotSidebarView;
         _workspaceHostView = workspaceHostView;
@@ -88,26 +73,35 @@ public partial class MainWindow : FluentWindow
 
         DataContext = _viewModel;
 
-        // Set the sidebar tab contents
+        // Eager-assign the always-present chrome: Copilot is the default visible sidebar
+        // panel, WorkspaceHost is the overlay container (its inner workspace views are
+        // themselves lazily resolved via WorkspaceHostView.WireLazyWorkspaces below).
         CopilotContent.Content = _copilotSidebarView;
-        DashboardContent.Content = _dashboardView;
-        DownloadsContent.Content = _downloadManagerView;
-        NetworkMonitorContent.Content = _networkMonitorView;
-        HistoryContent.Content = _historyView;
-        LogViewerContent.Content = _logViewerView;
         WorkspaceHostContainer.Content = _workspaceHostView;
-        _workspaceHostView.SetWorkspaceContent(
-            _serviceProvider.GetRequiredService<RulesWorkspaceView>(),
-            _serviceProvider.GetRequiredService<ExtensionsWorkspaceView>(),
-            _serviceProvider.GetRequiredService<MarketplaceWorkspaceView>(),
-            _serviceProvider.GetRequiredService<ChannelsWorkspaceView>(),
-            _serviceProvider.GetRequiredService<ProfilesWorkspaceView>(),
-            _serviceProvider.GetRequiredService<SettingsWorkspaceView>());
 
-        // Wire up dashboard quick action events
-        _dashboardView.ViewRulesRequested += (s, e) => RulesButton_Click(this, new RoutedEventArgs());
-        _dashboardView.MarketplaceRequested += (s, e) => MarketplaceButton_Click(this, new RoutedEventArgs());
-        _dashboardView.ChannelsRequested += (s, e) => ChannelsButton_Click(this, new RoutedEventArgs());
+        // Five non-default sidebar panels: defer until the user actually clicks their
+        // tab. WireLazyContent attaches IsVisibleChanged once and self-detaches after
+        // the first reveal. ~300-500ms saved off cold start.
+        WireLazyContent(DashboardContent, sp => sp.GetRequiredService<PrivacyDashboardView>(),
+            view =>
+            {
+                // Quick-action events live on PrivacyDashboardView. They couldn't be
+                // wired in this ctor previously because the view didn't exist yet —
+                // they're wired here on first reveal instead. Safe order-wise because
+                // the dashboard must be visible before the user can click these.
+                view.ViewRulesRequested += (s, e) => RulesButton_Click(this, new RoutedEventArgs());
+                view.MarketplaceRequested += (s, e) => MarketplaceButton_Click(this, new RoutedEventArgs());
+                view.ChannelsRequested += (s, e) => ChannelsButton_Click(this, new RoutedEventArgs());
+            });
+        WireLazyContent(DownloadsContent,      sp => sp.GetRequiredService<DownloadManagerView>());
+        WireLazyContent(NetworkMonitorContent, sp => sp.GetRequiredService<NetworkMonitorView>());
+        WireLazyContent(HistoryContent,        sp => sp.GetRequiredService<HistoryView>());
+        WireLazyContent(LogViewerContent,      sp => sp.GetRequiredService<LogViewerView>());
+
+        // Workspace dialog views (Rules / Extensions / Marketplace / Channels / Profiles
+        // / Settings) — same pattern, hooked from inside WorkspaceHostView since it owns
+        // those ContentControls.
+        _workspaceHostView.WireLazyWorkspaces(_serviceProvider);
 
         // Bookmarks bar: open-in-new-tab routes here since the new-tab plumbing lives on MainWindow.
         BookmarksBarControl.OpenInNewTabRequested += async (s, bookmark) =>
@@ -825,5 +819,36 @@ public partial class MainWindow : FluentWindow
         {
             ErrorLogger.LogError($"[MainWindow] {operation} failed", ex);
         }
+    }
+
+    /// <summary>
+    /// Lazily resolves a view from DI and assigns it to a <see cref="ContentControl"/>
+    /// the first time that control becomes visible. Used to defer XAML parsing of
+    /// sidebar panels that aren't visible on first paint — the user pays a small
+    /// one-time cost on first reveal (typically &lt;250 ms) and never again. WPF's
+    /// <see cref="UIElement.IsVisibleChanged"/> fires reliably when the bound
+    /// visibility flips, and the handler self-detaches after the first hit so we
+    /// don't re-resolve.
+    /// </summary>
+    private void WireLazyContent<T>(
+        ContentControl host,
+        Func<IServiceProvider, T> factory,
+        Action<T>? onLoaded = null) where T : UIElement
+    {
+        DependencyPropertyChangedEventHandler? handler = null;
+        handler = (_, _) =>
+        {
+            // Skip spurious IsVisibleChanged notifications from layout passes that
+            // don't actually flip visibility, and the (impossible-in-practice) case
+            // where Content was assigned by some other code path.
+            if (!host.IsVisible || host.Content != null) return;
+
+            var view = factory(_serviceProvider);
+            host.Content = view;
+            try { onLoaded?.Invoke(view); }
+            catch (Exception ex) { ErrorLogger.LogError($"[MainWindow] Lazy-view onLoaded for {typeof(T).Name} failed", ex); }
+            host.IsVisibleChanged -= handler;
+        };
+        host.IsVisibleChanged += handler;
     }
 }

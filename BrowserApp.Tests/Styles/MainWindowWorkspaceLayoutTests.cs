@@ -22,7 +22,7 @@ public class MainWindowWorkspaceLayoutTests
         string code = File.ReadAllText(codePath);
 
         Assert.Contains("WorkspaceHostContainer.Content = _workspaceHostView;", code, StringComparison.Ordinal);
-        Assert.Contains("_workspaceHostView.SetWorkspaceContent(", code, StringComparison.Ordinal);
+        Assert.Contains("_workspaceHostView.WireLazyWorkspaces(_serviceProvider);", code, StringComparison.Ordinal);
         Assert.Contains("_viewModel.PropertyChanged += OnMainViewModelPropertyChanged;", code, StringComparison.Ordinal);
         Assert.Contains("if (_viewModel.IsWorkspaceOpen)", code, StringComparison.Ordinal);
     }
