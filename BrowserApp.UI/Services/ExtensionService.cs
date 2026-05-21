@@ -52,6 +52,14 @@ public class ExtensionService
             _filterListService.IsEnabled = enabled;
         }
 
+        // Persist the value so the next launch's first paint of the title-bar shield
+        // indicator is correct without waiting on a DB query.
+        if (_settingsService != null)
+        {
+            try { _settingsService.LastKnownAdBlockerEnabled = enabled; }
+            catch (Exception ex) { ErrorLogger.LogError("[ExtensionService] Failed to persist LastKnownAdBlockerEnabled", ex); }
+        }
+
         try { AdBlockerStateChanged?.Invoke(this, enabled); }
         catch (Exception ex) { ErrorLogger.LogError("[ExtensionService] AdBlockerStateChanged handler threw", ex); }
     }

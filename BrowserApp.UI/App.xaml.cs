@@ -117,51 +117,21 @@ public partial class App : Application
 
         ErrorLogger.LogInfo("Services configured");
 
-        // Ensure database is created
-        EnsureDatabase();
+        // Ensure database is created — runs on a worker thread so the EF Core migration
+        // doesn't pin the UI dispatcher during startup. We still await before showing
+        // the window because subsequent service init reads from the DB.
+        await Task.Run(EnsureDatabase);
 
         ErrorLogger.LogInfo("Database initialized");
 
-        // Initialize blocking service (loads rules) - AWAIT to ensure it completes
+        // Initialize blocking service (loads user rules) — small, fast, and the rule
+        // engine is a hard dependency of every tab so this stays on the critical path.
         var blockingService = _serviceProvider.GetRequiredService<IBlockingService>();
         await blockingService.InitializeAsync();
 
         ErrorLogger.LogInfo("Blocking service initialized");
 
-        // Auto-enable best rule templates on first run (no rules in DB yet)
-        await AutoEnableDefaultTemplatesAsync(blockingService);
-
-        // Initialize filter list service (downloads EasyList/EasyPrivacy if needed)
-        try
-        {
-            var filterListService = _serviceProvider.GetRequiredService<IFilterListService>();
-            await filterListService.InitializeAsync();
-            ErrorLogger.LogInfo($"Filter list service initialized: {filterListService.GetTotalFilterCount()} filters");
-        }
-        catch (Exception ex)
-        {
-            ErrorLogger.LogError("Filter list initialization failed (non-fatal)", ex);
-        }
-
-        // Initialize content policy service (loads category definitions)
-        try
-        {
-            var contentPolicyService = _serviceProvider.GetRequiredService<ContentPolicyService>();
-            await contentPolicyService.InitializeAsync();
-            ErrorLogger.LogInfo("Content policy service initialized");
-        }
-        catch (Exception ex)
-        {
-            ErrorLogger.LogError("Content policy initialization failed (non-fatal)", ex);
-        }
-
-        // Start network logger background task - AWAIT to ensure it starts
-        var networkLogger = _serviceProvider.GetRequiredService<INetworkLogger>();
-        await networkLogger.StartAsync();
-
-        ErrorLogger.LogInfo("Network logger started");
-
-        // Initialize search engine from saved settings
+        // Initialize search engine from saved settings — cheap settings read.
         var settingsService = _serviceProvider.GetRequiredService<SettingsService>();
         settingsService.InitializeUsernameIfNeeded(_profileService.ActiveProfile.Name);
 
@@ -177,13 +147,99 @@ public partial class App : Application
 
         ErrorLogger.LogInfo($"Search engine set to: {settingsService.SearchEngine}");
 
-        ErrorLogger.LogInfo("Channel sync service initialized (manual sync only)");
-
-        // Show main window
+        // Show main window. The bookmarks bar populates from a per-profile JSON snapshot
+        // synchronously in BookmarkViewModel's ctor (resolved as part of MainWindow), so
+        // it paints with content on the first frame. Heavy services (filter list parse,
+        // content policy, network logger, default-template seeding) continue on
+        // background threads after this — none are required for the window to render,
+        // and the active-profile pill reads its ABP state from a persisted snapshot.
         var mainWindow = _serviceProvider.GetRequiredService<MainWindow>();
         mainWindow.Show();
 
-        ErrorLogger.LogInfo("Main window shown - startup complete");
+        ErrorLogger.LogInfo("Main window shown - kicking off background init");
+
+        _ = Task.Run(async () =>
+        {
+            // Filter list parsing (~137k regex compiles). ShouldBlock returns false
+            // safely while _isLoaded is false, so pages loaded in the first ~1 s simply
+            // aren't filtered — silent, intentional.
+            try
+            {
+                var filterListService = _serviceProvider.GetRequiredService<IFilterListService>();
+                await filterListService.InitializeAsync();
+                ErrorLogger.LogInfo($"Filter list service initialized: {filterListService.GetTotalFilterCount()} filters");
+            }
+            catch (Exception ex)
+            {
+                ErrorLogger.LogError("Filter list initialization failed (non-fatal)", ex);
+            }
+
+            // Category definitions for ContentPolicy rules — only used when a policy
+            // category rule actually matches, so out-of-band init is fine.
+            try
+            {
+                var contentPolicyService = _serviceProvider.GetRequiredService<ContentPolicyService>();
+                await contentPolicyService.InitializeAsync();
+                ErrorLogger.LogInfo("Content policy service initialized");
+            }
+            catch (Exception ex)
+            {
+                ErrorLogger.LogError("Content policy initialization failed (non-fatal)", ex);
+            }
+
+            // Network logger background channel — there are no active tabs yet when this
+            // would have run on the critical path, so deferring loses nothing.
+            try
+            {
+                var networkLogger = _serviceProvider.GetRequiredService<INetworkLogger>();
+                await networkLogger.StartAsync();
+                ErrorLogger.LogInfo("Network logger started");
+            }
+            catch (Exception ex)
+            {
+                ErrorLogger.LogError("Network logger start failed (non-fatal)", ex);
+            }
+
+            // First-run template seeding. Idempotent — short-circuits when rules exist.
+            try
+            {
+                await AutoEnableDefaultTemplatesAsync(blockingService);
+            }
+            catch (Exception ex)
+            {
+                ErrorLogger.LogError("Default-template seeding failed (non-fatal)", ex);
+            }
+
+            // EF Core warmup. The first real query against BrowserDbContext pays a
+            // ~100–200 ms tax (model snapshot init, connection open, LINQ provider JIT).
+            // Doing one cheap query now means the History panel / autocomplete / etc. feel
+            // snappier the first time the user actually opens them.
+            try
+            {
+                using var scope = _serviceProvider!.CreateScope();
+                var db = scope.ServiceProvider.GetRequiredService<BrowserDbContext>();
+                _ = await db.Bookmarks.CountAsync();
+                ErrorLogger.LogInfo("EF Core warmup complete");
+            }
+            catch (Exception ex)
+            {
+                ErrorLogger.LogError("EF Core warmup failed (non-fatal)", ex);
+            }
+
+            // Reconcile the bookmarks JSON snapshot against the DB so any drift (manual
+            // edits, future sync) gets folded into the on-disk cache for next launch.
+            try
+            {
+                var bookmarkVm = _serviceProvider!.GetRequiredService<ViewModels.BookmarkViewModel>();
+                await bookmarkVm.LoadBookmarksAsync();
+            }
+            catch (Exception ex)
+            {
+                ErrorLogger.LogError("Bookmark reconcile failed (non-fatal)", ex);
+            }
+        });
+
+        ErrorLogger.LogInfo("Startup complete (background init in flight)");
     }
 
     private void ConfigureServices(IServiceCollection services)
@@ -273,6 +329,11 @@ public partial class App : Application
 
         // Settings Service
         services.AddSingleton<SettingsService>();
+
+        // JSON snapshot of bookmarks. Read synchronously by BookmarkViewModel's ctor so
+        // the bar paints with content on the first frame, without paying EF Core's cold
+        // first-query tax. SQLite remains the source of truth.
+        services.AddSingleton<BookmarkSnapshotService>();
 
         // Tails on-disk log files for the debug console.
         services.AddSingleton<LogTailService>();

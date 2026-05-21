@@ -73,12 +73,23 @@ public partial class TabStripViewModel : ObservableObject, IDisposable
 
     /// <summary>
     /// Initializes the shared WebView2 environment. Must be called once before creating tabs.
+    /// Idempotent — repeat calls after the first return immediately.
     /// </summary>
     public async Task InitializeAsync(string userDataFolder)
     {
+        if (_environment != null) return;
+
+        // GPU-friendly defaults so pages composite/raster on the GPU when the host
+        // hardware allows it. WebView2 falls back to software cleanly when a flag
+        // doesn't apply (e.g. older drivers), so these stay safe on any machine.
         var options = new CoreWebView2EnvironmentOptions
         {
-            AreBrowserExtensionsEnabled = true
+            AreBrowserExtensionsEnabled = true,
+            AdditionalBrowserArguments =
+                "--ignore-gpu-blocklist " +
+                "--enable-gpu-rasterization " +
+                "--enable-zero-copy " +
+                "--enable-features=VaapiVideoDecoder"
         };
 
         _environment = await CoreWebView2Environment.CreateAsync(

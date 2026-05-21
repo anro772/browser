@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using BrowserApp.Data.Entities;
 using BrowserApp.Data.Interfaces;
 using BrowserApp.UI.Models;
+using BrowserApp.UI.Services;
 
 namespace BrowserApp.UI.ViewModels;
 
@@ -17,6 +18,7 @@ public partial class BookmarkViewModel : ObservableObject
 {
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly TabStripViewModel _tabStrip;
+    private readonly BookmarkSnapshotService? _snapshotService;
     private BrowserTabItem? _subscribedTab;
 
     [ObservableProperty]
@@ -26,10 +28,25 @@ public partial class BookmarkViewModel : ObservableObject
 
     public BookmarkViewModel(
         IServiceScopeFactory scopeFactory,
-        TabStripViewModel tabStrip)
+        TabStripViewModel tabStrip,
+        BookmarkSnapshotService? snapshotService = null)
     {
         _scopeFactory = scopeFactory;
         _tabStrip = tabStrip;
+        _snapshotService = snapshotService;
+
+        // Synchronously hydrate the bar from the on-disk JSON snapshot so the first WPF
+        // paint already shows bookmarks. EF Core's cold first-query tax (~100–200 ms) would
+        // otherwise cause a visible flash of "No bookmarks yet" before the DB call returns.
+        // SQLite remains the source of truth — a post-show reconcile rewrites this snapshot
+        // from the DB to catch any drift.
+        if (_snapshotService != null)
+        {
+            foreach (var b in _snapshotService.Load())
+            {
+                Bookmarks.Add(b);
+            }
+        }
 
         // Monitor active tab changes to update bookmark state
         _tabStrip.ActiveTabChanged += OnActiveTabChanged;
@@ -64,7 +81,7 @@ public partial class BookmarkViewModel : ObservableObject
         {
             using var scope = _scopeFactory.CreateScope();
             var repo = scope.ServiceProvider.GetRequiredService<IBookmarkRepository>();
-            var bookmarks = await repo.GetAllAsync();
+            var bookmarks = (await repo.GetAllAsync()).ToList();
 
             Application.Current?.Dispatcher.Invoke(() =>
             {
@@ -74,6 +91,13 @@ public partial class BookmarkViewModel : ObservableObject
                     Bookmarks.Add(b);
                 }
             });
+
+            // Reconcile the JSON snapshot with the authoritative DB state. Cheap I/O,
+            // safe to await on whatever thread we're already on.
+            if (_snapshotService != null)
+            {
+                await _snapshotService.SaveAsync(bookmarks);
+            }
         }
         catch (Exception ex)
         {
@@ -117,7 +141,7 @@ public partial class BookmarkViewModel : ObservableObject
                 IsCurrentPageBookmarked = true;
             }
 
-            await LoadBookmarksAsync();
+            await LoadBookmarksAsync(); // refreshes Bookmarks + JSON snapshot in one step
         }
         catch (Exception ex)
         {
@@ -147,7 +171,7 @@ public partial class BookmarkViewModel : ObservableObject
             using var scope = _scopeFactory.CreateScope();
             var repo = scope.ServiceProvider.GetRequiredService<IBookmarkRepository>();
             await repo.RemoveAsync(bookmark.Id);
-            await LoadBookmarksAsync();
+            await LoadBookmarksAsync(); // refreshes Bookmarks + JSON snapshot in one step
 
             // Update button state if we removed the current page
             var tab = _tabStrip.ActiveTab;

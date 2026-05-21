@@ -35,6 +35,9 @@ public class FilterListService : IFilterListService, IDisposable
         set => _isEnabled = value;
     }
 
+    /// <inheritdoc/>
+    public event Action? FilterListReady;
+
     public FilterListService()
     {
         _httpClient = new HttpClient();
@@ -79,13 +82,16 @@ public class FilterListService : IFilterListService, IDisposable
                 list.LastUpdated = File.GetLastWriteTimeUtc(cachePath);
             }
 
-            LoadListFromCache(list);
+            await LoadListFromCacheAsync(list);
         }
 
         _isLoaded = true;
 
         var totalFilters = GetTotalFilterCount();
         ErrorLogger.LogInfo($"FilterListService initialized: {totalFilters} filters from {_lists.Count(l => l.Enabled)} lists");
+
+        try { FilterListReady?.Invoke(); }
+        catch (Exception ex) { ErrorLogger.LogError("[FilterListService] FilterListReady handler threw", ex); }
 
         // Start auto-update timer (24 hours)
         _updateTimer.Change(TimeSpan.FromHours(24), TimeSpan.FromHours(24));
@@ -98,7 +104,7 @@ public class FilterListService : IFilterListService, IDisposable
             try
             {
                 await DownloadListAsync(list);
-                LoadListFromCache(list);
+                await LoadListFromCacheAsync(list);
             }
             catch (Exception ex)
             {
@@ -209,14 +215,14 @@ public class FilterListService : IFilterListService, IDisposable
             var cachePath = GetCachePath(list.Id);
             if (!File.Exists(cachePath))
                 await DownloadListAsync(list);
-            LoadListFromCache(list);
+            await LoadListFromCacheAsync(list);
         }
         else
         {
             // Rebuild filters without this list
             ClearParsedData();
             foreach (var l in _lists.Where(x => x.Enabled))
-                LoadListFromCache(l);
+                await LoadListFromCacheAsync(l);
         }
     }
 
@@ -246,27 +252,30 @@ public class FilterListService : IFilterListService, IDisposable
         }
     }
 
-    private void LoadListFromCache(FilterList list)
+    private async Task LoadListFromCacheAsync(FilterList list)
     {
         var cachePath = GetCachePath(list.Id);
         if (!File.Exists(cachePath)) return;
 
         try
         {
-            var lines = File.ReadAllLines(cachePath);
-            int parsed = 0;
+            var lines = await File.ReadAllLinesAsync(cachePath);
 
-            foreach (var rawLine in lines)
+            // Parsing compiles ~tens of thousands of regexes — push it onto a worker
+            // thread so callers awaiting on the UI dispatcher don't see a multi-hundred-ms
+            // stall during startup.
+            var parsed = await Task.Run(() =>
             {
-                var line = rawLine.Trim();
-
-                // Skip comments and metadata
-                if (string.IsNullOrEmpty(line) || line.StartsWith("!") || line.StartsWith("["))
-                    continue;
-
-                if (ParseFilterLine(line))
-                    parsed++;
-            }
+                int count = 0;
+                foreach (var rawLine in lines)
+                {
+                    var line = rawLine.Trim();
+                    if (string.IsNullOrEmpty(line) || line.StartsWith("!") || line.StartsWith("["))
+                        continue;
+                    if (ParseFilterLine(line)) count++;
+                }
+                return count;
+            });
 
             list.FilterCount = parsed;
             ErrorLogger.LogInfo($"Loaded filter list: {list.Name} — {parsed} filters parsed");

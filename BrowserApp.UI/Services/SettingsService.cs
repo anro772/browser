@@ -134,6 +134,23 @@ public class SettingsService : INotifyPropertyChanged
         }
     }
 
+    /// <summary>
+    /// Last observed ABP toggle state. Read synchronously by MainViewModel on construction
+    /// so the title-bar shield indicator is correct on the very first paint, instead of
+    /// flickering when the fire-and-forget DB query resolves a few hundred ms later.
+    /// Kept in lockstep with the DB record by ExtensionService.RaiseAdBlockerStateChanged.
+    /// </summary>
+    public bool LastKnownAdBlockerEnabled
+    {
+        get => _settings.LastKnownAdBlockerEnabled;
+        set
+        {
+            if (_settings.LastKnownAdBlockerEnabled == value) return;
+            _settings.LastKnownAdBlockerEnabled = value;
+            SaveSettings();
+        }
+    }
+
     public bool ShowBookmarksBar
     {
         get => _settings.ShowBookmarksBar;
@@ -262,6 +279,12 @@ public class UserSettings
     /// this flag stays true and the user's Settings toggle is honored thereafter.
     /// </summary>
     public bool HasMigratedToFilterListPrimary { get; set; } = false;
+
+    /// <summary>
+    /// Persisted snapshot of the built-in ad-blocker toggle. Lets the title-bar shield
+    /// indicator render correctly on first paint without waiting for a DB round-trip.
+    /// </summary>
+    public bool LastKnownAdBlockerEnabled { get; set; } = false;
 }
 
 /// <summary>

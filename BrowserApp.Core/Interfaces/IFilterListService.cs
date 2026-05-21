@@ -12,6 +12,13 @@ public interface IFilterListService
     /// </summary>
     bool IsEnabled { get; set; }
 
+    /// <summary>
+    /// Raised once the filter list cache has been parsed and ShouldBlock starts returning
+    /// real verdicts. UI elements that depend on filter readiness (e.g. the shield
+    /// indicator's "warming up" state) subscribe here instead of polling.
+    /// </summary>
+    event Action? FilterListReady;
+
     Task InitializeAsync();
     Task UpdateAllAsync();
     bool ShouldBlock(string requestUrl, string? pageUrl, string resourceType);

@@ -118,9 +118,9 @@ public partial class MainViewModel : ObservableObject, IDisposable
         _tabStrip.ActiveTabChanged += OnActiveTabChanged;
 
         // Setup debounce timer for autocomplete (Bug 10: named handler for proper cleanup).
-        // Kept tight so typing feels live — UpdateSuggestionsAsync renders local DB hits
-        // immediately on the first await and then patches in Google results when they arrive.
-        _debounceTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(10) };
+        // 80 ms feels instant to a typist but coalesces fast keypress bursts into a single
+        // suggestion fetch, so the UI thread isn't repeatedly thrashed mid-word.
+        _debounceTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(80) };
         _debounceTimer.Tick += OnDebounceTimerTick;
 
         // Restore the bookmarks-bar visibility from persisted settings.
@@ -131,8 +131,13 @@ public partial class MainViewModel : ObservableObject, IDisposable
         }
 
         // Mirror the built-in ad blocker state for the active-profile pill's shield
-        // indicator. Initial value is set when EnsureBuiltInExtensionsAsync fires the
-        // event after the first tab loads; this also catches user toggles in Settings.
+        // indicator. Read the persisted snapshot synchronously so the shield is correct
+        // on first paint; the DB query then runs as a backstop to catch the rare case
+        // where Settings drift from the actual extension record.
+        if (_settingsService != null)
+        {
+            _isAdBlockerEnabled = _settingsService.LastKnownAdBlockerEnabled;
+        }
         if (_extensionService != null)
         {
             _extensionService.AdBlockerStateChanged += OnAdBlockerStateChanged;

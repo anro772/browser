@@ -48,6 +48,15 @@ public partial class MainWindow : FluentWindow
     private bool _extensionProfileWired;
     private DispatcherTimer? _sessionAutoSaveTimer;
 
+    /// <summary>
+    /// WebView2 environment pre-warm. We start <c>CoreWebView2Environment.CreateAsync</c>
+    /// from the ctor (fire-and-forget) so the Chromium subprocess spawn overlaps with the
+    /// window's first paint instead of running serially after it. MainWindow_Loaded awaits
+    /// this same task before opening the first tab — InitializeAsync is idempotent so the
+    /// awaiter just observes the cached result.
+    /// </summary>
+    private Task? _webViewWarmupTask;
+
     public MainWindow(
         MainViewModel viewModel,
         TabStripViewModel tabStrip,
@@ -151,6 +160,22 @@ public partial class MainWindow : FluentWindow
         };
 
         Loaded += MainWindow_Loaded;
+
+        // Kick off the WebView2 environment now so the Chromium subprocess spawns in
+        // parallel with the first window paint. MainWindow_Loaded awaits the same task
+        // before creating tabs, so it ends up free (or nearly so) by then.
+        try
+        {
+            var profileService = _serviceProvider.GetRequiredService<ProfileService>();
+            string userDataPath = profileService.GetUserDataPath();
+            Directory.CreateDirectory(userDataPath);
+            _webViewWarmupTask = _tabStrip.InitializeAsync(userDataPath);
+        }
+        catch (Exception ex)
+        {
+            ErrorLogger.LogError("[MainWindow] WebView2 warmup kick-off failed", ex);
+        }
+
     }
 
     private async void OnMainViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -214,16 +239,26 @@ public partial class MainWindow : FluentWindow
     {
         try
         {
-            // Initialize the shared WebView2 environment using profile's user data path
+            // Await the warmup kicked off from the ctor. InitializeAsync is idempotent
+            // and returns immediately once the env exists, so this is essentially free
+            // on the happy path. The fallback path covers the rare case where the
+            // ctor's kick-off itself threw (the catch above will have logged).
             var profileService = _serviceProvider.GetRequiredService<ProfileService>();
             string userDataPath = profileService.GetUserDataPath();
-            Directory.CreateDirectory(userDataPath);
 
             ErrorLogger.LogInfo($"[MainWindow] Initializing WebView2 with user data: {userDataPath}");
 
-            await _tabStrip.InitializeAsync(userDataPath);
+            if (_webViewWarmupTask != null)
+            {
+                await _webViewWarmupTask;
+            }
+            else
+            {
+                Directory.CreateDirectory(userDataPath);
+                await _tabStrip.InitializeAsync(userDataPath);
+            }
 
-            ErrorLogger.LogInfo("[MainWindow] WebView2 environment created");
+            ErrorLogger.LogInfo("[MainWindow] WebView2 environment ready");
 
             // Check for crash recovery (sentinel file exists = previous unclean shutdown)
             var scopeFactory = _serviceProvider.GetRequiredService<IServiceScopeFactory>();
@@ -286,9 +321,8 @@ public partial class MainWindow : FluentWindow
 
             ErrorLogger.LogInfo($"[MainWindow] Tab system initialized ({_tabStrip.Tabs.Count} tabs), auto-save active");
 
-            // Populate the bookmarks bar on startup so it has data even before the sidebar panel is opened.
-            try { await _viewModel.BookmarkViewModel.LoadBookmarksCommand.ExecuteAsync(null); }
-            catch (Exception bookEx) { ErrorLogger.LogError("[MainWindow] Initial bookmark load failed", bookEx); }
+            // (Bookmark load was kicked off from the ctor — it should already be done
+            // by now since it ran in parallel with WebView2 warmup + tab restoration.)
         }
         catch (Exception ex)
         {
