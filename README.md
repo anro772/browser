@@ -2,10 +2,6 @@
 
 A privacy-focused browser built with C# WPF, WebView2, and Entity Framework Core. It includes tabbed browsing, content blocking, network monitoring, rule-based page modification, session persistence, extension support, and a single-window tools workspace.
 
-## Status
-
-**Phase 14 Complete** | 442 tests passing
-
 ## Features
 
 ### Browsing
@@ -21,8 +17,8 @@ A privacy-focused browser built with C# WPF, WebView2, and Entity Framework Core
 ### Content Blocking & Rules
 - Three independent blocking layers, all feeding the same dashboard counter:
   - **Custom rules** (block patterns, header mods, CSS/JS injection per-site with wildcard URL matching)
-  - **`FilterListService`** — 136,898 filters from EasyList + EasyPrivacy parsed on startup (primary ad/tracker blocker)
-  - **Adblock Plus extension** (bundled, ~80MB unpacked, toggled from Settings) — declarativeNetRequest + cosmetic filtering
+  - **`FilterListService`** — EasyList + EasyPrivacy (~137k patterns) parsed in C# instead of routed through `declarativeNetRequest`, so every block stays visible to the dashboard and network monitor. Surfaces in the UI as **"Included ABP"**. Toggling **Ad Blocker** in Settings disables it in real time (no restart).
+  - **Adblock Plus extension** (bundled, ~80MB unpacked, toggled from Settings) — cosmetic filtering (network blocking layer is intentionally off so attribution stays end-to-end visible)
 - 5 built-in templates (Privacy Mode, Block Ads, Hide Cookie Banners, Dark Mode, Hide Social Widgets)
 - Rule manager UI with dense table layout, source attribution (Local / Marketplace / Channel / Enforced), priority system
 - Rule marketplace and channel sharing
@@ -33,28 +29,34 @@ A privacy-focused browser built with C# WPF, WebView2, and Entity Framework Core
 
 ### Privacy & Monitoring
 - Real-time network request capture with filtering and CSV export
-- Live privacy dashboard with session-scoped **Detected / Blocked / Saved** stats — auto-refreshes via `RequestBlocked` event (500ms debounce), no manual refresh button
-- All blocks (custom rules + EasyList/EasyPrivacy + extension toggle state) flow through one pipeline → one accurate counter
+- Live privacy dashboard with session-scoped **Detected / Blocked / Saved** stats — `BlockingService` is the single source of truth, polled every 500ms so allowed-but-detected requests still tick the counter
+- The network monitor reads the same `BlockingService` counters → both panels stay 1:1 in sync (clearing either one zeros both)
+- Network monitor row attribution ("Blocked by") persists across sessions via DB columns — restart-safe
+- **Expanded Network Monitor** modal (`1100×740`, opens from the sidebar's expand icon) — full DB history (capped at 5,000 rows), filter chips, in-memory URL/host search, detail pane with rule attribution + monospace URL + headers/timing placeholders
+- Sidebar Network Monitor is trimmed to the most recent 100 rows for snappy redraws; the modal is the place to dig through everything
 - All data stored locally (no cloud sync)
 - Multi-profile support with isolated data directories
 
 ### Management
-- Browsing history grouped by day (Today / Yesterday / weekday / date) with host avatar, page title, and time
+- Browsing history grouped by day (Today / Yesterday / weekday / date) with host avatar, page title, and time — single-click row to navigate, hover-revealed `…` menu (Open in new tab / Copy URL / Delete entry)
 - Bookmarks (sidebar removed; lives in the bookmarks bar now)
-- Download manager with progress tracking
+- Download manager with file-type chip, source host, single-click row to open file, permanent folder icon to reveal in Explorer; inviting empty-state with **Choose folder** / **Open downloads** CTAs
+- Copilot sidebar with suggested-prompt chips (Summarize / Find trackers / Generate blocking rule / Translate) in the empty state, bouncing-dot streaming indicator, accent-glow page-context chip, and `…`-menu in place of the bare clear button
 - Extension support (Manifest V3 unpacked extensions, `.crx` install)
 - **Debug console** with file-tail integration (`info_*.log` + `errors_*.log` via `FileSystemWatcher`), search, level/category filters, copy-entry context menu
 
 ### UI / UX
 - Lightened dark theme (warm obsidian surfaces, indigo accent), aligned to the Claude Design `browser-profiles/` bundle
 - **Active-profile pill** in the title bar — avatar + name + privacy mode dot + live ABP shield indicator (visible when the ad blocker is on)
+- 440px right-hand sidebar with 6 icon-tab panels (Copilot / Privacy Dashboard / Downloads / Network Monitor / History / Logs)
+- Privacy dashboard hero "Mode" tile with radial accent glow, accent-strip stat tiles, softer rounded progress bars, segmented Quick Actions tile row
 - Source attribution in the Rules list — slate dot for Local, amber bookmark notch for Marketplace, channel-hued stripe + pulsing dot for Channel rules, rose lock for Enforced
 - Per-channel deterministic color identity (FNV-1a hash over channel name → 16-hue palette) — same channel renders the same color across avatar, name, and rule rows
 - Workspace polish: dense table-style Rules grid, featured "Editor's Pick" hero card in Marketplace + 3-up grid, single-line channel rows with "Live · Nm ago" chip, compact profile rows
 - Reusable empty-state slab (`Controls/WorkspaceEmptyState`) shared across Rules / Marketplace / Channels
 - Centered modal tools workspace (`1280x820`, click-outside-to-close) for Rules, Extensions, Marketplace, Channels, Profiles, Settings
 - Custom draggable titlebar with restore-on-drag from maximized, double-click maximize toggle
-- Session recovery with auto-save (30s interval) and crash detection — sentinel deletion now runs synchronously at the top of `OnExit` so it survives the WebView2 dispose latency
+- Session recovery with auto-save (30s interval) and crash detection — sentinel deletion runs synchronously at the top of `OnExit` so it survives the WebView2 dispose latency
 
 ## Project Structure
 
@@ -77,7 +79,7 @@ BrowserApp/
 │   ├── Repositories/        # Data repositories
 │   └── Migrations/          # EF Core migrations
 ├── BrowserApp.Server/       # Marketplace API server
-└── BrowserApp.Tests/        # Unit tests (442 tests)
+└── BrowserApp.Tests/        # Unit tests
 ```
 
 ## Tech Stack
@@ -133,8 +135,9 @@ dotnet ef database update --project BrowserApp.Data --startup-project BrowserApp
 1. Check logs at `%LOCALAPPDATA%\BrowserApp\Logs\`
 2. Reset database: `Remove-Item "$env:LOCALAPPDATA\BrowserApp\Profiles" -Recurse -Force`
 3. Verify WebView2 Runtime is installed
-4. Check blocking: logs show `BLOCKED: <url> by rule: <rule-name>` for custom rules and `BLOCKED: <url> by Filter List (EasyList/EasyPrivacy)` for filter-list hits
+4. Check blocking: logs show `BLOCKED: <url> by rule: <rule-name>` for custom rules and `BLOCKED: <url> by Filter List (EasyList/EasyPrivacy)` for the "Included ABP" path (FilterListService)
 5. Wipe runtime extensions safely: `Remove-Item "$env:LOCALAPPDATA\BrowserApp\Extensions" -Recurse -Force` — the bundled ad blocker is re-materialized from `BrowserApp.UI/Resources/BuiltInExtensions/` on next launch
+6. Dashboard / monitor counter mismatch: both panels read from `BlockingService` — if they drift, check `NetworkMonitorViewModel.SyncCountersFromBlockingService` and the `_liveCountersTimer` in `PrivacyDashboardViewModel`
 
 ## Documentation
 
@@ -152,7 +155,3 @@ dotnet ef database update --project BrowserApp.Data --startup-project BrowserApp
 - [WPF UI](https://github.com/lepoco/wpfui)
 - [WebView2](https://developer.microsoft.com/en-us/microsoft-edge/webview2/)
 - [Entity Framework Core](https://docs.microsoft.com/en-us/ef/core/)
-
----
-
-**Last Updated**: May 17, 2026 | **Build**: 442/442 tests passing
