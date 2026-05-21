@@ -11,6 +11,12 @@ public partial class ProfilesWorkspaceView : UserControl
     {
         InitializeComponent();
         DataContext = viewModel;
+
+        // Kick the ItemsControl on every reveal. ProfileSelectorViewModel is a singleton
+        // populated once in its ctor, but when this view is lazily resolved + made visible
+        // together, WPF's initial layout pass sometimes renders the list as empty. Calling
+        // LoadProfiles here forces the collection to refresh and the binding to re-evaluate.
+        Loaded += (_, _) => viewModel.LoadProfiles();
     }
 
     /// <summary>

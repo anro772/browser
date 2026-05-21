@@ -32,7 +32,15 @@ public partial class ProfileSelectorViewModel : ObservableObject
         _ = LoadChannelStatsAsync();
     }
 
-    private void LoadProfiles()
+    /// <summary>
+    /// Re-reads the profile list from <see cref="ProfileService"/> and repopulates the
+    /// <see cref="Profiles"/> observable collection. Idempotent — safe to call multiple
+    /// times. <see cref="ProfilesWorkspaceView"/> calls this from its Loaded handler to
+    /// kick the ItemsControl binding when the workspace first becomes visible, which
+    /// avoids a quirk where the initial layout pass renders zero items even though the
+    /// collection was populated in the singleton ViewModel's constructor.
+    /// </summary>
+    public void LoadProfiles()
     {
         Profiles.Clear();
         var activeId = _profileService.ActiveProfile.Id;

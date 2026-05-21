@@ -296,6 +296,15 @@ public partial class BrowserTabItem : ObservableObject, IDisposable
         var uri = e.Uri;
         if (string.IsNullOrEmpty(uri)) return;
 
+        // Suppress the bundled Adblock Plus extension's automatic welcome / day-1
+        // marketing tabs. They fire from ABP's chrome.runtime.onInstalled handler
+        // every time the extension is freshly installed into a profile (e.g. a
+        // newly-created profile, or a wiped UserData folder). They're cosmetic
+        // only — the extension's actual blocking functionality starts working
+        // regardless of whether these tabs are shown. The onInstalled handler
+        // still runs for state setup; we only drop the new-tab call.
+        if (IsSuppressedExtensionAnnouncement(uri)) return;
+
         // Fire event so the tab system can open it in a new tab
         if (NewWindowRequested != null)
         {
@@ -306,6 +315,13 @@ public partial class BrowserTabItem : ObservableObject, IDisposable
             // Fallback: navigate this tab
             Navigate(uri);
         }
+    }
+
+    private static bool IsSuppressedExtensionAnnouncement(string uri)
+    {
+        if (!uri.StartsWith("chrome-extension://", StringComparison.OrdinalIgnoreCase)) return false;
+        return uri.IndexOf("/first-run.html", StringComparison.OrdinalIgnoreCase) >= 0
+            || uri.IndexOf("/day1.html", StringComparison.OrdinalIgnoreCase) >= 0;
     }
 
     private async void OnFaviconChanged(object? sender, object e)

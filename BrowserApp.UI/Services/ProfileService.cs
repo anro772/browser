@@ -46,6 +46,15 @@ public class ProfileService
 
         LoadProfiles();
 
+        // If profiles.json was missing-or-corrupt AND data folders still exist on disk,
+        // register those folders as profiles before falling through to the first-run
+        // mint below. Prevents the "fresh Default orphans the user's real data" bug
+        // we hit when profiles.json got truncated mid-session.
+        if (_profiles.Count == 0)
+        {
+            RecoverProfilesFromDisk();
+        }
+
         // First run: create default profile and migrate existing data
         if (_profiles.Count == 0)
         {
@@ -230,18 +239,69 @@ public class ProfileService
 
     private void LoadProfiles()
     {
+        // True first run — file missing is expected, stay silent.
+        if (!File.Exists(ProfilesFilePath))
+        {
+            _profiles = new();
+            return;
+        }
+
         try
         {
-            if (File.Exists(ProfilesFilePath))
+            var json = File.ReadAllText(ProfilesFilePath);
+            if (string.IsNullOrWhiteSpace(json))
             {
-                var json = File.ReadAllText(ProfilesFilePath);
-                _profiles = JsonSerializer.Deserialize<List<BrowserProfile>>(json) ?? new();
+                ErrorLogger.LogError(
+                    "[ProfileService] profiles.json is empty — folder-based recovery will run",
+                    new Exception("Empty profiles.json"));
+                BackupCorruptProfilesFile();
+                _profiles = new();
+                return;
             }
+
+            var parsed = JsonSerializer.Deserialize<List<BrowserProfile>>(json);
+            if (parsed == null)
+            {
+                ErrorLogger.LogError(
+                    "[ProfileService] profiles.json deserialised to null — folder-based recovery will run",
+                    new Exception("Null deserialisation result"));
+                BackupCorruptProfilesFile();
+                _profiles = new();
+                return;
+            }
+
+            _profiles = parsed;
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"[ProfileService] Failed to load profiles: {ex.Message}");
+            // Surface the failure loudly. Earlier versions only wrote to Debug.WriteLine
+            // which silently swallowed corruption events — making post-mortem impossible.
+            ErrorLogger.LogError(
+                "[ProfileService] profiles.json corrupt — folder-based recovery will run",
+                ex);
+            BackupCorruptProfilesFile();
             _profiles = new();
+        }
+    }
+
+    /// <summary>
+    /// Copies the (currently corrupt) <c>profiles.json</c> to
+    /// <c>profiles.json.corrupt_&lt;yyyyMMdd_HHmmss&gt;</c> so the original is preserved
+    /// for forensic / manual recovery before we overwrite it with a freshly-rebuilt
+    /// version. Failure to back up is non-fatal — we still proceed to recovery.
+    /// </summary>
+    private void BackupCorruptProfilesFile()
+    {
+        try
+        {
+            var ts = DateTime.UtcNow.ToString("yyyyMMdd_HHmmss");
+            var backup = ProfilesFilePath + $".corrupt_{ts}";
+            File.Copy(ProfilesFilePath, backup, overwrite: true);
+            ErrorLogger.LogInfo($"[ProfileService] Backed up corrupt profiles.json to {Path.GetFileName(backup)}");
+        }
+        catch (Exception ex)
+        {
+            ErrorLogger.LogError("[ProfileService] Failed to back up corrupt profiles.json", ex);
         }
     }
 
@@ -256,6 +316,68 @@ public class ProfileService
         {
             System.Diagnostics.Debug.WriteLine($"[ProfileService] Failed to save profiles: {ex.Message}");
         }
+    }
+
+    /// <summary>
+    /// Scans the on-disk <c>Profiles/</c> folder for any data directories that look like
+    /// real profiles (folder name is a valid GUID AND it contains a <c>browser.db</c>) and
+    /// registers them as <see cref="BrowserProfile"/> entries. Called by
+    /// <see cref="Initialize"/> only when <see cref="LoadProfiles"/> ended with an empty
+    /// list, so it never duplicates registrations of profiles the JSON already described.
+    ///
+    /// The folder data IS the source of truth — the JSON is just an index over it.
+    /// When the index is lost (corruption, hand-edit, accidental delete), this scan
+    /// rebuilds it so the user's data isn't orphaned and a fresh "Default" mint isn't
+    /// pasted over the top of perfectly good folders.
+    /// </summary>
+    private void RecoverProfilesFromDisk()
+    {
+        var profilesRoot = Path.Combine(AppDataRoot, "Profiles");
+        if (!Directory.Exists(profilesRoot)) return;
+
+        var recovered = new List<(BrowserProfile profile, DateTime dbMtime)>();
+        try
+        {
+            foreach (var dir in Directory.EnumerateDirectories(profilesRoot))
+            {
+                var folderName = Path.GetFileName(dir);
+                if (!Guid.TryParse(folderName, out var folderId)) continue;
+
+                var dbPath = Path.Combine(dir, "browser.db");
+                if (!File.Exists(dbPath)) continue;
+
+                // Defensive: skip if already registered by an earlier code path.
+                if (_profiles.Any(p => p.Id == folderId)) continue;
+
+                var profile = new BrowserProfile
+                {
+                    Id = folderId,
+                    Name = $"Recovered ({folderName[..8]})",
+                    Color = "#7C6AEF",
+                    IsDefault = false,
+                    CreatedAt = Directory.GetCreationTimeUtc(dir),
+                };
+                recovered.Add((profile, File.GetLastWriteTimeUtc(dbPath)));
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorLogger.LogError("[ProfileService] Profile folder recovery scan failed", ex);
+            return;
+        }
+
+        if (recovered.Count == 0) return;
+
+        // Add in most-recent-DB-write-first order. If both pointer files are gone, the
+        // existing _profiles.FirstOrDefault() fallback in Initialize then lands on the
+        // most-recently-used profile — which is almost always what the user wants.
+        foreach (var (profile, _) in recovered.OrderByDescending(r => r.dbMtime))
+        {
+            _profiles.Add(profile);
+        }
+
+        ErrorLogger.LogInfo($"[ProfileService] Recovered {recovered.Count} profile(s) from disk folders");
+        SaveProfiles();
     }
 
     private BrowserProfile? LoadActiveProfile()
