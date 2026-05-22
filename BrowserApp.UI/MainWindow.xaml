@@ -8,6 +8,7 @@
         xmlns:vm="clr-namespace:BrowserApp.UI.ViewModels"
         mc:Ignorable="d"
         Title="{Binding PageTitle}"
+        Icon="pack://application:,,,/app-icon.ico"
         Height="1000"
         Width="1600"
         MinHeight="600"

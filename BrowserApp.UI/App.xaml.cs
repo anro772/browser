@@ -124,6 +124,18 @@ public partial class App : Application
 
         ErrorLogger.LogInfo("Database initialized");
 
+        // First-run seed: populate the curated marketplace packs + channel(s) into
+        // the local SQLite if those tables are empty. Idempotent — the seed service
+        // short-circuits when data exists. Runs before BlockingService init so the
+        // seeded rules are picked up on the initial rule load.
+        await Task.Run(async () =>
+        {
+            using var scope = _serviceProvider.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<BrowserDbContext>();
+            var seeder = new FirstRunSeedService(db);
+            await seeder.SeedIfNeededAsync();
+        });
+
         // Initialize blocking service (loads user rules) — small, fast, and the rule
         // engine is a hard dependency of every tab so this stays on the critical path.
         var blockingService = _serviceProvider.GetRequiredService<IBlockingService>();

@@ -26,6 +26,28 @@
     <UseWPF>true</UseWPF>
   </PropertyGroup>
 
+  <!-- Display-name metadata. AssemblyName intentionally not overridden so the
+       produced binary stays BrowserApp.UI.exe — keeps %LOCALAPPDATA%\BrowserApp\
+       profile paths stable across renames. -->
+  <PropertyGroup>
+    <AssemblyTitle>Slate</AssemblyTitle>
+    <Product>Slate</Product>
+    <Company>Slate</Company>
+    <Description>AI-powered privacy browser</Description>
+    <Version>0.1.0</Version>
+    <AssemblyVersion>0.1.0.0</AssemblyVersion>
+    <FileVersion>0.1.0.0</FileVersion>
+    <Copyright>© 2026 Slate</Copyright>
+    <ApplicationIcon>..\logo\slate-graphite.ico</ApplicationIcon>
+  </PropertyGroup>
+
+  <!-- Embed the same .ico as a WPF Resource at the logical path "app-icon.ico"
+       so MainWindow.xaml can bind Window.Icon via pack URI without duplicating
+       the file in the project. -->
+  <ItemGroup>
+    <Resource Include="..\logo\slate-graphite.ico" Link="app-icon.ico"/>
+  </ItemGroup>
+
   <ItemGroup>
     <None Update="appsettings.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
@@ -36,6 +58,11 @@
     <EmbeddedResource Include="Resources\DefaultRules\*.json" />
     <EmbeddedResource Include="Resources\ContentPolicies\*.json" />
     <EmbeddedResource Include="Resources\block-page.html" />
+    <!-- First-run seed data: marketplace packs + channel(s) the app
+         pre-populates into the local SQLite when those tables are empty.
+         Regenerate via the SeedExport tool under tools/SeedExport. -->
+    <EmbeddedResource Include="..\seed\marketplace.json" Link="Seed\marketplace.json" />
+    <EmbeddedResource Include="..\seed\channels.json"    Link="Seed\channels.json"    />
   </ItemGroup>
 
   <ItemGroup>

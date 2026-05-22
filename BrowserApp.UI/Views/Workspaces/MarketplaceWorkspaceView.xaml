@@ -165,7 +165,8 @@
                                            FontWeight="SemiBold"
                                            Foreground="{DynamicResource TextFillColorPrimaryBrush}"
                                            TextTrimming="CharacterEllipsis"/>
-                                <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                                <StackPanel Orientation="Horizontal" Margin="0,4,0,0"
+                                            Visibility="{Binding HasServerMetadata, Converter={StaticResource BoolToVisibility}}">
                                     <TextBlock Text="by " FontSize="12"
                                                Foreground="{DynamicResource TextFillColorTertiaryBrush}"/>
                                     <TextBlock Text="{Binding AuthorUsername}" FontSize="12"
@@ -270,17 +271,24 @@
                     Visibility="{Binding SelectedTag, Converter={StaticResource NullToVisibility}}"/>
         </Grid>
 
-        <!-- CARDS GRID -->
+        <!-- CARDS GRID — banner stacks above cards via internal row definitions.
+             Previously these were two separate sibling Grids both at Grid.Row="4",
+             which caused the banner to overlap the cards once both could be visible
+             simultaneously (offline-with-local-packs state). -->
         <Grid Grid.Row="4">
-            <!-- Offline banner overlay -->
-            <Border Background="{StaticResource WarningSubtleBrush}"
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <!-- Offline banner -->
+            <Border Grid.Row="0"
+                    Background="{StaticResource WarningSubtleBrush}"
                     BorderBrush="{StaticResource WarningBrush}"
                     BorderThickness="1"
                     CornerRadius="8"
                     Padding="14,10"
-                    VerticalAlignment="Top"
                     Margin="0,0,0,8"
-                    Panel.ZIndex="20"
                     Visibility="{Binding IsOffline, Converter={StaticResource BoolToVisibility}}">
                 <Grid>
                     <Grid.ColumnDefinitions>
@@ -293,19 +301,17 @@
                                    Foreground="{StaticResource WarningBrush}"
                                    VerticalAlignment="Center"/>
                     <TextBlock Grid.Column="1"
-                               Text="Marketplace server is offline. No packs available."
+                               Text="{Binding StatusMessage}"
                                VerticalAlignment="Center"
+                               TextWrapping="Wrap"
                                Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
                     <ui:Button Grid.Column="2"
                                Content="Retry"
                                Command="{Binding LoadRulesCommand}"/>
                 </Grid>
             </Border>
-        </Grid>
 
-        <!-- Hidden placeholder so Grid.Row="4" continues to host the grid below -->
-        <Grid Grid.Row="4"
-              Visibility="{Binding IsOffline, Converter={StaticResource BoolToVisibilityInverse}}">
+            <Grid Grid.Row="1">
             <controls:WorkspaceEmptyState
                 IconSymbol="BookmarkMultiple24"
                 Eyebrow="PUBLIC PACKS"
@@ -452,7 +458,8 @@
                                             <ColumnDefinition Width="Auto"/>
                                         </Grid.ColumnDefinitions>
 
-                                        <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                                        <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center"
+                                                    Visibility="{Binding HasServerMetadata, Converter={StaticResource BoolToVisibility}}">
                                             <ui:SymbolIcon Symbol="ArrowDownload24"
                                                            FontSize="12"
                                                            Margin="0,0,4,0"
@@ -518,6 +525,7 @@
                     Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisibility}}">
                 <ui:ProgressRing IsIndeterminate="True"/>
             </Border>
+            </Grid>
         </Grid>
 
         <!-- STATUS -->

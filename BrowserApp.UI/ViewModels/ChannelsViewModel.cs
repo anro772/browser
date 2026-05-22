@@ -81,16 +81,17 @@ public partial class ChannelsViewModel : ObservableObject
 
         try
         {
-            // Load available channels from server
-            var response = await _apiClient.GetChannelsAsync(1, 50);
-
-            // Load joined channels from local database
+            // Local-first: joined memberships always load from SQLite (works offline).
             var joined = await _syncService.GetJoinedChannelsAsync();
             var joinedList = joined.ToList();
 
+            // Server-second: catalog of all available channels. Null when the server is down —
+            // we still surface joined channels below so the user can see/leave/inspect them.
+            var response = await _apiClient.GetChannelsAsync(1, 50);
+            bool serverReachable = response != null;
+
             UiThread.Invoke(() =>
             {
-                // Backward compat: populate old collections
                 AvailableChannels.Clear();
                 JoinedChannels.Clear();
 
@@ -102,14 +103,18 @@ public partial class ChannelsViewModel : ObservableObject
                     }
                     _allAvailableChannels = AvailableChannels.ToList();
                 }
+                else
+                {
+                    _allAvailableChannels = new List<ChannelItemViewModel>();
+                }
 
                 foreach (var membership in joinedList)
                 {
                     JoinedChannels.Add(new JoinedChannelViewModel(membership));
                 }
 
-                // Build unified list
                 _allChannels.Clear();
+
                 if (response != null)
                 {
                     foreach (var channel in response.Channels)
@@ -120,9 +125,25 @@ public partial class ChannelsViewModel : ObservableObject
                         vm.IsOwner = string.Equals(channel.OwnerUsername, Username, StringComparison.OrdinalIgnoreCase);
                         _allChannels.Add(vm);
                     }
+
+                    // Joined channels not in the server's first-50 listing (e.g., paginated
+                    // out, or made private after you joined) — surface them from local cache.
+                    var listedIds = response.Channels.Select(c => c.Id.ToString()).ToHashSet();
+                    foreach (var m in joinedList.Where(m => !listedIds.Contains(m.ChannelId)))
+                    {
+                        _allChannels.Add(BuildOfflineChannelVm(m));
+                    }
+                }
+                else
+                {
+                    // Server offline — fall back to the locally-cached joined channels so
+                    // the view isn't empty when the user has rules synced from a channel.
+                    foreach (var m in joinedList)
+                    {
+                        _allChannels.Add(BuildOfflineChannelVm(m));
+                    }
                 }
 
-                // Sort: joined first (by name), then unjoined (by member count desc)
                 _allChannels = _allChannels
                     .OrderByDescending(c => c.IsJoined)
                     .ThenBy(c => c.IsJoined ? c.Name : "")
@@ -133,7 +154,11 @@ public partial class ChannelsViewModel : ObservableObject
                 FilterChannels();
             });
 
-            StatusMessage = $"Loaded {AvailableChannels.Count} channels, joined {JoinedChannels.Count}";
+            StatusMessage = serverReachable
+                ? $"Loaded {AvailableChannels.Count} channels, joined {JoinedChannels.Count}"
+                : (JoinedChannels.Count > 0
+                    ? $"Channel server offline — showing {JoinedChannels.Count} joined channel(s) from local cache."
+                    : "Channel server offline.");
         }
         catch (Exception ex)
         {
@@ -144,6 +169,25 @@ public partial class ChannelsViewModel : ObservableObject
         {
             IsLoading = false;
         }
+    }
+
+    private UnifiedChannelViewModel BuildOfflineChannelVm(ChannelMembershipDto membership)
+    {
+        // Synthesize a minimal server-shaped record from the local membership so the
+        // existing UnifiedChannelViewModel constructor can consume it unchanged.
+        if (!Guid.TryParse(membership.ChannelId, out var id)) id = Guid.NewGuid();
+        var synthetic = new ChannelResponse
+        {
+            Id = id,
+            Name = membership.ChannelName,
+            Description = membership.ChannelDescription,
+            OwnerUsername = string.Empty,
+            MemberCount = 0,
+            RuleCount = membership.RuleCount,
+            CreatedAt = membership.JoinedAt,
+            UpdatedAt = membership.LastSyncedAt
+        };
+        return new UnifiedChannelViewModel(synthetic, membership) { IsOwner = false };
     }
 
     [RelayCommand]
@@ -565,6 +609,23 @@ public partial class UnifiedChannelViewModel : ObservableObject
     // Computed properties
     public string DisplayInfo => $"{MemberCount} members \u2022 {RuleCount} rules";
     public string OwnerDisplay => $"by {OwnerUsername}";
+
+    /// <summary>
+    /// Single-line meta string for the channel card. Joins only the non-empty parts so
+    /// offline channels (no <see cref="OwnerUsername"/>) don't render a dangling "\u00b7 by \u00b7"
+    /// fragment between rule count and "Xd old".
+    /// </summary>
+    public string MetaLine
+    {
+        get
+        {
+            var parts = new List<string> { DisplayInfo };
+            if (!string.IsNullOrWhiteSpace(OwnerUsername))
+                parts.Add($"by {OwnerUsername}");
+            parts.Add(CreatedDisplay);
+            return string.Join(" \u00b7 ", parts);
+        }
+    }
     public string JoinedInfo => IsJoined && LastSyncedAt.HasValue
         ? $"Last synced: {LastSyncedAt.Value:g}"
         : string.Empty;

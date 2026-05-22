@@ -92,20 +92,26 @@ public partial class MarketplaceViewModel : ObservableObject
 
         try
         {
-            // Connection check — show offline banner instead of silently failing.
+            // Connection check — show offline banner but fall back to locally-installed packs
+            // so the view isn't empty when the user already has marketplace rules synced.
             var connected = await _apiClient.CheckConnectionAsync();
             if (!connected)
             {
                 IsOffline = true;
-                StatusMessage = "Marketplace server is offline.";
+                var local = await GetInstalledMarketplacePacksAsync();
                 UiThread.Invoke(() =>
                 {
                     Rules.Clear();
-                    _allRules.Clear();
+                    _allRules = local;
+                    foreach (var r in local) Rules.Add(r);
                     TopRule = null;
-                    TotalRules = 0;
-                    ServerTotalCount = 0;
+                    TotalRules = Rules.Count;
+                    ServerTotalCount = Rules.Count;
+                    RebuildAvailableTags();
                 });
+                StatusMessage = local.Count > 0
+                    ? $"Marketplace server is offline — showing {local.Count} installed pack(s) from local cache."
+                    : "Marketplace server is offline.";
                 return;
             }
 
@@ -393,6 +399,43 @@ public partial class MarketplaceViewModel : ObservableObject
             .Select(r => r.MarketplaceId)
             .ToHashSet();
     }
+
+    /// <summary>
+    /// Builds marketplace card view-models from already-installed marketplace rules in the
+    /// local SQLite store. Used as the offline fallback so the Marketplace view is not empty
+    /// when the user has packs from a previous sync but the server is unreachable.
+    /// Author/tags/download-count are unknown locally and surface as empty/zero.
+    /// </summary>
+    private async Task<List<MarketplaceRuleItemViewModel>> GetInstalledMarketplacePacksAsync()
+    {
+        using var scope = _scopeFactory.CreateScope();
+        var repository = scope.ServiceProvider.GetRequiredService<IRuleRepository>();
+        var localRules = await repository.GetAllAsync();
+
+        return localRules
+            .Where(r => string.Equals(r.Source, "marketplace", StringComparison.OrdinalIgnoreCase)
+                        && !string.IsNullOrEmpty(r.MarketplaceId))
+            .Select(r =>
+            {
+                if (!Guid.TryParse(r.MarketplaceId, out var id)) id = Guid.NewGuid();
+                var synthetic = new RuleResponse
+                {
+                    Id = id,
+                    Name = r.Name,
+                    Description = r.Description,
+                    Site = r.Site,
+                    Priority = r.Priority,
+                    RulesJson = r.RulesJson,
+                    AuthorUsername = string.Empty,
+                    DownloadCount = 0,
+                    Tags = Array.Empty<string>(),
+                    CreatedAt = r.CreatedAt,
+                    UpdatedAt = r.UpdatedAt
+                };
+                return new MarketplaceRuleItemViewModel(synthetic) { IsInstalled = true };
+            })
+            .ToList();
+    }
 }
 
 /// <summary>
@@ -435,4 +478,12 @@ public partial class MarketplaceRuleItemViewModel : ObservableObject
 
     public string TagsDisplay => Tags.Length > 0 ? string.Join(", ", Tags) : "No tags";
     public string InstallButtonText => IsInstalled ? "Installed" : "Install";
+
+    /// <summary>
+    /// True when the item carries author/download metadata (i.e. came from the server).
+    /// Offline-only items synthesized from the local DB lack these — the card hides the
+    /// "by … · N installs" line in that case to avoid showing "by  · 0 installs".
+    /// </summary>
+    public bool HasServerMetadata =>
+        !string.IsNullOrWhiteSpace(AuthorUsername) || DownloadCount > 0;
 }
