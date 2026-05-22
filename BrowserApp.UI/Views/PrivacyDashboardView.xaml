@@ -59,50 +59,187 @@
                 </Grid>
             </Border>
 
-            <!-- Hero "Mode" + three stat cards w/ accent strips -->
+            <!-- Hero "Mode" (full-width row) + three stat cards (second row) -->
+            <!-- Two rows so long mode labels (e.g. "Standard Mode") don't stretch the stat cards,
+                 and so the Saved value (e.g. "668.9 KB") has enough horizontal room to not clip. -->
+            <!--
+              Clickable mode tile. Visual layers (back to front):
+                1. Base linear-gradient accent fill (always visible, subtle).
+                2. ModeTileHoverGlow — overlay that fades 0→1 on MouseEnter.
+                3. Content grid (icon tile + name/description + dot + chevron).
+              Hover effect: 1px lift via TranslateTransform + chevron slides 3px right.
+              Animations live in Border.Triggers so children don't accidentally retrigger them.
+            -->
+            <Border x:Name="ModeTile"
+                    Background="{StaticResource BgGlassHeaderBrush}"
+                    BorderBrush="{StaticResource AccentBorderBrush}"
+                    BorderThickness="1" CornerRadius="12"
+                    Margin="0,0,0,6"
+                    Cursor="Hand"
+                    MouseLeftButtonUp="ModeTile_Click"
+                    ToolTip="Open Settings → Privacy Mode">
+                <Border.RenderTransform>
+                    <TranslateTransform x:Name="ModeTileTranslate"/>
+                </Border.RenderTransform>
+                <Border.Triggers>
+                    <EventTrigger RoutedEvent="MouseEnter">
+                        <BeginStoryboard>
+                            <Storyboard>
+                                <DoubleAnimation Storyboard.TargetName="ModeTileTranslate"
+                                                 Storyboard.TargetProperty="Y"
+                                                 To="-1" Duration="0:0:0.18">
+                                    <DoubleAnimation.EasingFunction>
+                                        <CubicEase EasingMode="EaseOut"/>
+                                    </DoubleAnimation.EasingFunction>
+                                </DoubleAnimation>
+                                <DoubleAnimation Storyboard.TargetName="ModeTileHoverGlow"
+                                                 Storyboard.TargetProperty="Opacity"
+                                                 To="1" Duration="0:0:0.18"/>
+                                <DoubleAnimation Storyboard.TargetName="ModeTileChevronT"
+                                                 Storyboard.TargetProperty="X"
+                                                 To="3" Duration="0:0:0.18">
+                                    <DoubleAnimation.EasingFunction>
+                                        <CubicEase EasingMode="EaseOut"/>
+                                    </DoubleAnimation.EasingFunction>
+                                </DoubleAnimation>
+                            </Storyboard>
+                        </BeginStoryboard>
+                    </EventTrigger>
+                    <EventTrigger RoutedEvent="MouseLeave">
+                        <BeginStoryboard>
+                            <Storyboard>
+                                <DoubleAnimation Storyboard.TargetName="ModeTileTranslate"
+                                                 Storyboard.TargetProperty="Y"
+                                                 To="0" Duration="0:0:0.18">
+                                    <DoubleAnimation.EasingFunction>
+                                        <CubicEase EasingMode="EaseOut"/>
+                                    </DoubleAnimation.EasingFunction>
+                                </DoubleAnimation>
+                                <DoubleAnimation Storyboard.TargetName="ModeTileHoverGlow"
+                                                 Storyboard.TargetProperty="Opacity"
+                                                 To="0" Duration="0:0:0.18"/>
+                                <DoubleAnimation Storyboard.TargetName="ModeTileChevronT"
+                                                 Storyboard.TargetProperty="X"
+                                                 To="0" Duration="0:0:0.18">
+                                    <DoubleAnimation.EasingFunction>
+                                        <CubicEase EasingMode="EaseOut"/>
+                                    </DoubleAnimation.EasingFunction>
+                                </DoubleAnimation>
+                            </Storyboard>
+                        </BeginStoryboard>
+                    </EventTrigger>
+                </Border.Triggers>
+
+                <Grid>
+                    <!-- Base accent sweep (always on) -->
+                    <Border CornerRadius="12" IsHitTestVisible="False">
+                        <Border.Background>
+                            <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                <GradientStop Color="#2A7C6AEF" Offset="0"/>
+                                <GradientStop Color="#0A7C6AEF" Offset="0.55"/>
+                                <GradientStop Color="#007C6AEF" Offset="1"/>
+                            </LinearGradientBrush>
+                        </Border.Background>
+                    </Border>
+
+                    <!-- Hover glow overlay (fades in on MouseEnter) -->
+                    <Border x:Name="ModeTileHoverGlow" CornerRadius="12"
+                            Opacity="0" IsHitTestVisible="False">
+                        <Border.Background>
+                            <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                                <GradientStop Color="#387C6AEF" Offset="0"/>
+                                <GradientStop Color="#1C7C6AEF" Offset="1"/>
+                            </LinearGradientBrush>
+                        </Border.Background>
+                    </Border>
+
+                    <Grid Margin="14,12,14,12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <!-- App-icon style square tile -->
+                        <Border Grid.Column="0" Width="46" Height="46" CornerRadius="11"
+                                VerticalAlignment="Center"
+                                BorderBrush="#4A7C6AEF" BorderThickness="1">
+                            <Border.Background>
+                                <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                    <GradientStop Color="#3F7C6AEF" Offset="0"/>
+                                    <GradientStop Color="#147C6AEF" Offset="1"/>
+                                </LinearGradientBrush>
+                            </Border.Background>
+                            <Grid>
+                                <!-- Inner top-left highlight to give the tile depth -->
+                                <Ellipse Width="32" Height="32"
+                                         HorizontalAlignment="Left" VerticalAlignment="Top"
+                                         Margin="-4" Opacity="0.55" IsHitTestVisible="False">
+                                    <Ellipse.Fill>
+                                        <RadialGradientBrush GradientOrigin="0.5,0.5" Center="0.5,0.5"
+                                                             RadiusX="0.6" RadiusY="0.6">
+                                            <GradientStop Color="#66FFFFFF" Offset="0"/>
+                                            <GradientStop Color="#00FFFFFF" Offset="1"/>
+                                        </RadialGradientBrush>
+                                    </Ellipse.Fill>
+                                </Ellipse>
+                                <ui:SymbolIcon Symbol="ShieldCheckmark24" FontSize="22"
+                                               HorizontalAlignment="Center" VerticalAlignment="Center"
+                                               Foreground="{Binding PrivacyModeColor}"/>
+                            </Grid>
+                        </Border>
+
+                        <!-- Mode name + description -->
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="14,0,8,0">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="{Binding PrivacyModeDisplay}"
+                                           FontSize="16" FontWeight="Bold"
+                                           VerticalAlignment="Center"
+                                           Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                                <Border CornerRadius="4" Padding="6,1,6,2"
+                                        Margin="8,0,0,0" VerticalAlignment="Center"
+                                        Background="#1F7C6AEF"
+                                        BorderBrush="#3A7C6AEF" BorderThickness="1">
+                                    <TextBlock Text="MODE" FontSize="9" FontWeight="Bold"
+                                               Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                </Border>
+                            </StackPanel>
+                            <TextBlock Text="{Binding PrivacyModeDescription}"
+                                       FontSize="11" Margin="0,3,0,0"
+                                       TextWrapping="Wrap"
+                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                        </StackPanel>
+
+                        <!-- Right: live mode dot + chevron (slides on hover) -->
+                        <StackPanel Grid.Column="2" Orientation="Horizontal"
+                                    VerticalAlignment="Center">
+                            <Grid Width="9" Height="9" Margin="0,0,8,0">
+                                <Ellipse Fill="{Binding PrivacyModeColor}" Opacity="0.35"/>
+                                <Ellipse Width="5" Height="5" Fill="{Binding PrivacyModeColor}"/>
+                            </Grid>
+                            <ui:SymbolIcon Symbol="ChevronRight24" FontSize="14"
+                                           Foreground="{DynamicResource TextFillColorTertiaryBrush}"
+                                           RenderTransformOrigin="0.5,0.5">
+                                <ui:SymbolIcon.RenderTransform>
+                                    <TranslateTransform x:Name="ModeTileChevronT"/>
+                                </ui:SymbolIcon.RenderTransform>
+                            </ui:SymbolIcon>
+                        </StackPanel>
+                    </Grid>
+                </Grid>
+            </Border>
+
             <Grid Margin="0,0,0,8">
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="1.4*"/>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
 
-                <!-- Hero Mode — subtle accent glow via layered RadialGradientBrush, no shadow -->
-                <Border Grid.Column="0"
-                        Background="{StaticResource BgGlassHeaderBrush}"
-                        BorderBrush="{StaticResource AccentBorderBrush}"
-                        BorderThickness="1" CornerRadius="8"
-                        Padding="12" Margin="0,0,4,0"
-                        ToolTip="{Binding PrivacyModeDescription}">
-                    <Grid>
-                        <Border CornerRadius="8" IsHitTestVisible="False">
-                            <Border.Background>
-                                <RadialGradientBrush Center="0.3,0" GradientOrigin="0.3,0"
-                                                     RadiusX="1.2" RadiusY="0.8">
-                                    <GradientStop Color="#387C6AEF" Offset="0"/>
-                                    <GradientStop Color="#0A7C6AEF" Offset="0.6"/>
-                                    <GradientStop Color="#007C6AEF" Offset="1"/>
-                                </RadialGradientBrush>
-                            </Border.Background>
-                        </Border>
-                        <StackPanel VerticalAlignment="Center">
-                            <ui:SymbolIcon Symbol="Shield24" FontSize="20"
-                                           Foreground="{Binding PrivacyModeColor}"/>
-                            <TextBlock Text="{Binding PrivacyModeDisplay}"
-                                       FontSize="14" FontWeight="Bold"
-                                       Margin="0,6,0,2"
-                                       Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
-                            <TextBlock Text="MODE" FontSize="9.5" FontWeight="SemiBold"
-                                       Foreground="{DynamicResource TextFillColorTertiaryBrush}"/>
-                        </StackPanel>
-                    </Grid>
-                </Border>
-
                 <!-- Detected -->
-                <Border Grid.Column="1" Background="{StaticResource BgGlassHeaderBrush}"
+                <Border Grid.Column="0" Background="{StaticResource BgGlassHeaderBrush}"
                         BorderBrush="{StaticResource BorderSubtleBrush}" BorderThickness="1"
-                        CornerRadius="8" Padding="10,12,8,10" Margin="2,0"
+                        CornerRadius="8" Padding="10,12,8,10" Margin="0,0,3,0"
                         ToolTip="Requests evaluated this session.">
                     <Grid>
                         <Border Width="3" HorizontalAlignment="Left" Margin="-10,2,0,2"
@@ -119,9 +256,9 @@
                 </Border>
 
                 <!-- Blocked -->
-                <Border Grid.Column="2" Background="{StaticResource BgGlassHeaderBrush}"
+                <Border Grid.Column="1" Background="{StaticResource BgGlassHeaderBrush}"
                         BorderBrush="{StaticResource BorderSubtleBrush}" BorderThickness="1"
-                        CornerRadius="8" Padding="10,12,8,10" Margin="2,0">
+                        CornerRadius="8" Padding="10,12,8,10" Margin="3,0">
                     <Grid>
                         <Border Width="3" HorizontalAlignment="Left" Margin="-10,2,0,2"
                                 CornerRadius="2" Background="{StaticResource ErrorBrush}"/>
@@ -137,15 +274,16 @@
                 </Border>
 
                 <!-- Saved -->
-                <Border Grid.Column="3" Background="{StaticResource BgGlassHeaderBrush}"
+                <Border Grid.Column="2" Background="{StaticResource BgGlassHeaderBrush}"
                         BorderBrush="{StaticResource BorderSubtleBrush}" BorderThickness="1"
-                        CornerRadius="8" Padding="10,12,8,10" Margin="4,0,0,0">
+                        CornerRadius="8" Padding="10,12,8,10" Margin="3,0,0,0">
                     <Grid>
                         <Border Width="3" HorizontalAlignment="Left" Margin="-10,2,0,2"
                                 CornerRadius="2" Background="{StaticResource SuccessBrush}"/>
                         <StackPanel VerticalAlignment="Center" Margin="6,0,0,0">
                             <TextBlock Text="{Binding DataSaved}"
                                        FontSize="20" FontWeight="Bold"
+                                       TextTrimming="None"
                                        Foreground="{StaticResource SuccessBrush}"/>
                             <TextBlock Text="SAVED" FontSize="9.5" FontWeight="SemiBold"
                                        Margin="0,4,0,0"

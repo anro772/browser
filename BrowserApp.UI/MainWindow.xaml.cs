@@ -92,6 +92,15 @@ public partial class MainWindow : FluentWindow
                 view.ViewRulesRequested += (s, e) => RulesButton_Click(this, new RoutedEventArgs());
                 view.MarketplaceRequested += (s, e) => MarketplaceButton_Click(this, new RoutedEventArgs());
                 view.ChannelsRequested += (s, e) => ChannelsButton_Click(this, new RoutedEventArgs());
+                view.SettingsRequested += (s, e) =>
+                {
+                    // Open Settings, then on the next Loaded tick (after the workspace
+                    // lazy-resolves SettingsWorkspaceView) scroll to the Privacy Mode card.
+                    SettingsButton_Click(this, new RoutedEventArgs());
+                    Dispatcher.BeginInvoke(
+                        new Action(() => _workspaceHostView.RevealSettingsPrivacyModeSection()),
+                        System.Windows.Threading.DispatcherPriority.Loaded);
+                };
             });
         WireLazyContent(DownloadsContent,      sp => sp.GetRequiredService<DownloadManagerView>());
         WireLazyContent(NetworkMonitorContent, sp => sp.GetRequiredService<NetworkMonitorView>());

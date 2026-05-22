@@ -35,4 +35,14 @@ public partial class SettingsWorkspaceView : UserControl
             SavedPillAnimator.Pulse(SavedPill);
         }
     }
+
+    /// <summary>
+    /// Scrolls the settings list so the Privacy Mode card is visible at the top.
+    /// Called by <see cref="WorkspaceHostView.RevealSettingsPrivacyModeSection"/>
+    /// when the user clicks the Mode tile on the Privacy Dashboard.
+    /// </summary>
+    public void ScrollToPrivacyMode()
+    {
+        PrivacyModeSection?.BringIntoView();
+    }
 }

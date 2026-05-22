@@ -28,6 +28,12 @@ public partial class PrivacyDashboardView : UserControl
     /// </summary>
     public event EventHandler? ChannelsRequested;
 
+    /// <summary>
+    /// Event raised when the Mode tile (hero card at the top of the dashboard) is clicked.
+    /// MainWindow opens the Settings workspace and scrolls to the Privacy Mode card.
+    /// </summary>
+    public event EventHandler? SettingsRequested;
+
     public PrivacyDashboardView(PrivacyDashboardViewModel viewModel)
     {
         InitializeComponent();
@@ -54,5 +60,10 @@ public partial class PrivacyDashboardView : UserControl
     private void ChannelsButton_Click(object sender, MouseButtonEventArgs e)
     {
         ChannelsRequested?.Invoke(this, EventArgs.Empty);
+    }
+
+    private void ModeTile_Click(object sender, MouseButtonEventArgs e)
+    {
+        SettingsRequested?.Invoke(this, EventArgs.Empty);
     }
 }

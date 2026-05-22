@@ -273,9 +273,16 @@ public class RuleEngine : IRuleEngine, IDisposable
         // Channel-enforced rules cannot be opted out of, regardless of mode.
         if (rule.IsEnforced) return true;
 
+        // Relaxed = first-party rules only: user-authored ("local") + shipped default
+        // templates ("template"). Skips third-party marketplace installs and non-enforced
+        // channel rules. Treating "template" as first-party (rather than a third-party
+        // source like marketplace) means a freshly-installed browser with only the seeded
+        // templates and no user rules still blocks ads/trackers under Relaxed.
         return mode switch
         {
-            PrivacyMode.Relaxed => string.Equals(rule.Source, "local", StringComparison.OrdinalIgnoreCase),
+            PrivacyMode.Relaxed =>
+                string.Equals(rule.Source, "local", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(rule.Source, "template", StringComparison.OrdinalIgnoreCase),
             _ => true,
         };
     }

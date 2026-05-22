@@ -57,6 +57,9 @@ A privacy-focused browser built with C# WPF, WebView2, and Entity Framework Core
 - Centered modal tools workspace (`1280x820`, click-outside-to-close) for Rules, Extensions, Marketplace, Channels, Profiles, Settings
 - Custom draggable titlebar with restore-on-drag from maximized, double-click maximize toggle
 - Session recovery with auto-save (30s interval) and crash detection — sentinel deletion runs synchronously at the top of `OnExit` so it survives the WebView2 dispose latency
+- **Lazy view resolution** at startup — only the default Copilot sidebar and the workspace container are eager-resolved; the other 5 sidebar panels and 6 workspace dialogs are deferred until first reveal, shaving ~300–500 ms off cold start
+- **Profile recovery** — if `profiles.json` is missing or corrupt, `ProfileService` scans `%LOCALAPPDATA%\BrowserApp\Profiles\` for folders containing a `browser.db` and re-registers them automatically (the corrupt file is preserved as `profiles.json.corrupt_<ts>`). No more silent data orphaning if the index file is damaged
+- Bundled Adblock Plus welcome / day-1 marketing tabs are suppressed on fresh installs (the extension still installs and functions normally — only the popup tabs are dropped)
 
 ## Project Structure
 
@@ -138,6 +141,7 @@ dotnet ef database update --project BrowserApp.Data --startup-project BrowserApp
 4. Check blocking: logs show `BLOCKED: <url> by rule: <rule-name>` for custom rules and `BLOCKED: <url> by Filter List (EasyList/EasyPrivacy)` for the "Included ABP" path (FilterListService)
 5. Wipe runtime extensions safely: `Remove-Item "$env:LOCALAPPDATA\BrowserApp\Extensions" -Recurse -Force` — the bundled ad blocker is re-materialized from `BrowserApp.UI/Resources/BuiltInExtensions/` on next launch
 6. Dashboard / monitor counter mismatch: both panels read from `BlockingService` — if they drift, check `NetworkMonitorViewModel.SyncCountersFromBlockingService` and the `_liveCountersTimer` in `PrivacyDashboardViewModel`
+7. Profile data appears empty / new "Default" profile after a launch: check `%LOCALAPPDATA%\BrowserApp\profiles.json` — if a `profiles.json.corrupt_<ts>` sibling exists, `ProfileService` ran folder-based recovery. Open the Profiles workspace to find your data registered as `Recovered (xxxxxxxx)` and rename if needed
 
 ## Documentation
 

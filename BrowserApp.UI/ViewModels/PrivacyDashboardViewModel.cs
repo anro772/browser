@@ -252,13 +252,15 @@ public partial class PrivacyDashboardViewModel : ObservableObject, IDisposable
 
     /// <summary>
     /// Gets the description for the current privacy mode.
+    /// Strings kept in sync with <c>SettingsViewModel.PrivacyModes</c> so the dashboard
+    /// hero tile and the Settings dropdown read identically — update both together.
     /// </summary>
     public string PrivacyModeDescription => CurrentPrivacyMode switch
     {
-        PrivacyMode.Relaxed => "User rules only — templates and channels skipped",
-        PrivacyMode.Standard => "All enabled rules apply",
-        PrivacyMode.Strict => "All rules + built-in tracker blocklist",
-        _ => "Balanced blocking"
+        PrivacyMode.Relaxed => "Minimal blocking - best for sites that break with aggressive blocking",
+        PrivacyMode.Standard => "Balanced blocking - recommended for daily browsing",
+        PrivacyMode.Strict => "Maximum blocking - may break some site functionality",
+        _ => "Balanced blocking - recommended for daily browsing"
     };
 
     /// <summary>

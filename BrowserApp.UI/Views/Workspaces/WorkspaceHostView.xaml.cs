@@ -46,4 +46,19 @@ public partial class WorkspaceHostView : UserControl
         };
         host.IsVisibleChanged += handler;
     }
+
+    /// <summary>
+    /// Forwards a "scroll to Privacy Mode card" request to the lazily-resolved
+    /// <see cref="SettingsWorkspaceView"/>. Called by MainWindow when the user clicks
+    /// the Mode tile on the Privacy Dashboard. Safe to call before the view has been
+    /// resolved — it just no-ops in that case, but in practice MainWindow defers to
+    /// the Loaded dispatcher tick so the lazy resolution has already fired.
+    /// </summary>
+    public void RevealSettingsPrivacyModeSection()
+    {
+        if (SettingsContent.Content is SettingsWorkspaceView view)
+        {
+            view.ScrollToPrivacyMode();
+        }
+    }
 }

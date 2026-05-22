@@ -192,7 +192,8 @@
                     </StackPanel>
                 </Border>
 
-                <Border Background="{StaticResource BgSurfaceBrush}"
+                <Border x:Name="PrivacyModeSection"
+                        Background="{StaticResource BgSurfaceBrush}"
                         CornerRadius="8"
                         BorderBrush="{StaticResource BorderSubtleBrush}"
                         BorderThickness="1"
