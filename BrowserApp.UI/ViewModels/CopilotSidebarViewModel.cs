@@ -17,7 +17,8 @@ public partial class CopilotSidebarViewModel : ObservableObject, IDisposable
         "You have read-only access to the user's current web page — URL, title, visible text, the user's current text selection, and optionally a screenshot when attached. " +
         "Answer questions about the page, summarise it, extract information from it, and give recommendations grounded in what's on screen. " +
         "If the user asks about something the page doesn't cover, say so plainly and answer from general knowledge. " +
-        "You cannot click, navigate, type, or change browser settings — if the user asks you to perform an action, explain the limitation and suggest what they can do themselves.";
+        "You cannot click, navigate, type, or change browser settings — if the user asks you to perform an action, explain the limitation and suggest what they can do themselves. " +
+        "Format replies in Markdown — use short paragraphs, ## headings for sections, - bullets for lists, and ``` fenced blocks for code so the UI can render them with proper structure.";
 
     private readonly IOllamaClient _ollamaClient;
     private readonly TabStripViewModel? _tabStrip;
@@ -40,10 +41,26 @@ public partial class CopilotSidebarViewModel : ObservableObject, IDisposable
     private bool _isOllamaConnected;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsVisionCapableModel))]
     private string _selectedModel = string.Empty;
 
     [ObservableProperty]
     private ObservableCollection<string> _availableModels = new();
+
+    /// True when the selected Ollama model has known vision support. The default
+    /// `llama3.2:latest` is text-only — vision lives in `llama3.2-vision`, `llava`,
+    /// `bakllava`, `moondream`, `minicpm-v`, `gemma3`, etc.
+    public bool IsVisionCapableModel
+    {
+        get
+        {
+            if (string.IsNullOrEmpty(SelectedModel)) return false;
+            var m = SelectedModel.ToLowerInvariant();
+            return m.Contains("vision") || m.Contains("llava") || m.Contains("bakllava")
+                || m.Contains("moondream") || m.Contains("minicpm-v") || m.Contains("gemma3")
+                || m.Contains("llama4") || m.Contains("qwen2.5-vl") || m.Contains("pixtral");
+        }
+    }
 
     [ObservableProperty]
     private string _connectionStatus = "Checking...";
@@ -258,6 +275,14 @@ public partial class CopilotSidebarViewModel : ObservableObject, IDisposable
         }
     }
 
+    private static readonly SuggestedPrompt[] DefaultFollowUps = new[]
+    {
+        new SuggestedPrompt { Label = "Explain simpler",  Glyph = "LightbulbFilament24", PromptText = "Can you explain that in simpler terms?" },
+        new SuggestedPrompt { Label = "Tell me more",     Glyph = "ChatMore24",          PromptText = "Tell me more about this." },
+        new SuggestedPrompt { Label = "Key risks",        Glyph = "ShieldError24",       PromptText = "What are the key risks or things to watch out for here?" },
+        new SuggestedPrompt { Label = "Next steps",       Glyph = "ArrowForward24",      PromptText = "What should I do next?" }
+    };
+
     [RelayCommand]
     public async Task SendMessageAsync()
     {
@@ -280,6 +305,9 @@ public partial class CopilotSidebarViewModel : ObservableObject, IDisposable
             return;
         }
 
+        // Drop follow-up chips from any prior assistant turn — only the latest answer shows them.
+        ClearAllFollowUps();
+
         // Add user message
         var userMessage = new ChatMessageItem
         {
@@ -294,7 +322,12 @@ public partial class CopilotSidebarViewModel : ObservableObject, IDisposable
             UserInput = string.Empty;
         });
 
-        // Add placeholder assistant message for streaming
+        var attachScreenshot = AttachScreenshotOnNext;
+        if (attachScreenshot)
+        {
+            RunOnUIThread(() => AttachScreenshotOnNext = false);
+        }
+
         var assistantMessage = new ChatMessageItem
         {
             Role = "assistant",
@@ -302,18 +335,52 @@ public partial class CopilotSidebarViewModel : ObservableObject, IDisposable
             Timestamp = DateTime.UtcNow,
             IsStreaming = true
         };
-
         RunOnUIThread(() => Messages.Add(assistantMessage));
 
-        IsGenerating = true;
-        _streamCts = new CancellationTokenSource();
-        var attachScreenshot = AttachScreenshotOnNext;
-        // Reset the one-shot flag before the request so toggling it mid-stream doesn't leak into the next turn.
-        if (attachScreenshot)
-        {
-            RunOnUIThread(() => AttachScreenshotOnNext = false);
-        }
+        await RunChatTurnAsync(assistantMessage, attachScreenshot);
+    }
 
+    [RelayCommand(CanExecute = nameof(CanRegenerate))]
+    public async Task RegenerateLastAnswerAsync()
+    {
+        if (IsGenerating || Messages.Count == 0) return;
+
+        // Strip the trailing assistant message and replay using the remaining history.
+        int lastAssistantIdx = -1;
+        for (int i = Messages.Count - 1; i >= 0; i--)
+        {
+            if (Messages[i].Role == "assistant") { lastAssistantIdx = i; break; }
+        }
+        if (lastAssistantIdx < 0) return;
+
+        RunOnUIThread(() =>
+        {
+            Messages.RemoveAt(lastAssistantIdx);
+            ClearAllFollowUps();
+        });
+
+        var assistantMessage = new ChatMessageItem
+        {
+            Role = "assistant",
+            Content = string.Empty,
+            Timestamp = DateTime.UtcNow,
+            IsStreaming = true
+        };
+        RunOnUIThread(() => Messages.Add(assistantMessage));
+
+        await RunChatTurnAsync(assistantMessage, attachScreenshot: false);
+    }
+
+    private bool CanRegenerate()
+        => !IsGenerating && Messages.Any(m => m.Role == "assistant" && !m.IsStreaming);
+
+    private async Task RunChatTurnAsync(ChatMessageItem assistantMessage, bool attachScreenshot)
+    {
+        IsGenerating = true;
+        RegenerateLastAnswerCommand.NotifyCanExecuteChanged();
+        _streamCts = new CancellationTokenSource();
+
+        bool succeeded = false;
         try
         {
             var pageContext = await CapturePageContextAsync(attachScreenshot, _streamCts.Token);
@@ -327,6 +394,7 @@ public partial class CopilotSidebarViewModel : ObservableObject, IDisposable
                     assistantMessage.Content += token;
                 });
             }
+            succeeded = !string.IsNullOrWhiteSpace(assistantMessage.Content);
         }
         catch (OperationCanceledException)
         {
@@ -348,11 +416,30 @@ public partial class CopilotSidebarViewModel : ObservableObject, IDisposable
             RunOnUIThread(() =>
             {
                 assistantMessage.IsStreaming = false;
+                if (succeeded)
+                {
+                    foreach (var p in DefaultFollowUps)
+                    {
+                        assistantMessage.FollowUpPrompts.Add(p);
+                    }
+                }
             });
             IsGenerating = false;
+            RegenerateLastAnswerCommand.NotifyCanExecuteChanged();
             _streamCts?.Dispose();
             _streamCts = null;
         }
+    }
+
+    private void ClearAllFollowUps()
+    {
+        RunOnUIThread(() =>
+        {
+            foreach (var m in Messages)
+            {
+                if (m.FollowUpPrompts.Count > 0) m.FollowUpPrompts.Clear();
+            }
+        });
     }
 
     [RelayCommand]
@@ -365,6 +452,26 @@ public partial class CopilotSidebarViewModel : ObservableObject, IDisposable
     public void ClearChat()
     {
         RunOnUIThread(() => Messages.Clear());
+    }
+
+    [RelayCommand]
+    public void NewChat()
+    {
+        // "New chat" and "Clear conversation" both start fresh — keep them as separate
+        // commands so the header buttons can be wired independently and labelled clearly.
+        RunOnUIThread(() =>
+        {
+            Messages.Clear();
+            UserInput = string.Empty;
+            AttachScreenshotOnNext = false;
+        });
+    }
+
+    [RelayCommand]
+    public void SelectModel(string? modelName)
+    {
+        if (string.IsNullOrWhiteSpace(modelName)) return;
+        SelectedModel = modelName;
     }
 
     [RelayCommand]
@@ -482,4 +589,23 @@ public partial class ChatMessageItem : ObservableObject
 
     [ObservableProperty]
     private bool _isStreaming;
+
+    [ObservableProperty]
+    private ObservableCollection<SuggestedPrompt> _followUpPrompts = new();
+
+    [RelayCommand]
+    private void CopyContent()
+    {
+        try
+        {
+            if (!string.IsNullOrEmpty(Content))
+            {
+                System.Windows.Clipboard.SetText(Content);
+            }
+        }
+        catch
+        {
+            // Clipboard access can fail transiently if another app holds the lock; swallow.
+        }
+    }
 }

@@ -100,4 +100,16 @@ public partial class CopilotSidebarView : UserControl
             e.Handled = true;
         }
     }
+
+    private void ModelPill_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+    {
+        // Open the pill's ContextMenu on left click so model switching is one-click reachable.
+        if (sender is FrameworkElement fe && fe.ContextMenu != null)
+        {
+            fe.ContextMenu.PlacementTarget = fe;
+            fe.ContextMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
+            fe.ContextMenu.IsOpen = true;
+            e.Handled = true;
+        }
+    }
 }

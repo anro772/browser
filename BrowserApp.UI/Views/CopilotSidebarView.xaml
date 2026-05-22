@@ -27,6 +27,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+             xmlns:controls="clr-namespace:BrowserApp.UI.Controls"
              xmlns:vm="clr-namespace:BrowserApp.UI.ViewModels"
              mc:Ignorable="d"
              d:DesignHeight="800" d:DesignWidth="380"
@@ -75,8 +76,8 @@
             <Grid Margin="40,5,8,5" HorizontalAlignment="Right">
                 <Border Background="{StaticResource AccentSubtleBrush}"
                         BorderBrush="{StaticResource AccentBorderBrush}" BorderThickness="1"
-                        CornerRadius="12,12,4,12"
-                        Padding="13,10" MaxWidth="300">
+                        CornerRadius="14,14,4,14"
+                        Padding="14,11" MaxWidth="340">
                     <StackPanel>
                         <TextBlock Text="{Binding Content}" TextWrapping="Wrap"
                                    FontSize="13" LineHeight="19"
@@ -92,26 +93,35 @@
 
         <!-- Assistant bubble — left-aligned, with avatar, streaming dots, code-block treatment. -->
         <DataTemplate x:Key="AssistantMessageTemplate">
-            <Grid Margin="8,5,40,5" HorizontalAlignment="Left">
+            <Grid x:Name="AssistantBubbleRoot" Margin="8,5,40,5" HorizontalAlignment="Left">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
 
-                <Border Grid.Column="0" Width="24" Height="24" CornerRadius="12"
-                        Background="{StaticResource AccentSubtleBrush}"
+                <Border Grid.Column="0" Grid.Row="0" Width="28" Height="28" CornerRadius="14"
+                        Background="{StaticResource AccentGlowBrush}"
                         BorderBrush="{StaticResource AccentBorderBrush}" BorderThickness="1"
-                        VerticalAlignment="Top" Margin="0,2,8,0">
-                    <ui:SymbolIcon Symbol="Bot24" FontSize="12"
+                        VerticalAlignment="Top" Margin="0,2,9,0">
+                    <ui:SymbolIcon Symbol="Bot24" FontSize="14"
                                    Foreground="{StaticResource AccentLightBrush}"
                                    HorizontalAlignment="Center" VerticalAlignment="Center"/>
                 </Border>
 
-                <Border Grid.Column="1"
-                        Background="{StaticResource BgSurfaceBrush}"
+                <Border Grid.Column="1" Grid.Row="0"
                         BorderBrush="{StaticResource BorderSubtleBrush}" BorderThickness="1"
-                        CornerRadius="12,12,12,4"
-                        Padding="13,10" MaxWidth="280">
+                        CornerRadius="14,14,14,4"
+                        Padding="14,12" MaxWidth="340">
+                    <Border.Background>
+                        <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                            <GradientStop Color="#2E3548" Offset="0"/>
+                            <GradientStop Color="#252B3B" Offset="1"/>
+                        </LinearGradientBrush>
+                    </Border.Background>
                     <StackPanel>
                         <!-- Streaming indicator: bouncing dots inline at the start of an in-progress bubble. -->
                         <StackPanel Orientation="Horizontal" Margin="0,2,0,4"
@@ -169,35 +179,104 @@
                             </Ellipse>
                         </StackPanel>
 
-                        <TextBlock Text="{Binding Content}" TextWrapping="Wrap"
-                                   FontSize="13" LineHeight="19"
-                                   Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                        <controls:MarkdownTextBlock Markdown="{Binding Content}"/>
 
-                        <!-- Sample code block treatment — apply this Border pattern wherever
-                             your renderer emits a code TextBlock. Includes a Copy button. -->
-                        <!--
-                        <Border Background="{StaticResource BgElevatedBrush}"
-                                BorderBrush="{StaticResource BorderSubtleBrush}" BorderThickness="1"
-                                CornerRadius="4" Padding="10,9" Margin="0,6,0,2">
-                            <Grid>
-                                <TextBlock FontFamily="JetBrains Mono, Consolas, monospace"
-                                           FontSize="11.5" Foreground="#C7CCE0"
-                                           Text="{Binding CodeText}"/>
-                                <ui:Button Icon="{ui:SymbolIcon Copy24}" Content="Copy"
-                                           Padding="6,2" FontSize="10"
-                                           HorizontalAlignment="Right" VerticalAlignment="Top"
-                                           Margin="0,-4,-4,0"
-                                           Command="{Binding CopyCodeCommand}"/>
-                            </Grid>
-                        </Border>
-                        -->
+                        <!-- Footer row: timestamp + hover-revealed actions (Copy, Regenerate placeholder) -->
+                        <Grid Margin="0,6,0,0"
+                              Visibility="{Binding IsStreaming, Converter={StaticResource BoolToVisibilityInverse}}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
 
-                        <TextBlock Text="{Binding Timestamp, StringFormat='{}{0:HH:mm}'}"
-                                   FontSize="10" Margin="0,5,0,0"
-                                   Foreground="{DynamicResource TextFillColorTertiaryBrush}"
-                                   Visibility="{Binding IsStreaming, Converter={StaticResource BoolToVisibilityInverse}}"/>
+                            <TextBlock Grid.Column="0"
+                                       Text="{Binding Timestamp, StringFormat='{}{0:HH:mm}'}"
+                                       FontSize="10"
+                                       VerticalAlignment="Center"
+                                       Foreground="{DynamicResource TextFillColorTertiaryBrush}"/>
+
+                            <StackPanel Grid.Column="1" Orientation="Horizontal">
+                                <StackPanel.Style>
+                                    <Style TargetType="StackPanel">
+                                        <Setter Property="Opacity" Value="0"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsMouseOver, ElementName=AssistantBubbleRoot}" Value="True">
+                                                <Setter Property="Opacity" Value="1"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </StackPanel.Style>
+                                <ui:Button Icon="{ui:SymbolIcon Copy24}"
+                                           ToolTip="Copy reply"
+                                           Command="{Binding CopyContentCommand}"
+                                           Appearance="Transparent"
+                                           Width="26" Height="26" Padding="0" CornerRadius="13"
+                                           Margin="0,0,4,0"/>
+                                <ui:Button Icon="{ui:SymbolIcon ArrowSync24}"
+                                           ToolTip="Regenerate this answer"
+                                           Command="{Binding DataContext.RegenerateLastAnswerCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                           Appearance="Transparent"
+                                           Width="26" Height="26" Padding="0" CornerRadius="13"/>
+                            </StackPanel>
+                        </Grid>
                     </StackPanel>
                 </Border>
+
+                <!-- Follow-up suggestion chips — appear only on the most recent completed answer. -->
+                <ItemsControl Grid.Column="1" Grid.Row="1"
+                              ItemsSource="{Binding FollowUpPrompts}"
+                              Margin="0,8,0,2">
+                    <ItemsControl.Style>
+                        <Style TargetType="ItemsControl">
+                            <Setter Property="Visibility" Value="Visible"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding FollowUpPrompts.Count}" Value="0">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </ItemsControl.Style>
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <WrapPanel Orientation="Horizontal"/>
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Button Margin="0,0,6,6" Padding="0"
+                                    Background="Transparent" BorderThickness="0" Cursor="Hand"
+                                    Command="{Binding DataContext.UseSuggestedPromptCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                    CommandParameter="{Binding}">
+                                <Button.Template>
+                                    <ControlTemplate TargetType="Button">
+                                        <Border x:Name="ChipBorder"
+                                                Background="{StaticResource BgGlassHeaderBrush}"
+                                                BorderBrush="{StaticResource BorderSubtleBrush}" BorderThickness="1"
+                                                CornerRadius="999" Padding="10,5">
+                                            <ContentPresenter/>
+                                        </Border>
+                                        <ControlTemplate.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter TargetName="ChipBorder" Property="Background" Value="{StaticResource AccentGlowBrush}"/>
+                                                <Setter TargetName="ChipBorder" Property="BorderBrush" Value="{StaticResource AccentBorderBrush}"/>
+                                            </Trigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </Button.Template>
+                                <StackPanel Orientation="Horizontal">
+                                    <ui:SymbolIcon Symbol="{Binding Glyph, FallbackValue=Sparkle24}"
+                                                   FontSize="12"
+                                                   Foreground="{StaticResource AccentLightBrush}"
+                                                   VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                    <TextBlock Text="{Binding Label}"
+                                               FontSize="11.5" FontWeight="Medium"
+                                               VerticalAlignment="Center"
+                                               Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                                </StackPanel>
+                            </Button>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
             </Grid>
         </DataTemplate>
 
@@ -254,9 +333,13 @@
                                Foreground="{DynamicResource TextFillColorPrimaryBrush}"
                                VerticalAlignment="Center"/>
 
-                    <!-- Inline status pill: green dot + model name when connected, red+Offline when not. -->
-                    <Border Grid.Column="1" Margin="9,0,0,0" Padding="7,2,9,2" CornerRadius="999"
-                            VerticalAlignment="Center">
+                    <!-- Inline status pill: green dot + model name when connected, red+Offline when not.
+                         Left-click opens a model-switcher popup. -->
+                    <Border Grid.Column="1" x:Name="ModelPillBorder"
+                            Margin="9,0,0,0" Padding="7,2,9,2" CornerRadius="999"
+                            VerticalAlignment="Center" Cursor="Hand"
+                            ToolTip="Click to switch model"
+                            MouseLeftButtonUp="ModelPill_MouseLeftButtonUp">
                         <Border.Style>
                             <Style TargetType="Border">
                                 <Setter Property="Background" Value="#1A6EE7B7"/>
@@ -270,6 +353,17 @@
                                 </Style.Triggers>
                             </Style>
                         </Border.Style>
+                        <Border.ContextMenu>
+                            <ContextMenu ItemsSource="{Binding AvailableModels}">
+                                <ContextMenu.ItemContainerStyle>
+                                    <Style TargetType="MenuItem">
+                                        <Setter Property="Header" Value="{Binding}"/>
+                                        <Setter Property="Command" Value="{Binding DataContext.SelectModelCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"/>
+                                        <Setter Property="CommandParameter" Value="{Binding}"/>
+                                    </Style>
+                                </ContextMenu.ItemContainerStyle>
+                            </ContextMenu>
+                        </Border.ContextMenu>
                         <StackPanel Orientation="Horizontal">
                             <Ellipse Width="6" Height="6" VerticalAlignment="Center" Margin="0,0,5,0">
                                 <Ellipse.Style>
@@ -297,35 +391,30 @@
                                     </Style>
                                 </TextBlock.Style>
                             </TextBlock>
+                            <ui:SymbolIcon Symbol="ChevronDown24" FontSize="10" Margin="4,1,0,0"
+                                           VerticalAlignment="Center"
+                                           Foreground="{DynamicResource TextFillColorTertiaryBrush}"/>
                         </StackPanel>
                     </Border>
 
-                    <!-- … menu — Clear chat / New chat / model picker (replaces ComboBox row) -->
-                    <ui:Button Grid.Column="3"
-                               Icon="{ui:SymbolIcon MoreHorizontal24}"
-                               Style="{StaticResource GlassToolbarButtonStyle}"
-                               ToolTip="More">
-                        <ui:Button.ContextMenu>
-                            <ContextMenu>
-                                <MenuItem Header="Clear chat" Command="{Binding ClearChatCommand}"/>
-                                <MenuItem Header="New chat"   Command="{Binding ClearChatCommand}"/>
-                                <Separator/>
-                                <MenuItem Header="Switch model"
-                                          ItemsSource="{Binding AvailableModels}">
-                                    <MenuItem.ItemContainerStyle>
-                                        <Style TargetType="MenuItem">
-                                            <Setter Property="Header" Value="{Binding}"/>
-                                            <Setter Property="Command" Value="{Binding DataContext.LoadModelsCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"/>
-                                            <!-- Live VM should add a SelectModelCommand; LoadModelsCommand is a placeholder no-op. -->
-                                        </Style>
-                                    </MenuItem.ItemContainerStyle>
-                                </MenuItem>
-                                <Separator/>
-                                <MenuItem Header="Refresh models" Command="{Binding LoadModelsCommand}"/>
-                                <MenuItem Header="Check connection" Command="{Binding CheckConnectionCommand}"/>
-                            </ContextMenu>
-                        </ui:Button.ContextMenu>
-                    </ui:Button>
+                    <!-- Direct icon buttons: New chat, Clear conversation, Check connection.
+                         Replaces a "…" Button.ContextMenu that only opened on right-click. -->
+                    <StackPanel Grid.Column="3" Orientation="Horizontal">
+                        <ui:Button Icon="{ui:SymbolIcon Compose24}"
+                                   ToolTip="New chat"
+                                   Command="{Binding NewChatCommand}"
+                                   Style="{StaticResource GlassToolbarButtonStyle}"
+                                   Margin="0,0,4,0"/>
+                        <ui:Button Icon="{ui:SymbolIcon Delete24}"
+                                   ToolTip="Clear conversation"
+                                   Command="{Binding ClearChatCommand}"
+                                   Style="{StaticResource GlassToolbarButtonStyle}"
+                                   Margin="0,0,4,0"/>
+                        <ui:Button Icon="{ui:SymbolIcon ArrowSync24}"
+                                   ToolTip="Check connection"
+                                   Command="{Binding CheckConnectionCommand}"
+                                   Style="{StaticResource GlassToolbarButtonStyle}"/>
+                    </StackPanel>
                 </Grid>
 
                 <!-- Page-context chip — favicon-style avatar + truncated title -->
@@ -566,18 +655,26 @@
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
 
-                    <!-- Screenshot button — INSIDE the pill, on the LEFT now. -->
+                    <!-- Screenshot button — only shown when the selected model has vision support
+                         (llama3.2-vision, llava, moondream, gemma3, etc.). Plain llama3.2 is text-only. -->
                     <ui:Button Grid.Column="0"
                                Icon="{ui:SymbolIcon Camera24}"
                                Command="{Binding ToggleAttachScreenshotCommand}"
                                Width="30" Height="30" Padding="0" CornerRadius="15"
-                               Margin="2,0,0,0"
-                               Visibility="{Binding HasActivePage, Converter={StaticResource BoolToVisibility}}">
+                               Margin="2,0,0,0">
                         <ui:Button.Style>
                             <Style TargetType="ui:Button" BasedOn="{StaticResource {x:Type ui:Button}}">
                                 <Setter Property="Appearance" Value="Secondary"/>
-                                <Setter Property="ToolTip" Value="Attach a screenshot of the current page to the next message (needs a vision model like llava)"/>
+                                <Setter Property="Visibility" Value="Collapsed"/>
+                                <Setter Property="ToolTip" Value="Attach a screenshot of the current page to the next message"/>
                                 <Style.Triggers>
+                                    <MultiDataTrigger>
+                                        <MultiDataTrigger.Conditions>
+                                            <Condition Binding="{Binding HasActivePage}" Value="True"/>
+                                            <Condition Binding="{Binding IsVisionCapableModel}" Value="True"/>
+                                        </MultiDataTrigger.Conditions>
+                                        <Setter Property="Visibility" Value="Visible"/>
+                                    </MultiDataTrigger>
                                     <DataTrigger Binding="{Binding AttachScreenshotOnNext}" Value="True">
                                         <Setter Property="Appearance" Value="Primary"/>
                                         <Setter Property="ToolTip" Value="Screenshot will be attached to your next message — click to unarm"/>
