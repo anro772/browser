@@ -1,0 +1,46 @@
+# Fly.io app config for Slate backend (BrowserApp.Server).
+#
+# Lives at the repo root because the Dockerfile needs to COPY three sibling
+# projects (Server, Core, Data) — Fly's build context is whatever directory
+# fly.toml lives in. Repo root = context covers all three.
+#
+# First-time deploy walkthrough is in docs/deploy.md.
+
+# Change once via:  flyctl apps create slate-api
+app = "slate-api"
+primary_region = "fra"            # Frankfurt — pick the region closest to you
+
+[build]
+  dockerfile = "BrowserApp.Server/Dockerfile"
+
+[env]
+  ASPNETCORE_ENVIRONMENT = "Production"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  # Free-tier friendly: machine stops when idle, auto-starts on next request.
+  # First request after idle adds ~3-5s cold start; subsequent requests are warm.
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+
+  [http_service.concurrency]
+    type = "requests"
+    soft_limit = 50
+    hard_limit = 100
+
+  # Health check — HTTP GET against /api/health. Grace period is generous because
+  # the very first deploy must run EF Core migrations against a freshly-provisioned
+  # Neon database, which takes longer than a normal warm start.
+  [[http_service.checks]]
+    grace_period = "60s"
+    interval = "15s"
+    method = "GET"
+    timeout = "10s"
+    path = "/api/health"
+
+[[vm]]
+  cpu_kind = "shared"
+  cpus = 1
+  memory_mb = 512

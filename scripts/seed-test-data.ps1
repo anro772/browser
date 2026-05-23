@@ -1,7 +1,15 @@
+[CmdletBinding()]
+param(
+  # Default is local dev. Pass -BaseUrl https://slate-api.fly.dev to seed the cloud.
+  [string] $BaseUrl = 'http://localhost:5000'
+)
+
 $ErrorActionPreference = 'Stop'
+$BaseUrl = $BaseUrl.TrimEnd('/')
+Write-Host "Seeding against $BaseUrl" -ForegroundColor Cyan
 
 function PostJson($path, $body) {
-  Invoke-RestMethod -Method Post -Uri "http://localhost:5000$path" `
+  Invoke-RestMethod -Method Post -Uri "$BaseUrl$path" `
     -ContentType 'application/json' -Body ($body | ConvertTo-Json -Depth 8)
 }
 
@@ -37,7 +45,7 @@ foreach ($p in $packs) {
 $bumps = @(47, 121, 9, 33, 18, 256, 4, 88)
 for ($i = 0; $i -lt $createdPacks.Count; $i++) {
   for ($n = 0; $n -lt $bumps[$i]; $n++) {
-    try { Invoke-RestMethod -Method Post -Uri "http://localhost:5000/api/marketplace/rules/$($createdPacks[$i].id)/download" | Out-Null } catch {}
+    try { Invoke-RestMethod -Method Post -Uri "$BaseUrl/api/marketplace/rules/$($createdPacks[$i].id)/download" | Out-Null } catch {}
   }
 }
 "Download counts bumped"

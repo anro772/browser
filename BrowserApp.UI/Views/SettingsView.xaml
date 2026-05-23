@@ -115,12 +115,29 @@
                                            Foreground="{StaticResource AccentBrush}" Margin="0,0,8,0"/>
                             <TextBlock Text="Account" FontSize="14" FontWeight="SemiBold" VerticalAlignment="Center"/>
                         </StackPanel>
-                        <TextBlock Text="Your username is used for channel membership and rule sharing."
-                                   FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                                   TextWrapping="Wrap" Margin="0,0,0,12"/>
-                        <ui:TextBox PlaceholderText="Username"
-                                    Text="{Binding Username, UpdateSourceTrigger=PropertyChanged}"
-                                    Icon="{ui:SymbolIcon Person24}"/>
+                        <TextBlock TextWrapping="Wrap" Margin="0,0,0,12"
+                                   FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}">
+                            Your handle identifies you on channels and marketplace packs. Each fresh install
+                            generates a unique handle so you can&apos;t be impersonated. To pair multiple of
+                            your own machines under one identity, copy this handle into the same field on the
+                            other install.
+                        </TextBlock>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <ui:TextBox Grid.Column="0"
+                                        PlaceholderText="Handle (e.g. user_a8f3k2)"
+                                        Text="{Binding Username, UpdateSourceTrigger=PropertyChanged}"
+                                        Icon="{ui:SymbolIcon Person24}"/>
+                            <ui:Button Grid.Column="1"
+                                       Icon="{ui:SymbolIcon Copy24}"
+                                       Content="Copy"
+                                       Margin="8,0,0,0"
+                                       Command="{Binding CopyHandleCommand}"
+                                       ToolTip="Copy your handle to the clipboard"/>
+                        </Grid>
                     </StackPanel>
                 </Border>
 

@@ -1,0 +1,32 @@
+# Keep the build context small and reproducible.
+**/bin/
+**/obj/
+**/publish/
+**/PublishOutput/
+**/installer/
+**/.vs/
+**/.idea/
+**/.vscode/
+**/node_modules/
+**/*.user
+**/*.suo
+
+# UI project is not shipped to the server image.
+BrowserApp.UI/
+BrowserApp.Tests/
+
+# Browser engine assets, downloads, profiles — never needed by the server.
+**/Resources/BuiltInExtensions/
+**/UserData/
+**/Profiles/
+**/browser.db
+**/browser.db-*
+
+# Misc.
+**/logo/
+**/docs/
+**/scripts/
+**/*.log
+**/*.md
+.git/
+.gitignore

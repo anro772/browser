@@ -198,6 +198,11 @@ public class SettingsService : INotifyPropertyChanged
 
     /// <summary>
     /// Initializes username and tag on first launch if not already set.
+    /// Username falls back to a freshly-generated unique handle ("user_xxxxxx")
+    /// instead of the profile name — without this every fresh install would end
+    /// up with the same identity (e.g. "Default") and impersonate each other on
+    /// channel/marketplace ownership checks. Existing installs that already have
+    /// a username persisted keep it untouched.
     /// </summary>
     public void InitializeUsernameIfNeeded(string profileName)
     {
@@ -205,12 +210,23 @@ public class SettingsService : INotifyPropertyChanged
             return;
 
         if (string.IsNullOrEmpty(_settings.Username))
-            _settings.Username = profileName;
+            _settings.Username = GenerateUniqueHandle();
 
         if (string.IsNullOrEmpty(_settings.UserTag))
             _settings.UserTag = Random.Shared.Next(1000, 10000).ToString();
 
         SaveSettings();
+    }
+
+    /// <summary>
+    /// "user_" + 6 lowercase hex chars from a fresh GUID. Stable across launches
+    /// once persisted to settings.json. Collision odds at this length are ~1 in
+    /// 16M per install — fine for personal multi-machine + share-with-friends use.
+    /// </summary>
+    private static string GenerateUniqueHandle()
+    {
+        var slug = Guid.NewGuid().ToString("N").Substring(0, 6);
+        return $"user_{slug}";
     }
 
     public event EventHandler<PrivacyMode>? PrivacyModeChanged;

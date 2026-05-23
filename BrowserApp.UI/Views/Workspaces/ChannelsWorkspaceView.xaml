@@ -40,6 +40,11 @@
                            Command="{Binding SyncNowCommand}"
                            Style="{StaticResource PrimaryAccentUiButton}"
                            Appearance="Primary"/>
+                <ui:Button Content="Join with code" Margin="0,0,8,0"
+                           Icon="{ui:SymbolIcon Key24}"
+                           Command="{Binding JoinByCodeCommand}"
+                           Appearance="Secondary"
+                           ToolTip="Join a private or unlisted channel using its ID + password"/>
                 <ui:Button Content="+ New Channel"
                            Icon="{ui:SymbolIcon Add24}"
                            Command="{Binding ShowCreateDialogCommand}"

@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using BrowserApp.Server.Data;
 using BrowserApp.Server.Data.Repositories;
@@ -66,14 +67,29 @@ builder.Services.AddCors(options =>
     });
 });
 
+// Fly.io (and most cloud hosts) terminate TLS at the edge and forward to the
+// container as plain HTTP, setting X-Forwarded-Proto: https on the way in.
+// Without honoring those headers, ASP.NET builds Location/redirect URLs as
+// http://... which causes downgrade-detection failures in HTTPS-strict clients
+// (e.g. PowerShell's Invoke-RestMethod refusing to follow a 201 Created
+// Location header on POSTed resources).
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    // Clear the default loopback-only restriction — Fly's proxy IP isn't loopback.
+    options.KnownNetworks.Clear();
+    options.KnownProxies.Clear();
+});
+
 var app = builder.Build();
 
-// Configure the HTTP request pipeline
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+// Must run before any middleware that emits URLs (CORS, controllers, Swagger).
+app.UseForwardedHeaders();
+
+// Configure the HTTP request pipeline. Swagger is also enabled in Production so
+// the deployed API is browsable at /swagger for diagnostics.
+app.UseSwagger();
+app.UseSwaggerUI();
 
 app.UseCors("AllowClient");
 

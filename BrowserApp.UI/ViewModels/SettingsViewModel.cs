@@ -322,6 +322,22 @@ public partial class SettingsViewModel : ObservableObject
         _settingsService.Username = value;
         BumpSaved();
     }
+
+    [RelayCommand]
+    private void CopyHandle()
+    {
+        try
+        {
+            if (!string.IsNullOrWhiteSpace(Username))
+            {
+                Clipboard.SetText(Username);
+            }
+        }
+        catch
+        {
+            // Clipboard access can fail transiently if another app holds the lock.
+        }
+    }
 }
 
 /// <summary>

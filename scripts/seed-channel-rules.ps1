@@ -1,11 +1,18 @@
+[CmdletBinding()]
+param(
+  [string] $BaseUrl = 'http://localhost:5000'
+)
+
 $ErrorActionPreference = 'Stop'
+$BaseUrl = $BaseUrl.TrimEnd('/')
+Write-Host "Seeding channel rules against $BaseUrl" -ForegroundColor Cyan
 
 function PostJson($path, $body) {
-  Invoke-RestMethod -Method Post -Uri "http://localhost:5000$path" `
+  Invoke-RestMethod -Method Post -Uri "$BaseUrl$path" `
     -ContentType 'application/json' -Body ($body | ConvertTo-Json -Depth 8)
 }
 
-$existing = Invoke-RestMethod -Uri "http://localhost:5000/api/channel/channels"
+$existing = Invoke-RestMethod -Uri "$BaseUrl/api/channel/channels"
 $wanted = @('acme-internal','dev-team','journalism-pack')
 $targets = $existing.channels | Where-Object { $wanted -contains $_.name }
 "Found channels: $($targets.Count)"

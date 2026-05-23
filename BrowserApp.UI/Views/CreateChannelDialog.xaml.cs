@@ -8,6 +8,7 @@ public partial class CreateChannelDialog : FluentWindow
     public string ChannelName { get; private set; } = string.Empty;
     public string ChannelDescription { get; private set; } = string.Empty;
     public string ChannelPassword { get; private set; } = string.Empty;
+    public bool IsPublic { get; private set; } = true;
 
     public CreateChannelDialog()
     {
@@ -34,6 +35,7 @@ public partial class CreateChannelDialog : FluentWindow
         ChannelName = ChannelNameInput.Text.Trim();
         ChannelDescription = ChannelDescriptionInput.Text?.Trim() ?? string.Empty;
         ChannelPassword = ChannelPasswordInput.Password;
+        IsPublic = PrivateChannelCheckBox.IsChecked != true;
         DialogResult = true;
         Close();
     }

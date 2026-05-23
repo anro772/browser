@@ -92,8 +92,9 @@ public partial class MarketplaceViewModel : ObservableObject
 
         try
         {
-            // Connection check — show offline banner but fall back to locally-installed packs
-            // so the view isn't empty when the user already has marketplace rules synced.
+            // Connection check — when offline, surface locally-installed packs from SQLite so
+            // the view isn't empty for returning users. Fresh installs (nothing installed yet)
+            // will show the offline banner with no cards, which is the correct empty state.
             var connected = await _apiClient.CheckConnectionAsync();
             if (!connected)
             {
@@ -402,9 +403,10 @@ public partial class MarketplaceViewModel : ObservableObject
 
     /// <summary>
     /// Builds marketplace card view-models from already-installed marketplace rules in the
-    /// local SQLite store. Used as the offline fallback so the Marketplace view is not empty
-    /// when the user has packs from a previous sync but the server is unreachable.
-    /// Author/tags/download-count are unknown locally and surface as empty/zero.
+    /// local SQLite store. Used as the offline fallback so the Marketplace view isn't empty
+    /// when the user has packs from a previous online session but the server is unreachable.
+    /// Author/tags/download-count aren't persisted locally and surface as empty/zero — the
+    /// HasServerMetadata flag in the card template hides those rows on offline items.
     /// </summary>
     private async Task<List<MarketplaceRuleItemViewModel>> GetInstalledMarketplacePacksAsync()
     {
@@ -420,17 +422,17 @@ public partial class MarketplaceViewModel : ObservableObject
                 if (!Guid.TryParse(r.MarketplaceId, out var id)) id = Guid.NewGuid();
                 var synthetic = new RuleResponse
                 {
-                    Id = id,
-                    Name = r.Name,
-                    Description = r.Description,
-                    Site = r.Site,
-                    Priority = r.Priority,
-                    RulesJson = r.RulesJson,
+                    Id             = id,
+                    Name           = r.Name,
+                    Description    = r.Description,
+                    Site          = r.Site,
+                    Priority       = r.Priority,
+                    RulesJson      = r.RulesJson,
                     AuthorUsername = string.Empty,
-                    DownloadCount = 0,
-                    Tags = Array.Empty<string>(),
-                    CreatedAt = r.CreatedAt,
-                    UpdatedAt = r.UpdatedAt
+                    DownloadCount  = 0,
+                    Tags           = Array.Empty<string>(),
+                    CreatedAt      = r.CreatedAt,
+                    UpdatedAt      = r.UpdatedAt
                 };
                 return new MarketplaceRuleItemViewModel(synthetic) { IsInstalled = true };
             })

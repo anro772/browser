@@ -4,16 +4,25 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Threading;
 using BrowserApp.UI.ViewModels;
 
 namespace BrowserApp.UI.Views.Workspaces;
 
 public partial class MarketplaceWorkspaceView : UserControl
 {
+    private readonly DispatcherTimer _autoRefresh;
+
     public MarketplaceWorkspaceView(MarketplaceViewModel viewModel)
     {
         InitializeComponent();
         DataContext = viewModel;
+
+        // Background catalog refresh — keeps the pack list fresh against the server
+        // while the workspace is visible. Stops on Unload to avoid background traffic.
+        _autoRefresh = new DispatcherTimer { Interval = TimeSpan.FromSeconds(60) };
+        _autoRefresh.Tick += OnAutoRefreshTick;
+        Unloaded += (_, _) => _autoRefresh.Stop();
     }
 
     private async void MarketplaceWorkspaceView_Loaded(object sender, RoutedEventArgs e)
@@ -22,6 +31,14 @@ public partial class MarketplaceWorkspaceView : UserControl
         {
             await viewModel.LoadRulesCommand.ExecuteAsync(null);
         }
+        _autoRefresh.Start();
+    }
+
+    private async void OnAutoRefreshTick(object? sender, EventArgs e)
+    {
+        if (DataContext is not MarketplaceViewModel vm) return;
+        if (vm.IsLoading) return;
+        await vm.LoadRulesCommand.ExecuteAsync(null);
     }
 
     private async void MarketplaceEmpty_Refresh(object? sender, EventArgs e)

@@ -85,10 +85,11 @@ public partial class ChannelsViewModel : ObservableObject
             var joined = await _syncService.GetJoinedChannelsAsync();
             var joinedList = joined.ToList();
 
-            // Server-second: catalog of all available channels. Null when the server is down —
-            // we still surface joined channels below so the user can see/leave/inspect them.
-            var response = await _apiClient.GetChannelsAsync(1, 50);
-            bool serverReachable = response != null;
+            // Explicit health probe — `GetChannelsAsync` returns an empty-but-non-null
+            // response on connection failure (try/catch in ChannelApiClient), so we
+            // can't use "response != null" alone to detect server health.
+            bool serverReachable = await _apiClient.CheckConnectionAsync();
+            var response = serverReachable ? await _apiClient.GetChannelsAsync(1, 50) : null;
 
             UiThread.Invoke(() =>
             {
@@ -371,6 +372,71 @@ public partial class ChannelsViewModel : ObservableObject
         }
     }
 
+    /// <summary>
+    /// Opens the "Join with code" dialog and joins a channel by ID + password. Works
+    /// for both public and private channels — private channels are unreachable via the
+    /// catalog list but remain joinable through GetByIdAsync.
+    /// </summary>
+    [RelayCommand]
+    private async Task JoinByCodeAsync()
+    {
+        var dialog = new JoinByCodeDialog
+        {
+            Owner = Application.Current.MainWindow
+        };
+
+        if (dialog.ShowDialog() != true) return;
+
+        IsLoading = true;
+        StatusMessage = $"Looking up channel {dialog.ChannelId}…";
+
+        try
+        {
+            var channel = await _apiClient.GetChannelByIdAsync(dialog.ChannelId);
+            if (channel == null)
+            {
+                StatusMessage = "Couldn't find that channel. Check the ID and that the server is reachable.";
+                ConfirmDialog.Show(
+                    Application.Current.MainWindow,
+                    "Channel not found",
+                    "Couldn't find a channel with that ID. Verify the ID and that the channel server is online.",
+                    showCancel: false);
+                return;
+            }
+
+            var success = await _syncService.JoinChannelAsync(
+                channel.Id,
+                channel.Name,
+                channel.Description,
+                Username,
+                dialog.Password);
+
+            if (success)
+            {
+                StatusMessage = $"Joined '{channel.Name}' successfully!";
+                await LoadChannelsAsync();
+            }
+            else
+            {
+                StatusMessage = "Failed to join channel. Check the password.";
+                ConfirmDialog.Show(
+                    Application.Current.MainWindow,
+                    "Join failed",
+                    "Failed to join channel. Please check the password.",
+                    showCancel: false);
+            }
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Error joining by code: {ex.Message}";
+            ErrorLogger.LogError($"Failed to join channel by code {dialog.ChannelId}", ex);
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
     [RelayCommand]
     private async Task ShowCreateDialogAsync()
     {
@@ -392,7 +458,7 @@ public partial class ChannelsViewModel : ObservableObject
                 Description = dialog.ChannelDescription,
                 OwnerUsername = Username,
                 Password = dialog.ChannelPassword,
-                IsPublic = true
+                IsPublic = dialog.IsPublic
             });
 
             if (result != null)

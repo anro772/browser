@@ -4,6 +4,7 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Threading;
 using BrowserApp.UI.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -12,12 +13,20 @@ namespace BrowserApp.UI.Views.Workspaces;
 public partial class ChannelsWorkspaceView : UserControl
 {
     private readonly IServiceProvider? _serviceProvider;
+    private readonly DispatcherTimer _autoRefresh;
 
     public ChannelsWorkspaceView(ChannelsViewModel viewModel, IServiceProvider serviceProvider)
     {
         InitializeComponent();
         DataContext = viewModel;
         _serviceProvider = serviceProvider;
+
+        // Background catalog refresh — pulls the latest channel list from the server
+        // while the user is on this workspace. Stops as soon as the view unloads, so
+        // there's no traffic when the panel is hidden.
+        _autoRefresh = new DispatcherTimer { Interval = TimeSpan.FromSeconds(60) };
+        _autoRefresh.Tick += OnAutoRefreshTick;
+        Unloaded += (_, _) => _autoRefresh.Stop();
     }
 
     private async void ChannelsWorkspaceView_Loaded(object sender, RoutedEventArgs e)
@@ -26,6 +35,14 @@ public partial class ChannelsWorkspaceView : UserControl
         {
             await viewModel.LoadChannelsCommand.ExecuteAsync(null);
         }
+        _autoRefresh.Start();
+    }
+
+    private async void OnAutoRefreshTick(object? sender, EventArgs e)
+    {
+        if (DataContext is not ChannelsViewModel vm) return;
+        if (vm.IsLoading) return;
+        await vm.LoadChannelsCommand.ExecuteAsync(null);
     }
 
     private async void ChannelsEmpty_Refresh(object? sender, EventArgs e)

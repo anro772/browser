@@ -58,11 +58,6 @@
     <EmbeddedResource Include="Resources\DefaultRules\*.json" />
     <EmbeddedResource Include="Resources\ContentPolicies\*.json" />
     <EmbeddedResource Include="Resources\block-page.html" />
-    <!-- First-run seed data: marketplace packs + channel(s) the app
-         pre-populates into the local SQLite when those tables are empty.
-         Regenerate via the SeedExport tool under tools/SeedExport. -->
-    <EmbeddedResource Include="..\seed\marketplace.json" Link="Seed\marketplace.json" />
-    <EmbeddedResource Include="..\seed\channels.json"    Link="Seed\channels.json"    />
   </ItemGroup>
 
   <ItemGroup>
