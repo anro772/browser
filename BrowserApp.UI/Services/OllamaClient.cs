@@ -18,6 +18,7 @@ public class OllamaClient : IOllamaClient, IDisposable
     {
         var baseUrl = configuration["Ollama:BaseUrl"] ?? "http://localhost:11434";
         _defaultModel = configuration["Ollama:Model"] ?? "llama3.2";
+        var authToken = configuration["Ollama:AuthToken"];
         _ownsHttpClient = true;
 
         _httpClient = new HttpClient
@@ -25,6 +26,15 @@ public class OllamaClient : IOllamaClient, IDisposable
             BaseAddress = new Uri(baseUrl),
             Timeout = TimeSpan.FromSeconds(120)
         };
+
+        // Optional bearer-token auth for hosted Ollama setups behind a reverse proxy
+        // (e.g. Caddy + Cloudflare Tunnel). When the config key is empty the header is
+        // omitted entirely, preserving the local-Ollama use case (no auth needed).
+        if (!string.IsNullOrWhiteSpace(authToken))
+        {
+            _httpClient.DefaultRequestHeaders.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", authToken.Trim());
+        }
     }
 
     public OllamaClient(HttpClient httpClient, string defaultModel = "llama3.2")
