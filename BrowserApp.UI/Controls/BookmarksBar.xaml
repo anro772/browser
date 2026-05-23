@@ -11,7 +11,7 @@
     <UserControl.Resources>
         <!-- Bookmark item button: small rounded chip with star + title. -->
         <Style x:Key="BookmarkChipButtonStyle" TargetType="Button">
-            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Background" Value="{StaticResource BgElevatedBrush}"/>
             <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}"/>
             <Setter Property="Cursor" Value="Hand"/>
@@ -32,7 +32,7 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Bg" Property="Background" Value="{StaticResource BgSurfaceHoverBrush}"/>
+                                <Setter TargetName="Bg" Property="Background" Value="{StaticResource AccentSubtleBrush}"/>
                             </Trigger>
                             <Trigger Property="IsPressed" Value="True">
                                 <Setter TargetName="Bg" Property="Background" Value="{StaticResource BgSurfaceActiveBrush}"/>
@@ -44,7 +44,7 @@
         </Style>
     </UserControl.Resources>
 
-    <Border Background="{StaticResource BgElevatedBrush}"
+    <Border Background="{StaticResource BgSurfaceBrush}"
             BorderBrush="{StaticResource BorderSubtleBrush}"
             BorderThickness="0,0,0,1"
             Padding="6,2"

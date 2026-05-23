@@ -319,9 +319,19 @@ public partial class BrowserTabItem : ObservableObject, IDisposable
 
     private static bool IsSuppressedExtensionAnnouncement(string uri)
     {
-        if (!uri.StartsWith("chrome-extension://", StringComparison.OrdinalIgnoreCase)) return false;
-        return uri.IndexOf("/first-run.html", StringComparison.OrdinalIgnoreCase) >= 0
-            || uri.IndexOf("/day1.html", StringComparison.OrdinalIgnoreCase) >= 0;
+        // Internal extension welcome pages — chrome-extension://<id>/first-run.html and /day1.html.
+        if (uri.StartsWith("chrome-extension://", StringComparison.OrdinalIgnoreCase))
+        {
+            return uri.IndexOf("/first-run.html", StringComparison.OrdinalIgnoreCase) >= 0
+                || uri.IndexOf("/day1.html", StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
+        // External welcome / uninstall pages ABP opens from its onInstalled handler.
+        // Fires on every fresh extension install (new profile, wiped UserData, etc.).
+        if (uri.IndexOf("welcome.adblockplus.org", StringComparison.OrdinalIgnoreCase) >= 0)
+            return true;
+
+        return false;
     }
 
     private async void OnFaviconChanged(object? sender, object e)
