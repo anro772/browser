@@ -1,6 +1,6 @@
-# Privacy Browser
+# Slate Browser
 
-A privacy-focused browser built with C# WPF, WebView2, and Entity Framework Core. It includes tabbed browsing, content blocking, network monitoring, rule-based page modification, session persistence, extension support, and a single-window tools workspace.
+An AI-powered privacy browser built with C# WPF, WebView2, and Entity Framework Core. Features tabbed browsing, content blocking, network monitoring, rule-based page modification, a cloud-synced marketplace and channel system, an AI copilot sidebar (local or hosted LLM), and a distributable Windows installer.
 
 ## Features
 
@@ -37,13 +37,28 @@ A privacy-focused browser built with C# WPF, WebView2, and Entity Framework Core
 - All data stored locally (no cloud sync)
 - Multi-profile support with isolated data directories
 
+### AI Copilot Sidebar
+- **Ollama-powered** AI assistant embedded in the sidebar — works with any Ollama model (default: Llama 3.2)
+- **Markdown rendering** in assistant replies — headings, bullet/numbered lists, bold/italic, inline code, fenced code blocks with Copy button
+- Follow-up prompt chips after each reply (Explain simpler / Tell me more / Key risks / Next steps)
+- Regenerate-last-answer button (hover-revealed alongside Copy)
+- Vision-model detection — screenshot button auto-hides when the selected model lacks vision support
+- Page-context awareness — toggle to include current page text/URL in prompts
+- **Remote LLM hosting** — optional bearer-token auth for hosted Ollama behind a Cloudflare Tunnel + Caddy proxy (see [LLM Hosting](docs/llm-hosting.md))
+
+### Cloud Sync (Marketplace + Channels)
+- **Marketplace** — cloud-hosted catalog of rule packs, browsable and installable with one click. 60-second auto-refresh while the workspace is visible.
+- **Channels** — cloud-hosted team rule sharing. Public channels appear in the catalog; **private channels** are joinable via **"Join with code"** (channel ID + password).
+- **Backend**: .NET 8 API on Fly.io + Neon Postgres (free tier). Deployment guide in [docs/deploy.md](docs/deploy.md).
+- **Offline fallback** — when the server is unreachable, locally installed packs and joined channels still render from SQLite cache.
+
 ### Management
 - Browsing history grouped by day (Today / Yesterday / weekday / date) with host avatar, page title, and time — single-click row to navigate, hover-revealed `…` menu (Open in new tab / Copy URL / Delete entry)
 - Bookmarks (sidebar removed; lives in the bookmarks bar now)
 - Download manager with file-type chip, source host, single-click row to open file, permanent folder icon to reveal in Explorer; inviting empty-state with **Choose folder** / **Open downloads** CTAs
-- Copilot sidebar with suggested-prompt chips (Summarize / Find trackers / Generate blocking rule / Translate) in the empty state, bouncing-dot streaming indicator, accent-glow page-context chip, and `…`-menu in place of the bare clear button
 - Extension support (Manifest V3 unpacked extensions, `.crx` install)
 - **Debug console** with file-tail integration (`info_*.log` + `errors_*.log` via `FileSystemWatcher`), search, level/category filters, copy-entry context menu
+- **Per-install unique identity** — each fresh install generates a `user_<6hex>` handle to prevent ownership impersonation across machines. Editable in Settings → Account with a Copy button for multi-machine pairing.
 
 ### UI / UX
 - Lightened dark theme (warm obsidian surfaces, indigo accent), aligned to the Claude Design `browser-profiles/` bundle
@@ -87,13 +102,18 @@ BrowserApp/
 
 ## Tech Stack
 
-- **.NET 8** (Windows) with **WPF** + [WPF UI](https://wpfui.lepo.co/) (Fluent Design)
-- **WebView2** (Chromium engine)
-- **SQLite** with Entity Framework Core 8
-- **MVVM** with CommunityToolkit.Mvvm, Repository Pattern
-- **xUnit** + Moq for testing
+| Layer | Technology |
+|-------|------------|
+| **Client UI** | WPF + [WPF UI](https://wpfui.lepo.co/) (Fluent Design 2.0) |
+| **Browser Engine** | WebView2 (Edge/Chromium) |
+| **Client DB** | SQLite + EF Core 8 |
+| **Server API** | .NET 8 Web API (Fly.io) |
+| **Server DB** | PostgreSQL (Neon) |
+| **LLM** | Ollama (Llama 3.2) — local or hosted via Cloudflare Tunnel |
+| **Architecture** | MVVM + CommunityToolkit.Mvvm, Repository Pattern |
+| **Testing** | xUnit + Moq |
 
-## Build & Run
+## Build & Run (Development)
 
 Prerequisites: Windows 10/11, .NET 8 SDK, WebView2 Runtime
 
@@ -103,6 +123,31 @@ dotnet build
 dotnet run --project BrowserApp.UI
 dotnet test
 ```
+
+Server is optional for everyday browsing — only needed for Marketplace/Channels sync:
+```bash
+dotnet run --project BrowserApp.Server    # requires local PostgreSQL
+```
+
+## Packaging & Distribution
+
+Slate ships as a Windows installer built with Inno Setup. The published binary
+is self-contained (no .NET runtime required on the target machine), precompiled
+with ReadyToRun for fast cold start, and NOT single-file (avoids first-launch
+temp-extraction penalty).
+
+```powershell
+.\publish.ps1                         # produces publish\win-x64\
+iscc installer\BrowserApp.iss         # produces publish\installer\Slate-Setup-0.1.0.exe
+```
+
+Prerequisites for building the installer:
+- .NET 8 SDK
+- [Inno Setup](https://jrsoftware.org/isinfo.php) (`winget install JRSoftware.InnoSetup`)
+- WebView2 bootstrapper at `installer\MicrosoftEdgeWebview2Setup.exe` ([download](https://go.microsoft.com/fwlink/p/?LinkId=2124703))
+
+See [docs/deploy.md](docs/deploy.md) for cloud server deployment and
+[docs/llm-hosting.md](docs/llm-hosting.md) for the self-hosted LLM setup.
 
 ## Data Locations
 
@@ -145,7 +190,9 @@ dotnet ef database update --project BrowserApp.Data --startup-project BrowserApp
 
 ## Documentation
 
-- [Project Context](docs/project_context.md) - Architecture, decisions, and development history
+- [Project Context](docs/project_context.md) — Architecture, decisions, and full development history
+- [Deploy Guide](docs/deploy.md) — Deploying the server to Fly.io + Neon Postgres
+- [LLM Hosting](docs/llm-hosting.md) — Self-hosting Ollama via Cloudflare Tunnel + Caddy
 
 ## Known Limitations
 
@@ -153,6 +200,7 @@ dotnet ef database update --project BrowserApp.Data --startup-project BrowserApp
 - Some dynamic ad networks may bypass blocking
 - CSS/JS injections occur after initial page load
 - Profile switching requires app restart
+- Copilot requires Ollama installed locally, or a hosted endpoint configured in `appsettings.json`
 
 ## Acknowledgments
 
